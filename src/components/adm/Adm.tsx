@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useConfig } from '../../context/ConfigContext';
 import { brl } from '../../lib/format';
-import { Flame, LayoutDashboard, UtensilsCrossed, ShoppingCart, Wallet, Settings, Package, LogOut, Menu, X, TrendingUp, MessageSquare } from 'lucide-react';
+import { Flame, LayoutDashboard, UtensilsCrossed, ShoppingCart, Wallet, Settings, Package, LogOut, Menu, X, TrendingUp, MessageSquare, Radio } from 'lucide-react';
 import { Produtos } from './Produtos';
 import { Balcao } from './Balcao';
 import { Pedidos } from './Pedidos';
@@ -11,8 +11,9 @@ import { Financeiro } from './Financeiro';
 import { Configuracoes } from './Configuracoes';
 import { Estoque } from './Estoque';
 import { IAWhatsApp } from './IAWhatsApp';
+import { Monitoramento } from './Monitoramento';
 
-type Tab = 'dashboard' | 'produtos' | 'balcao' | 'pedidos' | 'financeiro' | 'estoque' | 'ia' | 'config';
+type Tab = 'dashboard' | 'produtos' | 'balcao' | 'pedidos' | 'financeiro' | 'estoque' | 'ia' | 'monitoramento' | 'config';
 
 interface DashboardData {
   lucro: number;
@@ -60,6 +61,7 @@ export function Adm() {
     { id: 'financeiro', label: 'Financeiro', icon: Wallet },
     { id: 'estoque', label: 'Estoque', icon: Package },
     { id: 'ia', label: 'Agente de IA', icon: MessageSquare },
+    { id: 'monitoramento', label: 'Monitoramento', icon: Radio },
     { id: 'config', label: 'Config', icon: Settings },
   ];
 
@@ -72,6 +74,7 @@ export function Adm() {
       case 'financeiro': return <Financeiro />;
       case 'estoque': return <Estoque />;
       case 'ia': return <IAWhatsApp />;
+      case 'monitoramento': return <Monitoramento />;
       case 'config': return <Configuracoes />;
     }
   };

@@ -103,6 +103,48 @@ export interface ItemPedido {
   adicional_preco: number;
 }
 
+export interface Reserva {
+  id: string;
+  cliente_nome: string;
+  cliente_telefone: string;
+  data: string;
+  horario: string;
+  numero_pessoas: number;
+  observacao: string;
+  status: 'pendente' | 'confirmada' | 'cancelada';
+  created_at: string;
+}
+
+export interface IaConversa {
+  id: string;
+  telefone: string;
+  cliente_nome: string;
+  canal: 'simulador' | 'whatsapp';
+  status: 'ia' | 'humano' | 'resolvida';
+  precisa_atencao: boolean;
+  motivo_atencao: string;
+  last_message_at: string;
+  created_at: string;
+}
+
+export interface IaMensagem {
+  id: string;
+  conversa_id: string;
+  remetente: 'cliente' | 'ia' | 'humano' | 'sistema';
+  texto: string;
+  feedback: 'positivo' | 'negativo' | '';
+  enviado: boolean;
+  created_at: string;
+}
+
+export interface IaConhecimento {
+  id: string;
+  topico: string;
+  conteudo: string;
+  ativo: boolean;
+  created_at: string;
+}
+
 export interface CaixaEntry {
   id: string;
   tipo: 'entrada' | 'saida';

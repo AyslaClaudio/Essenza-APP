@@ -1,8 +1,10 @@
 # ESSENZA Pizzaria - Chatbot de WhatsApp com IA
 
-Este módulo é um robô autônomo em Node.js projetado para rodar em segundo plano em qualquer computador ou servidor local, conectando um número real de WhatsApp da pizzaria diretamente à Inteligência Artificial do Google Gemini (1.5 Flash) e ao seu banco de dados Supabase.
+Este módulo é um robô autônomo em Node.js projetado para rodar em segundo plano em qualquer computador ou servidor local, conectando um número real de WhatsApp da pizzaria diretamente à Inteligência Artificial do Google Gemini (flash-lite, otimizado para respostas rápidas) e ao seu banco de dados Supabase.
 
-Ele permite que clientes façam perguntas sobre horários de funcionamento, taxas de entrega por bairro, vejam o cardápio ativo, montem pizzas meio a meio com cálculo automático de valor (cobrando o sabor mais caro) e façam pedidos que caem diretamente no painel de pedidos do estabelecimento em tempo real.
+Ele permite que clientes façam perguntas sobre horários de funcionamento, taxas de entrega por bairro, recebam o cardápio oficial em PDF, montem pizzas meio a meio com cálculo automático de valor (cobrando o sabor mais caro, disponível só no tamanho G), interpretem mensagens de áudio, façam pedidos (retirada ou entrega) ou reservem mesa no salão — tudo isso caindo diretamente no painel do estabelecimento em tempo real.
+
+Todas as conversas reais ficam visíveis ao vivo no painel **Monitoramento** do app (aba lateral), onde a equipe pode acompanhar, tomar posse de uma conversa a qualquer momento, dar feedback nas respostas da IA e manter uma base de conhecimento com regras que a IA deve sempre seguir.
 
 ---
 
@@ -25,8 +27,14 @@ Ele permite que clientes façam perguntas sobre horários de funcionamento, taxa
    GEMINI_API_KEY=sua_chave_do_gemini_aqui
    
    # Configurações adicionais de tempo de preparo (opcional)
-   BASE_WAIT_TIME=30
+   # BASE_WAIT_TIME: tempo médio real de preparo de um pedido (do forno até pronto)
+   # WAIT_TIME_PER_ORDER: minutos somados por cada pedido ativo na cozinha (delivery + balcão/salão juntos)
+   BASE_WAIT_TIME=20
    WAIT_TIME_PER_ORDER=5
+
+   # Número (com DDD e código do país, só números) que recebe alertas de "atenção humana"
+   # quando a IA sinaliza reclamações ou situações fora do escopo dela (opcional)
+   OWNER_ALERT_PHONE=5511999998888
    ```
 
 2. **Instalar Dependências**
@@ -73,3 +81,15 @@ O bot utiliza o modelo **Gemini 1.5 Flash** em modo estruturado JSON. A cada men
    - Cadastrar os itens e adicionais na tabela `itens_pedido`.
    - Registrar a entrada financeira no fluxo de `caixa`.
 5. Envia o resumo formatado com o número do pedido e tempo de espera calculado no WhatsApp do cliente.
+
+---
+
+## Monitoramento e Tomada de Posse
+
+Toda conversa real do WhatsApp é salva no Supabase (`ia_conversas` / `ia_mensagens`) e aparece ao vivo na aba **Monitoramento** do painel administrativo:
+
+- **Conversas que precisam de atenção** ficam destacadas no topo da lista — a própria IA marca isso quando detecta reclamação, pedido de falar com humano, ou algo fora do que ela sabe responder com segurança. Se `OWNER_ALERT_PHONE` estiver configurado, o bot também manda uma mensagem de WhatsApp avisando o dono/gerente na hora.
+- **"Tomar Posse"** transfere a conversa para um atendente humano — o bot para de responder automaticamente àquele cliente, e a equipe pode digitar respostas direto no painel, que o bot entrega pelo WhatsApp real em poucos segundos.
+- **"Devolver para IA"** retorna o controle da conversa para o robô.
+- **👍/👎** em cada resposta da IA ficam salvos como feedback — não treinam o modelo automaticamente (isso exigiria fine-tuning), mas dão um histórico do que funcionou ou não para revisar o prompt depois.
+- Aba **Base de Conhecimento**: qualquer regra ou resposta que a equipe cadastrar ali é injetada automaticamente no contexto da IA em toda conversa (simulador e WhatsApp real), sem precisar mexer no código.

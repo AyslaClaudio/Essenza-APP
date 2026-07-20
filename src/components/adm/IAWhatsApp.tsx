@@ -6,7 +6,9 @@ import {
   Bot, Send, Smartphone, Settings, Key, Clock, Sparkles, 
   CheckCircle2, Trash2, RefreshCw, AlertTriangle, Play, HelpCircle
 } from 'lucide-react';
-import type { Produto, TaxaEntrega, Cliente } from '../../types';
+import type { Produto, TaxaEntrega, Cliente, IaConhecimento } from '../../types';
+
+const CARDAPIO_LINK = 'https://canva.link/fz8x4fcgqx23762';
 
 interface Message {
   id: string;
@@ -29,7 +31,7 @@ export function IAWhatsApp() {
   // Settings States
   const [geminiKey, setGeminiKey] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
-  const [baseWaitTime, setBaseWaitTime] = useState(30);
+  const [baseWaitTime, setBaseWaitTime] = useState(20);
   const [waitTimePerOrder, setWaitTimePerOrder] = useState(5);
   const [whatsappApiUrl, setWhatsappApiUrl] = useState('http://localhost:8000');
   const [whatsappToken, setWhatsappToken] = useState('');
@@ -39,6 +41,7 @@ export function IAWhatsApp() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [taxas, setTaxas] = useState<TaxaEntrega[]>([]);
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
+  const [conhecimento, setConhecimento] = useState<IaConhecimento[]>([]);
 
   // Simulator States
   const [chats, setChats] = useState<Chat[]>([]);
@@ -53,7 +56,7 @@ export function IAWhatsApp() {
   useEffect(() => {
     const savedKey = localStorage.getItem('essenza_gemini_api_key') || '';
     const savedPrompt = localStorage.getItem('essenza_ia_system_prompt') || '';
-    const savedBaseWait = localStorage.getItem('essenza_ia_base_wait') || '30';
+    const savedBaseWait = localStorage.getItem('essenza_ia_base_wait') || '20';
     const savedWaitPer = localStorage.getItem('essenza_ia_wait_per_order') || '5';
     const savedApiUrl = localStorage.getItem('essenza_whatsapp_api_url') || 'http://localhost:8000';
     const savedToken = localStorage.getItem('essenza_whatsapp_token') || '';
@@ -70,28 +73,47 @@ export function IAWhatsApp() {
       setSystemPrompt(savedPrompt);
     } else {
       // Default System Prompt
-      const defaultPrompt = `Você é o "Essenza Bot", o atendente de Inteligência Artificial perfeito da ESSENZA Pizzaria.
-Seu objetivo é ser extremamente educado, amigável, prestativo e profissional no atendimento aos clientes pelo WhatsApp, tratando-os muito bem.
+      const defaultPrompt = `Você é a Bia, atendente da ESSENZA Pizzaria pelo WhatsApp. Você é uma pessoa de verdade fazendo esse atendimento — não um robô nem um script decorado. Seja calorosa, atenciosa e genuinamente interessada em bem servir, do jeito que a gente gostaria de ser tratado numa pizzaria de bairro que se importa com o cliente.
 
-### Regras Principais de Atendimento (Seja o Atendente Perfeito):
-1. Cumprimente o cliente com entusiasmo! Dê sempre "Boa noite" (ou o cumprimento adequado para o momento), pergunte como ele está e pergunte o que ele deseja pedir hoje de forma muito acolhedora.
-2. Para novos clientes, peça sempre o Nome de forma simpática para personalizar o atendimento.
-3. Quando o cliente pedir pizza, pergunte ativamente se ele deseja que a pizza seja "meio a meio" (dois sabores) ou se prefere inteira de um sabor só.
-4. Explique com clareza a regra de meio a meio: o cliente pode escolher até 2 sabores para a pizza, e o preço cobrado será o do sabor de maior valor da nossa tabela de preços.
-5. Ao apresentar o cardápio, formate os produtos com clareza, caprichando na apresentação (ex: *Nome da Pizza* - R$ Preço).
-6. Peça o endereço completo de entrega (rua, número) e o Bairro (confirme se o bairro dele está na nossa lista de bairros atendidos).
-7. Ofereça de forma gentil a adição de borda recheada ou bebidas para acompanhar o pedido.
-8. Informe sempre o tempo de espera atualizado fornecido no contexto de forma clara e honesta.
-9. Pergunte a forma de pagamento (Pix, Cartão ou Dinheiro). Se for dinheiro, pergunte se precisa de troco.
-10. Faça um resumo detalhado e caprichado com: Itens, Taxa de entrega, Valor total, Forma de pagamento e Endereço antes de pedir a confirmação final.
-11. Quando o cliente confirmar e estiver tudo pronto para lançar, responda finalizando de forma alegre e retorne um objeto estruturado em JSON com a ação correspondente para salvar o pedido.
+### Como se comportar (o tom é tão importante quanto a informação):
+1. Cumprimente de forma natural e variada — adequada ao horário do dia (bom dia/boa tarde/boa noite) — sem soar decorado. Pergunte o nome com simpatia se for a primeira mensagem do cliente, e use o nome dele ao longo da conversa (sem exagerar, repetir toda hora soa falso).
+2. Escreva como alguém digitaria de verdade no WhatsApp: frases curtas, tom leve, emojis com moderação (não em toda linha). Evite parecer um formulário ou um anúncio.
+3. Se o cliente perguntar o cardápio, ou disser que quer pedir algo sem especificar o quê, NÃO digite a lista de produtos em texto. Em vez disso, avise com simpatia que vai te mandar o cardápio completo (ex: "Vou te mandar nosso cardápio completinho aqui! 📄🍕"), marque "attach_menu": true, e você pode citar 2-3 sugestões/destaques rapidamente se quiser. O cardápio oficial (com fotos e descrições) é enviado automaticamente quando você marca esse campo.
+4. Quando o cliente escolher pizza, pergunte se prefere inteira (1 sabor) ou meio a meio (2 sabores). Explique com clareza: no meio a meio, cobramos o valor do sabor mais caro dos dois, e **o meio a meio só está disponível no tamanho Grande (G)** — no tamanho Pequeno (P) é só um sabor inteiro. Se o cliente pedir meio a meio no tamanho P, explique isso com gentileza e ofereça o G como alternativa.
+
+### Depois que o cliente já escolheu os itens do cardápio, colete as informações abaixo — uma coisa de cada vez, numa conversa natural, nunca tudo de uma vez num interrogatório:
+5. O nome do cliente, se ainda não souber.
+6. Pergunte sempre, com clareza: é para **retirar aqui na loja**, para **receber em casa (entrega)**, ou o cliente quer **reservar uma mesa** para vir comer no salão? Nunca assuma isso sozinha.
+   - Se for **retirada**: não precisa de endereço nem taxa de entrega. Só confirme o nome e que vai buscar na loja.
+   - Se for **entrega**: peça o endereço completo (rua, número) e o Bairro, confirme se atendemos aquela região, e informe com clareza o valor da taxa de entrega daquele bairro (soma no total).
+   - Se for **reserva de mesa**: isso NÃO é um pedido de comida, é reservar lugar no salão. Colete nome, quantas pessoas, e o dia/horário desejado. Explique com simpatia que a equipe vai confirmar a disponibilidade em breve. Não pergunte forma de pagamento nem monte itens para uma reserva.
+7. Em pedidos (retirada ou entrega), ofereça borda recheada e bebidas de um jeito natural, como sugestão de quem quer que o pedido fique completo — não como script de upsell forçado.
+8. **Tempo de espera — só se aplica a pedidos de retirada/entrega, seja sempre honesta, humana e transparente:**
+   - O preparo de um pedido leva em torno de 20 minutos do forno até ficar pronto.
+   - A pizzaria atende ao mesmo tempo quem pede pelo WhatsApp/delivery E quem está no salão, então o tempo real pode variar de acordo com o quanto a cozinha está corrida no momento. O contexto abaixo te dá o tempo estimado atualizado — use sempre esse número, nunca invente um valor fixo.
+   - Os pedidos seguem a ordem de chegada, para ser justo com todo mundo — se for explicar um tempo maior que o normal, faça isso com empatia (ex: "Hoje tá um pouquinho mais movimentado por aqui, mas já já sai a sua" em vez de simplesmente informar um número seco).
+   - Reforce que vale a pena esse cuidado porque a pizza sai do forno na hora certa para chegar bem quentinha — isso é prioridade da casa.
+9. Em pedidos, pergunte a forma de pagamento (Pix, Cartão ou Dinheiro). Se for dinheiro, pergunte se precisa de troco. Reservas não têm forma de pagamento.
+10. **Antes de fechar QUALQUER pedido ou reserva, faça sempre um resumo completo e claro e peça a confirmação explícita do cliente — nunca finalize sem essa confirmação:**
+    - Para pedidos: Itens, tipo (retirada ou entrega), taxa de entrega (se houver), valor total, forma de pagamento, e endereço (se for entrega).
+    - Para reservas: nome, quantidade de pessoas, dia e horário.
+    - Só depois que o cliente confirmar claramente (ex: "sim", "confirmo", "pode mandar", "isso mesmo") você muda a "action". Se o cliente ainda não confirmou, ou pedir para mudar algo, mantenha "action": "none" e continue a conversa.
+11. Quando o cliente confirmar e você tiver tudo, finalize com alegria genuína (não robotizada) e retorne o JSON estruturado com a ação correspondente.
+12. Se a mensagem mais recente do cliente vier de um ÁUDIO (você vai receber o áudio anexado nesta requisição), ouça com atenção e responda normalmente como se fosse texto, seguindo todas as regras acima. Preencha o campo "customer_message_transcript" com um resumo do que você entendeu do áudio, para registro interno.
+13. **Peça ajuda humana quando for o caso** — marque "precisa_atencao_humana": true e explique o motivo em "motivo_atencao" quando: o cliente reclamar de algo (pedido errado, atraso, comida fria, atendimento ruim), pedir para falar com um humano/gerente, perguntar algo bem fora do escopo de pedidos/cardápio/reservas que você não tem informação segura para responder, ou você perceber que está indo pra um impasse. Mesmo marcando isso, continue respondendo o cliente com gentileza normalmente — a marcação só avisa a equipe internamente, o cliente não vê isso.
+14. Se houver uma seção "CONHECIMENTO ADICIONAL DA CASA" no contexto abaixo, essas são regras e respostas definidas pela equipe da pizzaria — siga-as sempre que se aplicarem, elas têm prioridade sobre suposições suas.
 
 ### Resposta Obrigatória:
 Você DEVE SEMPRE responder no formato JSON estruturado com o seguinte schema:
 {
   "reply": "Sua mensagem amigável formatada para enviar no WhatsApp (use emojis, negritos e quebras de linha)",
-  "action": "place_order" ou "none",
+  "action": "place_order" | "request_reservation" | "none",
+  "attach_menu": false,
+  "precisa_atencao_humana": false,
+  "motivo_atencao": "",
+  "customer_message_transcript": "Preenchido apenas se a última mensagem do cliente foi um áudio: o que você entendeu que ele disse",
   "order_details": {
+    "tipo_pedido": "retirada" | "entrega",
     "items": [
       {
         "product_name": "Nome exato da pizza/bebida no cardápio",
@@ -106,12 +128,23 @@ Você DEVE SEMPRE responder no formato JSON estruturado com o seguinte schema:
     "payment_method": "Pix" | "Cartão" | "Dinheiro",
     "customer_name": "Nome do cliente",
     "customer_phone": "Telefone do cliente",
-    "customer_address": "Rua e número de entrega",
-    "customer_bairro": "Nome do Bairro exato"
+    "customer_address": "Rua e número (apenas se tipo_pedido for entrega)",
+    "customer_bairro": "Nome do Bairro exato (apenas se tipo_pedido for entrega)"
+  },
+  "reservation_details": {
+    "customer_name": "Nome do cliente",
+    "customer_phone": "Telefone do cliente",
+    "data": "AAAA-MM-DD",
+    "horario": "HH:MM",
+    "numero_pessoas": 2,
+    "observacao": "Ex: mesa perto da janela"
   }
 }
 
-Importante: Apenas mude a "action" para "place_order" no exato momento em que o cliente confirmou expressamente o fechamento do pedido e você tiver todas as informações obrigatórias (Nome, Endereço, Bairro, Itens do pedido e Forma de pagamento). Caso contrário, mantenha "action": "none" e "order_details": null.`;
+Importante:
+- Mude "action" para "place_order" apenas quando for um pedido de comida (retirada ou entrega) e o cliente já tiver confirmado tudo expressamente, com Nome, Itens, Forma de pagamento e (se entrega) Endereço + Bairro.
+- Mude "action" para "request_reservation" apenas quando for reserva de mesa e o cliente já tiver confirmado, com Nome, Número de pessoas, Dia e Horário.
+- Caso contrário, mantenha "action": "none", "order_details": null e "reservation_details": null.`;
       setSystemPrompt(defaultPrompt);
     }
   }, []);
@@ -152,6 +185,13 @@ Importante: Apenas mude a "action" para "place_order" no exato momento em que o 
         .select('*', { count: 'exact', head: true })
         .in('status', ['recebido', 'preparo', 'forno', 'saiu']);
       setActiveOrdersCount(count || 0);
+
+      // 4. Load active knowledge base entries (staff-curated rules/answers)
+      const { data: dbConhecimento } = await supabase
+        .from('ia_conhecimento')
+        .select('*')
+        .eq('ativo', true);
+      setConhecimento(dbConhecimento || []);
     } catch (e) {
       console.error('Erro ao buscar dados do Supabase:', e);
     } finally {
@@ -315,10 +355,11 @@ Importante: Apenas mude a "action" para "place_order" no exato momento em que o 
         };
       });
 
-      // Taxa de entrega
+      // Tipo de pedido: retirada (balcão) x entrega (delivery) — taxa só se aplica à entrega
+      const isEntrega = orderDetails.tipo_pedido === 'entrega';
       const bairroName = orderDetails.customer_bairro || '';
       const matchedTaxa = taxas.find(t => t.bairro.toLowerCase() === bairroName.toLowerCase());
-      const taxaEntrega = matchedTaxa ? matchedTaxa.taxa : (config?.taxa_fixa_entrega || 5);
+      const taxaEntrega = isEntrega ? (matchedTaxa ? matchedTaxa.taxa : (config?.taxa_fixa_entrega || 5)) : 0;
       const total = subtotal + taxaEntrega;
       const lucro = subtotal - custoTotal;
 
@@ -332,9 +373,9 @@ Importante: Apenas mude a "action" para "place_order" no exato momento em que o 
         cliente_id: clienteId,
         cliente_nome: orderDetails.customer_name || 'Cliente WhatsApp',
         cliente_telefone: customerPhone,
-        cliente_endereco: orderDetails.customer_address || '',
-        cliente_bairro: orderDetails.customer_bairro || '',
-        tipo: 'delivery' as const,
+        cliente_endereco: isEntrega ? (orderDetails.customer_address || '') : '',
+        cliente_bairro: isEntrega ? (orderDetails.customer_bairro || '') : '',
+        tipo: isEntrega ? ('delivery' as const) : ('balcao' as const),
         status: 'recebido' as const,
         subtotal,
         taxa_entrega: taxaEntrega,
@@ -343,7 +384,7 @@ Importante: Apenas mude a "action" para "place_order" no exato momento em que o 
         custo_total: custoTotal,
         lucro,
         forma_pagamento: orderDetails.payment_method || 'Pix',
-        observacao: `Pedido IA - ${customerPhone}`,
+        observacao: `Pedido IA (${isEntrega ? 'Entrega' : 'Retirada'}) - ${customerPhone}`,
         cupom: ''
       };
 
@@ -384,11 +425,11 @@ Importante: Apenas mude a "action" para "place_order" no exato momento em que o 
 Seu pedido é o de número *#${numero}*.
 
 🍕 *Resumo do Pedido:*
-${orderItems.map((i: any) => `- ${i.quantidade}x ${i.produto_name} ${i.observacao ? `(_Obs: ${i.observacao}_)` : ''}`).join('\n')}
+${orderItems.map((i: any) => `- ${i.quantidade}x ${i.produto_nome} ${i.observacao ? `(_Obs: ${i.observacao}_)` : ''}`).join('\n')}
 
-💰 *Total:* ${brl(total)} (com entrega de ${brl(taxaEntrega)} para o bairro ${orderDetails.customer_bairro})
+💰 *Total:* ${brl(total)}${isEntrega ? ` (com entrega de ${brl(taxaEntrega)} para o bairro ${orderDetails.customer_bairro})` : ' (retirada na loja, sem taxa)'}
 💳 *Pagamento:* ${orderDetails.payment_method}
-📍 *Endereço:* ${orderDetails.customer_address}
+${isEntrega ? `📍 *Endereço:* ${orderDetails.customer_address}` : '🏠 *Retirada:* aqui na loja'}
 ⏱️ *Tempo de espera estimado:* ${computedWait} minutos.
 
 Nossa equipe já está preparando a sua massa com muito carinho! Qualquer dúvida, estamos aqui.`);
@@ -402,6 +443,43 @@ Nossa equipe já está preparando a sua massa com muito carinho! Qualquer dúvid
     }
   };
 
+  // Handle Table Reservation Insertion (The Action Callback)
+  const processReservation = async (reservationDetails: any, chatId: string) => {
+    addMessage(chatId, 'system', '⚙️ Registrando reserva de mesa...');
+
+    try {
+      const customerPhone = reservationDetails.customer_phone || activeChat?.phone || 'whatsapp-sim';
+
+      const { error: reservaError } = await supabase.from('reservas').insert({
+        cliente_nome: reservationDetails.customer_name || 'Cliente WhatsApp',
+        cliente_telefone: customerPhone,
+        data: reservationDetails.data,
+        horario: reservationDetails.horario || '',
+        numero_pessoas: reservationDetails.numero_pessoas || 1,
+        observacao: reservationDetails.observacao || '',
+        status: 'pendente'
+      });
+
+      if (reservaError) throw new Error(reservaError.message);
+
+      addMessage(chatId, 'system', '✅ Reserva registrada com sucesso! A equipe da loja vai confirmar a disponibilidade da mesa.');
+
+      setTimeout(() => {
+        addMessage(chatId, 'bot', `🎉 *Reserva Recebida!*
+
+📅 *Data:* ${reservationDetails.data}
+🕒 *Horário:* ${reservationDetails.horario}
+👥 *Pessoas:* ${reservationDetails.numero_pessoas}
+🙋 *Nome:* ${reservationDetails.customer_name}
+
+Nossa equipe vai confirmar a disponibilidade da mesa e te avisa por aqui em breve. Até já! 🍕`);
+      }, 1000);
+    } catch (e: any) {
+      console.error(e);
+      addMessage(chatId, 'system', `❌ Falha ao registrar a reserva: ${e.message || 'Erro inesperado'}`);
+    }
+  };
+
   // Call Gemini API (or Simulator Fallback)
   const queryAI = async (chatId: string, currentChat: Chat, textToSend: string) => {
     setIsTyping(true);
@@ -409,6 +487,7 @@ Nossa equipe já está preparando a sua massa com muito carinho! Qualquer dúvid
     // Format contextual menu and rates for Gemini
     const menuContext = produtos.map(p => `- ${p.nome} (${p.categoria_nome}) - Preço: R$${p.preco} (Tamanho: ${p.tamanho || 'Único'})`).join('\n');
     const freteContext = taxas.map(t => `- Bairro: ${t.bairro} - Taxa: R$${t.taxa}`).join('\n');
+    const conhecimentoContext = conhecimento.map(c => `- [${c.topico}] ${c.conteudo}`).join('\n');
     const computedWaitTime = baseWaitTime + (activeOrdersCount * waitTimePerOrder);
 
     const storeContext = `
@@ -425,15 +504,19 @@ Fila de Espera Atual:
 Cardápio Disponível (Apenas venda estes produtos):
 ${menuContext}
 
+Cardápio oficial em PDF (enviado automaticamente quando "attach_menu": true, cite o link só se precisar): ${CARDAPIO_LINK}
+
 Bairros que atendemos e taxas de entrega:
 ${freteContext}
 Taxa Fixa Padrão (para bairros não listados): R$${config?.taxa_fixa_entrega || 5}
+${conhecimentoContext ? `\nCONHECIMENTO ADICIONAL DA CASA (regras definidas pela equipe, sempre priorize):\n${conhecimentoContext}` : ''}
 ----------------------------------------
     `;
 
-    // Format chat history
+    // Format chat history (only the most recent messages — keeps requests fast and cheap)
     const conversationHistory = currentChat.messages
       .filter(m => m.sender !== 'system')
+      .slice(-16)
       .map(m => `${m.sender === 'customer' ? 'Cliente' : 'IA'}: ${m.text}`)
       .join('\n');
 
@@ -478,6 +561,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
           const matchedCalabresa = produtos.find(p => p.nome.toLowerCase().includes('calabresa')) || produtos[0];
           responseJson.action = "place_order";
           responseJson.order_details = {
+            tipo_pedido: 'entrega',
             items: [
               {
                 product_name: matchedCalabresa?.nome || 'Pizza Calabresa',
@@ -508,10 +592,10 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
       return;
     }
 
-    // 2. If Gemini API Key IS set, run Gemini 2.5 Flash from browser
+    // 2. If Gemini API Key IS set, run Gemini from browser (flash-lite: faster + cheaper, plenty for structured chat)
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${geminiKey}`,
         {
           method: 'POST',
           headers: {
@@ -526,13 +610,16 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
             ],
             generationConfig: {
               responseMimeType: 'application/json',
+              maxOutputTokens: 1024,
+              temperature: 0.7,
             },
           }),
         }
       );
 
       if (!response.ok) {
-        throw new Error(`Erro na API do Gemini: ${response.statusText}`);
+        const errBody = await response.text().catch(() => '');
+        throw new Error(`Erro na API do Gemini (${response.status} ${response.statusText}): ${errBody}`);
       }
 
       const resData = await response.json();
@@ -548,8 +635,17 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
 
       if (result.action === 'place_order' && result.order_details) {
         await processDatabaseOrder(result.order_details, chatId);
+      } else if (result.action === 'request_reservation' && result.reservation_details) {
+        await processReservation(result.reservation_details, chatId);
       } else {
         addMessage(chatId, 'bot', result.reply || 'Desculpe, tive um problema ao processar a resposta.');
+      }
+
+      if (result.attach_menu) {
+        addMessage(chatId, 'system', '📄 (No WhatsApp real, o PDF do cardápio seria enviado aqui como anexo)');
+      }
+      if (result.precisa_atencao_humana) {
+        addMessage(chatId, 'system', `🚩 Conversa marcada para revisão humana: ${result.motivo_atencao || 'motivo não especificado'}`);
       }
 
     } catch (e: any) {
@@ -842,7 +938,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                       />
                     </div>
                   </div>
-                  <span className="text-[10px] text-neutral-500 block">Fórmula: Espera Base + (Pedidos Preparando × Acréscimo). A IA usará este cálculo para informar aos clientes.</span>
+                  <span className="text-[10px] text-neutral-500 block">Fórmula: Espera Base + (Pedidos Preparando × Acréscimo). A contagem de "Pedidos Preparando" já inclui automaticamente os pedidos do balcão/salão, não só delivery — então quando o salão está cheio, a IA já informa um tempo maior e mais honesto ao cliente do WhatsApp.</span>
                 </div>
 
                 <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-4 space-y-3">
