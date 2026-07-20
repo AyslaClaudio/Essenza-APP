@@ -12,6 +12,7 @@
     "@supabase/supabase-js": "^2.39.8",
     "@whiskeysockets/baileys": "^6.6.0",
     "dotenv": "^16.4.5",
+    "node-cron": "^3.0.3",
     "pino": "^8.19.0",
     "qrcode-terminal": "^0.12.0"
   }

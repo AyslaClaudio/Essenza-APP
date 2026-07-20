@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useConfig } from '../../context/ConfigContext';
@@ -7,6 +7,8 @@ import { Flame, LayoutDashboard, UtensilsCrossed, ShoppingCart, Wallet, Settings
 import { Produtos } from './Produtos';
 import { Balcao } from './Balcao';
 import { Mesas } from './Mesas';
+// Dashboard carrega o recharts (pesado); lazy-load para não onerar as demais telas.
+const Dashboard = lazy(() => import('./Dashboard').then((m) => ({ default: m.Dashboard })));
 import { Pedidos } from './Pedidos';
 import { Financeiro } from './Financeiro';
 import { Configuracoes } from './Configuracoes';
@@ -69,7 +71,7 @@ export function Adm() {
 
   const renderTab = () => {
     switch (tab) {
-      case 'dashboard': return <Dashboard data={dash} meta={config?.meta_diaria || 2000} onNavigate={setTab} />;
+      case 'dashboard': return <Dashboard meta={config?.meta_diaria || 2000} />;
       case 'produtos': return <Produtos />;
       case 'balcao': return <Balcao onOrderComplete={loadDashboard} />;
       case 'mesas': return <Mesas />;
@@ -158,7 +160,9 @@ export function Adm() {
           <ProfitStrip dash={dash} />
         </div>
         <div className="p-4 lg:p-6 max-w-7xl mx-auto">
-          {renderTab()}
+          <Suspense fallback={<div className="p-12 text-center text-neutral-500">Carregando...</div>}>
+            {renderTab()}
+          </Suspense>
         </div>
       </main>
     </div>
@@ -191,67 +195,3 @@ function ProfitStrip({ dash }: { dash: DashboardData }) {
   );
 }
 
-function Dashboard({ data, meta, onNavigate }: { data: DashboardData; meta: number; onNavigate: (t: Tab) => void }) {
-  const pct = meta > 0 ? Math.min((data.faturamento / meta) * 100, 100) : 0;
-  return (
-    <div className="space-y-6 animate-fadeIn">
-      <h2 className="text-2xl font-bold text-white">Visão Geral</h2>
-
-      {/* Big cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-[#FFD700]/20 to-[#FFD700]/5 border border-[#FFD700]/30 rounded-2xl p-6">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="text-[#FFD700]" size={24} />
-            <span className="text-[#FFD700]/70 text-sm uppercase tracking-wide">Lucro do Dia</span>
-          </div>
-          <p className="text-[#FFD700] font-black text-4xl">{brl(data.lucro)}</p>
-        </div>
-        <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-6">
-          <span className="text-neutral-500 text-sm uppercase tracking-wide">Faturamento</span>
-          <p className="text-white font-black text-4xl mt-2">{brl(data.faturamento)}</p>
-        </div>
-        <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-6">
-          <span className="text-neutral-500 text-sm uppercase tracking-wide">Pedidos Hoje</span>
-          <p className="text-white font-black text-4xl mt-2">{data.numPedidos}</p>
-        </div>
-      </div>
-
-      {/* Meta progress */}
-      <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-neutral-400 text-sm">Meta do Dia</span>
-          <span className="text-white font-semibold">{brl(data.faturamento)} / {brl(meta)}</span>
-        </div>
-        <div className="h-4 bg-neutral-800 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-[#E50914] to-[#FFD700] rounded-full transition-all duration-500"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <p className="text-neutral-500 text-sm mt-2">
-          {pct < 100 ? `Faltam ${brl(meta - data.faturamento)}` : 'Meta atingida!'}
-        </p>
-      </div>
-
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <QuickAction icon={ShoppingCart} label="Novo Pedido" onClick={() => onNavigate('balcao')} />
-        <QuickAction icon={UtensilsCrossed} label="Ver Pedidos" onClick={() => onNavigate('pedidos')} />
-        <QuickAction icon={Flame} label="Cardápio" onClick={() => onNavigate('produtos')} />
-        <QuickAction icon={Wallet} label="Financeiro" onClick={() => onNavigate('financeiro')} />
-      </div>
-    </div>
-  );
-}
-
-function QuickAction({ icon: Icon, label, onClick }: { icon: typeof LayoutDashboard; label: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex flex-col items-center gap-2 bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-6 hover:border-[#E50914] transition-colors active:scale-95"
-    >
-      <Icon size={28} className="text-[#E50914]" />
-      <span className="text-white font-medium text-sm">{label}</span>
-    </button>
-  );
-}

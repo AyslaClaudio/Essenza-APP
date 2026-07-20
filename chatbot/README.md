@@ -33,8 +33,13 @@ Todas as conversas reais ficam visíveis ao vivo no painel **Monitoramento** do 
    WAIT_TIME_PER_ORDER=5
 
    # Número (com DDD e código do país, só números) que recebe alertas de "atenção humana"
-   # quando a IA sinaliza reclamações ou situações fora do escopo dela (opcional)
+   # quando a IA sinaliza reclamações ou situações fora do escopo dela.
+   # Este MESMO número também recebe os relatórios automáticos (diário/semanal). (opcional)
    OWNER_ALERT_PHONE=5511999998888
+
+   # Dia da semana do relatório SEMANAL (0=domingo ... 6=sábado). Padrão 1 (segunda,
+   # folga comum de pizzaria). O relatório diário sempre sai às 09:00. (opcional)
+   RELATORIO_SEMANAL_DIA=1
    ```
 
 2. **Instalar Dependências**
@@ -93,3 +98,14 @@ Toda conversa real do WhatsApp é salva no Supabase (`ia_conversas` / `ia_mensag
 - **"Devolver para IA"** retorna o controle da conversa para o robô.
 - **👍/👎** em cada resposta da IA ficam salvos como feedback — não treinam o modelo automaticamente (isso exigiria fine-tuning), mas dão um histórico do que funcionou ou não para revisar o prompt depois.
 - Aba **Base de Conhecimento**: qualquer regra ou resposta que a equipe cadastrar ali é injetada automaticamente no contexto da IA em toda conversa (simulador e WhatsApp real), sem precisar mexer no código.
+
+---
+
+## Relatórios Automáticos no WhatsApp
+
+Com o bot conectado e `OWNER_ALERT_PHONE` configurado, o robô envia relatórios de vendas automaticamente pelo mesmo número já conectado (via `node-cron`):
+
+- **Diário — todo dia às 09:00**: resume o dia anterior (faturamento, lucro, margem, nº de pedidos, ticket médio, sabor mais vendido e uma sugestão).
+- **Semanal — no dia de folga às 09:00**: resume os últimos 7 dias, com o melhor dia da semana. O dia é configurável por `RELATORIO_SEMANAL_DIA` (padrão segunda-feira).
+
+Os números vêm direto do banco (custo e lucro que o app grava em cada pedido). Como dependem do `node-cron` e da conexão do WhatsApp, **os relatórios só rodam com o robô ligado** (`npm run chatbot`) — não rodam no Vercel. Arquivos: `services/whatsappService.js` (geração/envio) e `cron/relatorios.js` (agendamento).

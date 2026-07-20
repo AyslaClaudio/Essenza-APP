@@ -12,8 +12,13 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import { iniciarRelatoriosAgendados } from './cron/relatorios.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Garante que os relatórios agendados sejam configurados só uma vez,
+// mesmo que a conexão reabra várias vezes (reconexões).
+let relatoriosStarted = false;
 
 // 1. Load Environment Variables
 // Look in current folder first, then parent folder
@@ -531,6 +536,11 @@ async function connectToWhatsApp() {
     } else if (connection === 'open') {
       console.log('🚀 WhatsApp conectado com sucesso! O bot de IA está pronto para atender.');
       startHumanMessagePoller();
+      // Agenda os relatórios diário/semanal (uma vez), usando sempre o socket atual
+      if (!relatoriosStarted) {
+        relatoriosStarted = true;
+        iniciarRelatoriosAgendados(() => activeSock, supabase, ownerAlertPhone);
+      }
     }
   });
 
