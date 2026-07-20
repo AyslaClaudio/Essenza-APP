@@ -23,3 +23,7 @@ dist-ssr
 .env
 .vercel
 .env*
+
+# WhatsApp bot: sessão (credenciais do WhatsApp) e QR — nunca versionar
+chatbot/auth_info_baileys
+chatbot/qr.png

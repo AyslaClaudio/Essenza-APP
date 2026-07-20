@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import makeWASocket, {
   DisconnectReason,
   useMultiFileAuthState,
@@ -7,6 +7,7 @@ import makeWASocket, {
   downloadMediaMessage
 } from '@whiskeysockets/baileys';
 import qrcode from 'qrcode-terminal';
+import QRCode from 'qrcode';
 import pino from 'pino';
 import fs from 'fs';
 import path from 'path';
@@ -48,7 +49,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 let genAI = null;
 if (geminiApiKey) {
-  genAI = new GoogleGenAI({ apiKey: geminiApiKey });
+  genAI = new GoogleGenerativeAI(geminiApiKey);
   console.log('🤖 Chave do Gemini configurada com sucesso.');
 } else {
   console.warn('⚠️ AVISO: GEMINI_API_KEY não foi encontrada no .env! O bot responderá com mensagens estáticas de teste.');
@@ -502,7 +503,7 @@ async function connectToWhatsApp() {
   
   console.log(`🤖 Iniciando WhatsApp Web (Baileys v${version.join('.')})...`);
 
-  const sock = makeWASocket.default({
+  const sock = makeWASocket({
     version,
     printQRInTerminal: false, // Custom print QR code to avoid terminal issues
     auth: state,
@@ -522,6 +523,10 @@ async function connectToWhatsApp() {
     if (qr) {
       console.log('📱 Leia o QR Code abaixo no seu WhatsApp para conectar o bot:');
       qrcode.generate(qr, { small: true });
+      // Também salva o QR como imagem PNG, para escanear fora do terminal
+      QRCode.toFile(path.join(__dirname, 'qr.png'), qr, { width: 320, margin: 2 })
+        .then(() => console.log(`🖼️  QR Code também salvo em: ${path.join(__dirname, 'qr.png')}`))
+        .catch((err) => console.error('Erro ao salvar QR como imagem:', err));
     }
 
     if (connection === 'close') {
