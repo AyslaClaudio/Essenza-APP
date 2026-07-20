@@ -1,0 +1,18 @@
+{
+  "name": "essenza-whatsapp-chatbot",
+  "version": "1.0.0",
+  "description": "Chatbot de WhatsApp integrado com Gemini IA e Supabase para a Pizzaria ESSENZA",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.11.0",
+    "@supabase/supabase-js": "^2.39.8",
+    "@whiskeysockets/baileys": "^6.6.0",
+    "dotenv": "^16.4.5",
+    "pino": "^8.19.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
