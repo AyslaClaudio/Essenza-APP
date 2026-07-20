@@ -3,9 +3,10 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useConfig } from '../../context/ConfigContext';
 import { brl } from '../../lib/format';
-import { Flame, LayoutDashboard, UtensilsCrossed, ShoppingCart, Wallet, Settings, Package, LogOut, Menu, X, TrendingUp, MessageSquare, Radio } from 'lucide-react';
+import { Flame, LayoutDashboard, UtensilsCrossed, ShoppingCart, Wallet, Settings, Package, LogOut, Menu, X, TrendingUp, MessageSquare, Radio, LayoutGrid } from 'lucide-react';
 import { Produtos } from './Produtos';
 import { Balcao } from './Balcao';
+import { Mesas } from './Mesas';
 import { Pedidos } from './Pedidos';
 import { Financeiro } from './Financeiro';
 import { Configuracoes } from './Configuracoes';
@@ -13,7 +14,7 @@ import { Estoque } from './Estoque';
 import { IAWhatsApp } from './IAWhatsApp';
 import { Monitoramento } from './Monitoramento';
 
-type Tab = 'dashboard' | 'produtos' | 'balcao' | 'pedidos' | 'financeiro' | 'estoque' | 'ia' | 'monitoramento' | 'config';
+type Tab = 'dashboard' | 'produtos' | 'balcao' | 'mesas' | 'pedidos' | 'financeiro' | 'estoque' | 'ia' | 'monitoramento' | 'config';
 
 interface DashboardData {
   lucro: number;
@@ -56,6 +57,7 @@ export function Adm() {
   const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'balcao', label: 'Balcão', icon: ShoppingCart },
+    { id: 'mesas', label: 'Mesas', icon: LayoutGrid },
     { id: 'pedidos', label: 'Pedidos', icon: UtensilsCrossed },
     { id: 'produtos', label: 'Cardápio', icon: Flame },
     { id: 'financeiro', label: 'Financeiro', icon: Wallet },
@@ -70,6 +72,7 @@ export function Adm() {
       case 'dashboard': return <Dashboard data={dash} meta={config?.meta_diaria || 2000} onNavigate={setTab} />;
       case 'produtos': return <Produtos />;
       case 'balcao': return <Balcao onOrderComplete={loadDashboard} />;
+      case 'mesas': return <Mesas />;
       case 'pedidos': return <Pedidos />;
       case 'financeiro': return <Financeiro />;
       case 'estoque': return <Estoque />;

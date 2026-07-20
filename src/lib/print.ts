@@ -1,4 +1,4 @@
-import type { Pedido, ItemPedido, Configuracao } from '../types';
+import type { Pedido, ItemPedido, Configuracao, ItemMesa } from '../types';
 import { brl, fmtHora } from './format';
 
 /**
@@ -102,6 +102,92 @@ export function printReceipt(pedido: Pedido, config: Configuracao, via: 'cozinha
     div.innerHTML = cashHTML(pedido, config);
   }
 
+  document.body.appendChild(div);
+  window.print();
+  setTimeout(() => div.remove(), 1000);
+}
+
+/**
+ * Comanda de cozinha para a MESA — impressa quando novos itens são lançados na mesa.
+ * Diferente do pedido de delivery/balcão, uma mesa manda várias comandas ao longo da
+ * refeição (uma a cada rodada de itens). `itens` aqui são apenas os itens recém-lançados.
+ */
+export function printMesaComanda(numeroMesa: number, itens: ItemMesa[], config: Configuracao) {
+  const existing = document.getElementById('print-area');
+  if (existing) existing.remove();
+
+  let itensHTML = '';
+  itens.forEach((item) => {
+    itensHTML += `<div class="item"><b>${item.quantidade}x ${item.produto_nome}</b></div>`;
+    if (item.sabor1 || item.sabor2) {
+      const s = [item.sabor1, item.sabor2].filter(Boolean).join(' / ');
+      itensHTML += `<div class="sub"><b>Sabores: ${s}</b></div>`;
+    }
+    if (item.adicional) itensHTML += `<div class="sub"><b>Adic: ${item.adicional}</b></div>`;
+    if (item.observacao) itensHTML += `<div class="sub"><b>Obs: ${item.observacao.toUpperCase()}</b></div>`;
+  });
+
+  const div = document.createElement('div');
+  div.id = 'print-area';
+  div.className = 'print-receipt';
+  div.innerHTML = `
+    <div class="center"><b>${config.nome_loja || 'ESSENZA'}</b></div>
+    <div class="center">*** COZINHA ***</div>
+    <div class="center"><b>MESA ${numeroMesa}</b></div>
+    <div>Hora: ${fmtHora(new Date().toISOString())}</div>
+    <div class="sep">--------------------------------</div>
+    ${itensHTML}
+    <div class="sep">--------------------------------</div>
+  `;
+  document.body.appendChild(div);
+  window.print();
+  setTimeout(() => div.remove(), 1000);
+}
+
+/**
+ * Conta (extrato) da MESA — impressa no fechamento, com todos os itens acumulados.
+ */
+export function printMesaConta(
+  numeroMesa: number,
+  itens: ItemMesa[],
+  total: number,
+  formaPagamento: string,
+  config: Configuracao,
+) {
+  const existing = document.getElementById('print-area');
+  if (existing) existing.remove();
+
+  let itensHTML = '';
+  itens.forEach((item) => {
+    itensHTML += `<div class="item">${item.quantidade}x ${item.produto_nome}</div>`;
+    if (item.sabor1 || item.sabor2) {
+      const s = [item.sabor1, item.sabor2].filter(Boolean).join(' / ');
+      itensHTML += `<div class="sub">${s}</div>`;
+    }
+    if (item.adicional) itensHTML += `<div class="sub">+ ${item.adicional}</div>`;
+    if (item.observacao) itensHTML += `<div class="sub">Obs: ${item.observacao}</div>`;
+    itensHTML += `<div class="right">${brl(item.quantidade * (item.preco_unitario + item.adicional_preco))}</div>`;
+  });
+
+  const div = document.createElement('div');
+  div.id = 'print-area';
+  div.className = 'print-receipt';
+  div.innerHTML = `
+    <div class="center"><b>${config.nome_loja || 'ESSENZA'}</b></div>
+    ${config.endereco_loja ? `<div class="center">${config.endereco_loja}</div>` : ''}
+    ${config.telefone_loja ? `<div class="center">Tel: ${config.telefone_loja}</div>` : ''}
+    <div class="sep">--------------------------------</div>
+    <div class="center"><b>CONTA DA MESA ${numeroMesa}</b></div>
+    <div>Data: ${fmtHora(new Date().toISOString())}</div>
+    <div class="sep">--------------------------------</div>
+    ${itensHTML}
+    <div class="sep">--------------------------------</div>
+    <div class="total">TOTAL:       ${brl(total)}</div>
+    <div>Pagamento:   ${formaPagamento || '-'}</div>
+    <div class="sep">--------------------------------</div>
+    <div class="center">Obrigado! Volte Sempre</div>
+    <div class="center">ESSENZA Pizzaria</div>
+  `;
   document.body.appendChild(div);
   window.print();
   setTimeout(() => div.remove(), 1000);

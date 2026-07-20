@@ -71,7 +71,7 @@ export interface Pedido {
   cliente_telefone: string;
   cliente_endereco: string;
   cliente_bairro: string;
-  tipo: 'balcao' | 'delivery' | 'cliente';
+  tipo: 'balcao' | 'delivery' | 'cliente' | 'mesa';
   status: PedidoStatus;
   subtotal: number;
   taxa_entrega: number;
@@ -101,6 +101,35 @@ export interface ItemPedido {
   sabor2: string;
   adicional: string;
   adicional_preco: number;
+}
+
+export type MesaStatus = 'livre' | 'ocupada' | 'fechando';
+
+export interface Mesa {
+  id: string;
+  numero: number;
+  status: MesaStatus;
+  abertura_at: string | null;
+  garcom: string;
+  observacao: string;
+  created_at: string;
+  itens?: ItemMesa[];
+}
+
+export interface ItemMesa {
+  id: string;
+  mesa_id: string;
+  produto_id: string | null;
+  produto_nome: string;
+  quantidade: number;
+  preco_unitario: number;
+  custo_unitario: number;
+  observacao: string;
+  sabor1: string;
+  sabor2: string;
+  adicional: string;
+  adicional_preco: number;
+  created_at: string;
 }
 
 export interface Reserva {
