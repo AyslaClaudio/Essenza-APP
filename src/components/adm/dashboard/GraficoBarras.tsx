@@ -19,7 +19,7 @@ function TooltipDark({ active, payload }: any) {
   return (
     <div className="bg-neutral-900 border border-essenza-dark-border rounded-lg px-3 py-2 text-xs">
       <p className="text-neutral-400">{p.label}</p>
-      <p className="text-[#FFD700] font-bold">{brl(p.valor)}</p>
+      <p className="text-green-500 font-bold">{brl(p.valor)}</p>
     </div>
   );
 }
@@ -40,7 +40,9 @@ export function GraficoBarras({ data }: { data: BarraDia[] }) {
             <Tooltip content={<TooltipDark />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
             <Bar dataKey="valor" radius={[6, 6, 0, 0]}>
               {data.map((_, i) => (
-                <Cell key={i} fill={i === data.length - 1 ? '#E50914' : '#FFD700'} />
+                // Faturamento é sempre positivo → verde. Hoje (última barra) em verde
+                // mais claro para destacar.
+                <Cell key={i} fill={i === data.length - 1 ? '#4ade80' : '#22c55e'} />
               ))}
             </Bar>
           </BarChart>

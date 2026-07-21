@@ -170,13 +170,18 @@ export function Adm() {
 }
 
 function ProfitStrip({ dash }: { dash: DashboardData }) {
+  // Lucro em verde quando positivo, vermelho quando negativo (prejuízo)
+  const pos = dash.lucro >= 0;
+  const tone = pos
+    ? { bg: 'bg-green-500/10', icon: 'text-green-500', label: 'text-green-500/70', val: 'text-green-500' }
+    : { bg: 'bg-red-500/10', icon: 'text-red-400', label: 'text-red-400/70', val: 'text-red-400' };
   return (
     <div className="flex items-center gap-4 px-4 py-2.5 overflow-x-auto">
-      <div className="flex items-center gap-2 bg-[#FFD700]/10 rounded-lg px-3 py-1.5 flex-shrink-0">
-        <TrendingUp size={18} className="text-[#FFD700]" />
+      <div className={`flex items-center gap-2 ${tone.bg} rounded-lg px-3 py-1.5 flex-shrink-0`}>
+        <TrendingUp size={18} className={tone.icon} />
         <div>
-          <p className="text-[10px] text-[#FFD700]/70 uppercase tracking-wide leading-none">Lucro do Dia</p>
-          <p className="text-[#FFD700] font-bold text-base leading-tight">{brl(dash.lucro)}</p>
+          <p className={`text-[10px] ${tone.label} uppercase tracking-wide leading-none`}>Lucro do Dia</p>
+          <p className={`${tone.val} font-bold text-base leading-tight`}>{brl(dash.lucro)}</p>
         </div>
       </div>
       <div className="flex items-center gap-2 bg-neutral-800/50 rounded-lg px-3 py-1.5 flex-shrink-0">

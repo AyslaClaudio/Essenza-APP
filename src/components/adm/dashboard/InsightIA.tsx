@@ -58,12 +58,12 @@ function gerarInsight({ margem, ticketMedio, faturamento, meta, seteDias, topSab
 export function InsightIA(props: Props) {
   const frase = gerarInsight(props);
   return (
-    <div className="bg-gradient-to-br from-[#E50914]/15 to-[#FFD700]/5 border border-[#E50914]/30 rounded-2xl p-5 flex gap-3">
-      <div className="w-9 h-9 rounded-xl bg-[#E50914] flex items-center justify-center flex-shrink-0">
+    <div className="bg-gradient-to-br from-green-600/15 to-green-500/5 border border-green-500/30 rounded-2xl p-5 flex gap-3">
+      <div className="w-9 h-9 rounded-xl bg-green-600 flex items-center justify-center flex-shrink-0">
         <Sparkles size={18} className="text-white" />
       </div>
       <div>
-        <p className="text-[#FFD700] text-xs font-bold uppercase tracking-wide mb-1">Insight do dia</p>
+        <p className="text-green-500 text-xs font-bold uppercase tracking-wide mb-1">Insight do dia</p>
         <p className="text-neutral-200 text-sm leading-relaxed">{frase}</p>
       </div>
     </div>

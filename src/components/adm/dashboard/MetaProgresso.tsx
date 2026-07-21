@@ -34,7 +34,7 @@ export function MetaProgresso({ faturamento, meta }: { faturamento: number; meta
       <div className="h-5 bg-neutral-800 rounded-full overflow-hidden relative">
         <div
           className={`h-full rounded-full transition-all duration-1000 ease-out ${
-            bateu ? 'bg-gradient-to-r from-green-500 to-green-400 animate-pulse' : 'bg-gradient-to-r from-[#E50914] to-[#FFD700]'
+            bateu ? 'bg-gradient-to-r from-green-500 to-green-400 animate-pulse' : 'bg-gradient-to-r from-green-700 to-green-500'
           }`}
           style={{ width: `${width}%` }}
         />

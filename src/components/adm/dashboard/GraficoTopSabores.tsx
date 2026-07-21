@@ -29,12 +29,12 @@ export function GraficoTopSabores({ data }: { data: SaborTop[] }) {
                   {s.nome}
                 </span>
                 <span className="text-neutral-400 whitespace-nowrap ml-2">
-                  {s.quantidade}x <span className="text-[#FFD700]">{brl(s.valor)}</span>
+                  {s.quantidade}x <span className="text-green-500">{brl(s.valor)}</span>
                 </span>
               </div>
               <div className="h-2.5 bg-neutral-800 rounded-full overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#E50914] to-[#FFD700] transition-all duration-700"
+                  className="h-full rounded-full bg-gradient-to-r from-green-600 to-green-400 transition-all duration-700"
                   style={{ width: `${(s.quantidade / max) * 100}%` }}
                 />
               </div>

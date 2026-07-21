@@ -181,6 +181,13 @@ export function Dashboard({ meta }: { meta: number }) {
   const ticketMedioPrev = anterior.num > 0 ? anterior.faturamento / anterior.num : 0;
   const margem = atual.faturamento > 0 ? (atual.lucro / atual.faturamento) * 100 : 0;
 
+  // O card de Lucro é destacado em VERDE quando há lucro (positivo) e em VERMELHO
+  // quando há prejuízo (negativo).
+  const lucroPos = atual.lucro >= 0;
+  const destTone = lucroPos
+    ? { grad: 'bg-gradient-to-br from-green-500/20 to-green-500/5 border-green-500/30', text: 'text-green-500' }
+    : { grad: 'bg-gradient-to-br from-red-500/20 to-red-500/5 border-red-500/30', text: 'text-red-400' };
+
   const cards = [
     { label: 'Faturamento', valor: brl(atual.faturamento), pct: pctChange(atual.faturamento, anterior.faturamento), icon: DollarSign, destaque: false },
     { label: 'Lucro', valor: brl(atual.lucro), pct: pctChange(atual.lucro, anterior.lucro), icon: TrendingUp, destaque: true },
@@ -219,14 +226,14 @@ export function Dashboard({ meta }: { meta: number }) {
             <div
               key={c.label}
               className={`rounded-2xl p-5 border ${
-                c.destaque ? 'bg-gradient-to-br from-[#FFD700]/20 to-[#FFD700]/5 border-[#FFD700]/30' : 'bg-essenza-dark-card border-essenza-dark-border'
+                c.destaque ? destTone.grad : 'bg-essenza-dark-card border-essenza-dark-border'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-neutral-400 text-xs uppercase tracking-wide">{c.label}</span>
-                <c.icon size={18} className={c.destaque ? 'text-[#FFD700]' : 'text-neutral-500'} />
+                <c.icon size={18} className={c.destaque ? destTone.text : 'text-neutral-500'} />
               </div>
-              <p className={`font-black text-2xl ${c.destaque ? 'text-[#FFD700]' : 'text-white'}`}>{c.valor}</p>
+              <p className={`font-black text-2xl ${c.destaque ? destTone.text : 'text-white'}`}>{c.valor}</p>
               <div className={`flex items-center gap-1 text-xs mt-1 ${subiu ? 'text-green-500' : 'text-red-400'}`}>
                 {subiu ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                 {Math.abs(c.pct).toFixed(0)}% <span className="text-neutral-600">{labelPrev}</span>
