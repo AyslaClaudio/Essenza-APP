@@ -12,7 +12,7 @@ export const configLojaSchema = z.object({
   meta_diaria: z.number().min(1, 'Meta diária deve ser > 0').default(2000),
   cor_primaria: z.string().optional().default('#E50914'),
   cor_fundo: z.string().optional().default('#0A0A0A'),
-  cor_lucro: z.string().optional().default('#FFD700'),
+  cor_lucro: z.string().optional().default('#22c55e'),
 });
 
 export type ConfigLojaInput = z.infer<typeof configLojaSchema>;

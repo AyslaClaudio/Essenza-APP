@@ -87,9 +87,9 @@ function Caixa() {
           <div className="flex items-center gap-2 mb-1"><ArrowDownCircle size={20} className="text-red-400" /><span className="text-red-400/70 text-sm">Saídas</span></div>
           <p className="text-red-400 font-bold text-2xl">{brl(totalSaidas)}</p>
         </div>
-        <div className="bg-[#FFD700]/10 border border-[#FFD700]/30 rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-1"><DollarSign size={20} className="text-[#FFD700]" /><span className="text-[#FFD700]/70 text-sm">Saldo</span></div>
-          <p className={`font-bold text-2xl ${saldo >= 0 ? 'text-[#FFD700]' : 'text-red-400'}`}>{brl(saldo)}</p>
+        <div className="bg-[#22c55e]/10 border border-[#22c55e]/30 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-1"><DollarSign size={20} className="text-[#22c55e]" /><span className="text-[#22c55e]/70 text-sm">Saldo</span></div>
+          <p className={`font-bold text-2xl ${saldo >= 0 ? 'text-[#22c55e]' : 'text-red-400'}`}>{brl(saldo)}</p>
         </div>
       </div>
 
@@ -230,15 +230,15 @@ function Fechamento() {
       </div>
 
       {/* Big result */}
-      <div className="bg-gradient-to-br from-[#FFD700]/20 to-[#FFD700]/5 border border-[#FFD700]/30 rounded-2xl p-6 text-center">
-        <p className="text-[#FFD700]/70 text-sm uppercase tracking-wide">Lucro Total do Dia</p>
-        <p className="text-[#FFD700] font-black text-5xl">{brl(lucroLiquido)}</p>
+      <div className="bg-gradient-to-br from-[#22c55e]/20 to-[#22c55e]/5 border border-[#22c55e]/30 rounded-2xl p-6 text-center">
+        <p className="text-[#22c55e]/70 text-sm uppercase tracking-wide">Lucro Total do Dia</p>
+        <p className="text-[#22c55e] font-black text-5xl">{brl(lucroLiquido)}</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="Faturamento" value={brl(faturamento)} color="text-white" />
         <StatCard label="Custo Produtos" value={brl(custoTotal)} color="text-orange-400" />
-        <StatCard label="Lucro Bruto" value={brl(lucroBruto)} color="text-[#FFD700]" />
+        <StatCard label="Lucro Bruto" value={brl(lucroBruto)} color="text-[#22c55e]" />
         <StatCard label="Despesas Fixas" value={brl(despesasFixas)} color="text-red-400" />
       </div>
 
@@ -266,7 +266,7 @@ function Fechamento() {
                   <td className="px-2 py-2 text-right text-neutral-400">{d.qtd}</td>
                   <td className="px-2 py-2 text-right text-neutral-400">{brl(d.custo)}</td>
                   <td className="px-2 py-2 text-right text-white">{brl(d.venda)}</td>
-                  <td className="px-2 py-2 text-right text-[#FFD700] font-semibold">{brl(d.lucro)}</td>
+                  <td className="px-2 py-2 text-right text-[#22c55e] font-semibold">{brl(d.lucro)}</td>
                   <td className="px-4 py-2 text-right text-green-400">{margemProduto(d.custo, d.venda).toFixed(0)}%</td>
                 </tr>
               ))}
@@ -368,7 +368,7 @@ function Relatorios() {
               </div>
               <div className="flex justify-between border-t border-essenza-dark-border pt-2">
                 <span className="text-neutral-300 font-medium">Lucro Bruto</span>
-                <span className="text-[#FFD700] font-bold">{brl(kpis.lucroTotal)}</span>
+                <span className="text-[#22c55e] font-bold">{brl(kpis.lucroTotal)}</span>
               </div>
             </div>
           </div>
@@ -377,7 +377,7 @@ function Relatorios() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <StatCard label="Ticket Médio" value={brl(kpis.ticketMedio)} color="text-white" />
             <StatCard label="Margem Média" value={`${kpis.margemMedia.toFixed(1)}%`} color="text-green-400" />
-            <StatCard label="Margem Máxima" value={`${estatisticas.maxima.toFixed(1)}%`} color="text-[#FFD700]" />
+            <StatCard label="Margem Máxima" value={`${estatisticas.maxima.toFixed(1)}%`} color="text-[#22c55e]" />
             <StatCard label="Margem Mínima" value={`${estatisticas.minima.toFixed(1)}%`} color="text-red-400" />
             <StatCard label="Total Pedidos" value={String(kpis.pedidosCount)} color="text-white" />
             <StatCard label="Entregues" value={String(kpis.pedidosEntregues)} color="text-green-400" />
@@ -389,17 +389,17 @@ function Relatorios() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
-                <Trophy size={20} className="text-[#FFD700]" />
+                <Trophy size={20} className="text-[#22c55e]" />
                 <h3 className="text-white font-semibold">Top 5 Mais Lucrativos</h3>
               </div>
               <div className="space-y-2">
                 {top10Lucrativos.slice(0, 5).map((p, i) => (
                   <div key={p.nome} className="flex items-center gap-3">
                     <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      i === 0 ? 'bg-[#FFD700] text-black' : 'bg-neutral-800 text-neutral-400'
+                      i === 0 ? 'bg-[#22c55e] text-black' : 'bg-neutral-800 text-neutral-400'
                     }`}>{i + 1}</span>
                     <span className="flex-1 text-white text-sm">{p.nome}</span>
-                    <span className="text-[#FFD700] font-semibold text-sm">{brl(p.lucro)}</span>
+                    <span className="text-[#22c55e] font-semibold text-sm">{brl(p.lucro)}</span>
                   </div>
                 ))}
               </div>
@@ -451,7 +451,7 @@ function Relatorios() {
                     <td className="px-2 py-2 text-right text-neutral-400">{p.quantidade}</td>
                     <td className="px-2 py-2 text-right text-neutral-400">{brl(p.custo)}</td>
                     <td className="px-2 py-2 text-right text-white">{brl(p.venda)}</td>
-                    <td className="px-2 py-2 text-right text-[#FFD700] font-semibold">{brl(p.lucro)}</td>
+                    <td className="px-2 py-2 text-right text-[#22c55e] font-semibold">{brl(p.lucro)}</td>
                     <td className="px-4 py-2 text-right text-green-400">{p.margem.toFixed(1)}%</td>
                   </tr>
                 ))}
@@ -469,7 +469,7 @@ function Relatorios() {
               <h3 className="text-white font-semibold mb-3 capitalize">Tipo: {tipo}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                 <div><p className="text-neutral-400">Faturamento</p><p className="text-white font-bold">{brl(kpi.faturamento)}</p></div>
-                <div><p className="text-neutral-400">Lucro</p><p className="text-[#FFD700] font-bold">{brl(kpi.lucroTotal)}</p></div>
+                <div><p className="text-neutral-400">Lucro</p><p className="text-[#22c55e] font-bold">{brl(kpi.lucroTotal)}</p></div>
                 <div><p className="text-neutral-400">Pedidos</p><p className="text-white font-bold">{kpi.pedidosCount}</p></div>
                 <div><p className="text-neutral-400">Ticket Médio</p><p className="text-white font-bold">{brl(kpi.ticketMedio)}</p></div>
                 <div><p className="text-neutral-400">Margem Média</p><p className="text-green-400 font-bold">{kpi.margemMedia.toFixed(1)}%</p></div>
@@ -533,7 +533,7 @@ function Metas() {
           <span className="text-white font-semibold">{brl(faturamentoHoje)} / {brl(metaDiaria)}</span>
         </div>
         <div className="h-6 bg-neutral-800 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-[#E50914] to-[#FFD700] rounded-full transition-all duration-500 flex items-center justify-end pr-2" style={{ width: `${pct}%` }}>
+          <div className="h-full bg-gradient-to-r from-[#E50914] to-[#22c55e] rounded-full transition-all duration-500 flex items-center justify-end pr-2" style={{ width: `${pct}%` }}>
             {pct > 10 && <span className="text-black text-xs font-bold">{pct.toFixed(0)}%</span>}
           </div>
         </div>
@@ -548,10 +548,10 @@ function Metas() {
         {metas.map((m) => (
           <div key={m.id} className="bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Target size={20} className="text-[#FFD700]" />
+              <Target size={20} className="text-[#22c55e]" />
               <div>
                 <p className="text-white font-medium">Meta {m.periodo}</p>
-                <p className="text-[#FFD700] font-bold">{brl(m.valor)}</p>
+                <p className="text-[#22c55e] font-bold">{brl(m.valor)}</p>
               </div>
             </div>
             <button onClick={() => removeMeta(m.id)} className="text-neutral-400 hover:text-red-400"><X size={18} /></button>

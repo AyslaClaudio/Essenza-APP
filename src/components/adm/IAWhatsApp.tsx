@@ -777,7 +777,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-neutral-400">Tempo de Espera:</span>
-                  <span className="text-[#FFD700] font-black">{baseWaitTime + (activeOrdersCount * waitTimePerOrder)} min</span>
+                  <span className="text-[#22c55e] font-black">{baseWaitTime + (activeOrdersCount * waitTimePerOrder)} min</span>
                 </div>
               </div>
             </div>
@@ -837,7 +837,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                     {/* Typing Indicator */}
                     {isTyping && (
                       <div className="bg-neutral-900 border border-essenza-dark-border text-neutral-400 rounded-2xl rounded-bl-none max-w-[50%] p-3 self-start flex items-center gap-2">
-                        <Sparkles size={14} className="text-[#FFD700] animate-spin" />
+                        <Sparkles size={14} className="text-[#22c55e] animate-spin" />
                         <span className="text-xs">IA está digitando...</span>
                       </div>
                     )}
@@ -974,7 +974,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                 <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-4 flex-1 flex flex-col gap-2 min-h-[300px]">
                   <div className="flex items-center justify-between text-white font-semibold text-sm mb-1">
                     <div className="flex items-center gap-2">
-                      <Sparkles size={16} className="text-[#FFD700]" />
+                      <Sparkles size={16} className="text-[#22c55e]" />
                       <span>Instruções do Sistema (Prompt)</span>
                     </div>
                     <button 

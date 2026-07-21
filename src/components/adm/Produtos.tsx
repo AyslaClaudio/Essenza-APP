@@ -171,7 +171,7 @@ export function Produtos() {
                             </td>
                             <td className="px-2 py-3 text-right text-neutral-400">{brl(p.custo)}</td>
                             <td className="px-2 py-3 text-right text-white font-semibold">{brl(p.preco)}</td>
-                            <td className="px-2 py-3 text-right text-[#FFD700] font-semibold">{brl(lucro)}</td>
+                            <td className="px-2 py-3 text-right text-[#22c55e] font-semibold">{brl(lucro)}</td>
                             <td className="px-2 py-3 text-right">
                               <span className={`font-semibold ${margem >= 70 ? 'text-green-400' : margem >= 50 ? 'text-yellow-400' : 'text-orange-400'}`}>
                                 {margem.toFixed(0)}%
@@ -386,7 +386,7 @@ function ProdutoForm({ produto, categorias, onClose, onSave }: {
           <div className="grid grid-cols-3 gap-2 bg-neutral-900 rounded-xl p-3">
             <div className="text-center">
               <p className="text-neutral-500 text-xs">Lucro R$</p>
-              <p className="text-[#FFD700] font-bold">{brl(lucro)}</p>
+              <p className="text-[#22c55e] font-bold">{brl(lucro)}</p>
             </div>
             <div className="text-center">
               <p className="text-neutral-500 text-xs">Margem %</p>
@@ -448,7 +448,7 @@ function AdicionaisList() {
           <div key={a.id} className="bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-4 flex items-center justify-between">
             <div>
               <p className="text-white font-medium">{a.nome}</p>
-              <p className="text-[#FFD700] font-semibold">{brl(a.preco)}</p>
+              <p className="text-[#22c55e] font-semibold">{brl(a.preco)}</p>
             </div>
             {canEdit && (
               <div className="flex gap-1">

@@ -203,7 +203,7 @@ function DeleteConfirmModal({ pedido, senhaTabela, onCancel, onConfirm }: {
         <div className="flex items-center justify-between bg-neutral-900 rounded-xl p-3 mb-4">
           <div>
             <p className="text-neutral-500 text-xs">Valor da venda</p>
-            <p className="text-[#FFD700] font-bold text-lg">{brl(pedido.total)}</p>
+            <p className="text-[#22c55e] font-bold text-lg">{brl(pedido.total)}</p>
           </div>
           <div className="text-right">
             <p className="text-neutral-500 text-xs">Cliente</p>
@@ -286,7 +286,7 @@ function PedidoCard({ pedido, onView, onStatus, canDelete, onDelete }: {
           <p className="text-neutral-400 text-sm mt-1">{pedido.cliente_nome}</p>
           <p className="text-neutral-500 text-xs">{fmtHora(pedido.created_at)} · {pedido.tipo}</p>
         </div>
-        <span className="text-[#FFD700] font-bold text-lg">{brl(pedido.total)}</span>
+        <span className="text-[#22c55e] font-bold text-lg">{brl(pedido.total)}</span>
       </div>
 
       <div className="flex gap-2">
@@ -354,7 +354,7 @@ function PedidoDetail({ pedido, onClose, onPrint, onStatus, canDelete, onDelete 
               {item.sabor1 && <p className="text-neutral-400 text-sm">Sabores: {[item.sabor1, item.sabor2].filter(Boolean).join(' / ')}</p>}
               {item.adicional && <p className="text-neutral-400 text-sm">+ {item.adicional}</p>}
               {item.observacao && <p className="text-yellow-400 text-sm">Obs: {item.observacao}</p>}
-              <p className="text-[#FFD700] text-sm font-semibold">{brl(item.quantidade * (item.preco_unitario + item.adicional_preco))}</p>
+              <p className="text-[#22c55e] text-sm font-semibold">{brl(item.quantidade * (item.preco_unitario + item.adicional_preco))}</p>
             </div>
           ))}
           {(!pedido.itens || pedido.itens.length === 0) && (
@@ -366,7 +366,7 @@ function PedidoDetail({ pedido, onClose, onPrint, onStatus, canDelete, onDelete 
         <div className="bg-neutral-900 rounded-xl p-3 space-y-1 mb-4">
           <div className="flex justify-between text-neutral-400 text-sm"><span>Subtotal</span><span>{brl(pedido.subtotal)}</span></div>
           {pedido.taxa_entrega > 0 && <div className="flex justify-between text-neutral-400 text-sm"><span>Entrega</span><span>{brl(pedido.taxa_entrega)}</span></div>}
-          <div className="flex justify-between text-white font-bold text-lg border-t border-essenza-dark-border pt-1"><span>Total</span><span className="text-[#FFD700]">{brl(pedido.total)}</span></div>
+          <div className="flex justify-between text-white font-bold text-lg border-t border-essenza-dark-border pt-1"><span>Total</span><span className="text-[#22c55e]">{brl(pedido.total)}</span></div>
           <div className="flex justify-between text-neutral-400 text-sm"><span>Pagamento</span><span>{pedido.forma_pagamento}</span></div>
         </div>
 

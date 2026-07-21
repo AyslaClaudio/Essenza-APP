@@ -83,7 +83,7 @@ function ConfigLoja() {
         <div className="grid grid-cols-3 gap-3">
           <ColorField label="Primária" value={form.cor_primaria || '#E50914'} onChange={(v) => set('cor_primaria', v)} />
           <ColorField label="Fundo" value={form.cor_fundo || '#0A0A0A'} onChange={(v) => set('cor_fundo', v)} />
-          <ColorField label="Lucro" value={form.cor_lucro || '#FFD700'} onChange={(v) => set('cor_lucro', v)} />
+          <ColorField label="Lucro" value={form.cor_lucro || '#22c55e'} onChange={(v) => set('cor_lucro', v)} />
         </div>
       </div>
 
@@ -241,7 +241,7 @@ function ConfigEntrega() {
           <div key={t.id} className="bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-4 flex items-center justify-between">
             <div>
               <p className="text-white font-medium">{t.bairro}</p>
-              <p className="text-[#FFD700] font-bold">{brl(t.taxa)}</p>
+              <p className="text-[#22c55e] font-bold">{brl(t.taxa)}</p>
             </div>
             <div className="flex gap-1">
               <button onClick={() => { setEditing(t); setShowForm(true); }} className="p-1.5 text-neutral-400 hover:text-white"><Pencil size={16} /></button>
@@ -321,7 +321,7 @@ function ConfigPromocoes() {
               <p className="text-white font-medium">{p.nome}</p>
               <p className="text-neutral-400 text-sm">{p.itens}</p>
               <div className="flex gap-2 mt-1">
-                <span className="text-[#FFD700] font-semibold text-sm">{brl(p.preco)}</span>
+                <span className="text-[#22c55e] font-semibold text-sm">{brl(p.preco)}</span>
                 <span className="text-neutral-500 text-xs">{p.data_inicio} a {p.data_fim}</span>
               </div>
             </div>
@@ -505,7 +505,7 @@ function ConfigMarketing() {
 
       {/* Fidelidade */}
       <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-5 space-y-3">
-        <div className="flex items-center gap-2"><Star size={20} className="text-[#FFD700]" /><h3 className="text-white font-semibold">Programa de Fidelidade</h3></div>
+        <div className="flex items-center gap-2"><Star size={20} className="text-[#22c55e]" /><h3 className="text-white font-semibold">Programa de Fidelidade</h3></div>
         <label className="flex items-center gap-2 text-neutral-300 text-sm">
           <input type="checkbox" checked={config?.fidelidade_ativo ?? false} onChange={async (e) => {
             if (config?.id) { await supabase.from('configuracoes').update({ fidelidade_ativo: e.target.checked }).eq('id', config.id); refresh(); }
@@ -518,7 +518,7 @@ function ConfigMarketing() {
 
       {/* Avaliações */}
       <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-5">
-        <div className="flex items-center gap-2 mb-2"><Star size={20} className="text-[#FFD700]" /><h3 className="text-white font-semibold">Avaliações de Clientes</h3></div>
+        <div className="flex items-center gap-2 mb-2"><Star size={20} className="text-[#22c55e]" /><h3 className="text-white font-semibold">Avaliações de Clientes</h3></div>
         <p className="text-neutral-400 text-sm">Após o status "Entregue", o cliente recebe um link para avaliar com 1-5 estrelas. As avaliações aparecem no painel de pedidos.</p>
       </div>
     </div>

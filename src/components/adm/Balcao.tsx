@@ -277,7 +277,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
           <ShoppingCart size={22} />
           Carrinho
           {cart.length > 0 && (
-            <span className="absolute -top-2 -right-2 bg-[#FFD700] text-black text-xs font-black w-6 h-6 rounded-full flex items-center justify-center">
+            <span className="absolute -top-2 -right-2 bg-[#22c55e] text-black text-xs font-black w-6 h-6 rounded-full flex items-center justify-center">
               {cart.reduce((s, c) => s + c.quantidade, 0)}
             </span>
           )}
@@ -370,7 +370,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
                       <span className="text-white font-bold w-6 text-center">{c.quantidade}</span>
                       <button onClick={() => updateQty(i, 1)} className="w-8 h-8 bg-neutral-800 text-white rounded-lg flex items-center justify-center"><Plus size={16} /></button>
                     </div>
-                    <span className="text-[#FFD700] font-bold w-20 text-right">{brl(c.quantidade * (c.preco_unitario + c.adicional_preco))}</span>
+                    <span className="text-[#22c55e] font-bold w-20 text-right">{brl(c.quantidade * (c.preco_unitario + c.adicional_preco))}</span>
                     <button onClick={() => removeFromCart(i)} className="text-neutral-500 hover:text-red-400"><X size={18} /></button>
                   </div>
                 ))}
@@ -396,7 +396,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
               <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-4 space-y-2">
                 <div className="flex justify-between text-neutral-400"><span>Subtotal</span><span className="text-white">{brl(subtotal)}</span></div>
                 {tipo === 'delivery' && <div className="flex justify-between text-neutral-400"><span>Entrega</span><span className="text-white">{brl(taxaEntrega)}</span></div>}
-                <div className="flex justify-between text-xl font-bold border-t border-essenza-dark-border pt-2"><span className="text-white">Total</span><span className="text-[#FFD700]">{brl(total)}</span></div>
+                <div className="flex justify-between text-xl font-bold border-t border-essenza-dark-border pt-2"><span className="text-white">Total</span><span className="text-[#22c55e]">{brl(total)}</span></div>
               </div>
 
               <button onClick={() => setStep('cliente')} className="w-full bg-[#E50914] text-white py-4 rounded-xl font-bold text-lg active:scale-95">
@@ -478,7 +478,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
 
           <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-4 text-center">
             <p className="text-neutral-400 text-sm">Total a Pagar</p>
-            <p className="text-[#FFD700] font-black text-4xl">{brl(total)}</p>
+            <p className="text-[#22c55e] font-black text-4xl">{brl(total)}</p>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
@@ -624,7 +624,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
 
         <div className="flex items-center justify-between bg-neutral-900 rounded-xl p-3 mb-4">
           <span className="text-neutral-400">Preço</span>
-          <span className="text-[#FFD700] font-bold text-xl">{brl(precoFinal + (selectedAdicional?.preco || 0))}</span>
+          <span className="text-[#22c55e] font-bold text-xl">{brl(precoFinal + (selectedAdicional?.preco || 0))}</span>
         </div>
 
         <button onClick={onConfirm} disabled={!sabor1} className="w-full bg-green-500 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50 active:scale-95">

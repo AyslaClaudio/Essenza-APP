@@ -248,7 +248,7 @@ function FichaTecnicaView() {
               <h3 className="text-white font-semibold mb-2">Ficha Técnica: {selectedProduto.nome}</h3>
               <div className="flex items-center gap-2 mb-3 text-sm">
                 <span className="text-neutral-400">Custo Atual:</span>
-                <span className="text-[#FFD700] font-bold">{brl(custoCalculado || selectedProduto.custo)}</span>
+                <span className="text-[#22c55e] font-bold">{brl(custoCalculado || selectedProduto.custo)}</span>
               </div>
 
               {/* Linked ingredients */}
@@ -264,7 +264,7 @@ function FichaTecnicaView() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-neutral-400 text-sm">{f.quantidade} {ing.unidade}</span>
-                        <span className="text-[#FFD700] text-sm">{brl(ing.custo_por_unidade * f.quantidade)}</span>
+                        <span className="text-[#22c55e] text-sm">{brl(ing.custo_por_unidade * f.quantidade)}</span>
                         <button onClick={() => removeFicha(f.id)} className="text-neutral-400 hover:text-red-400"><X size={14} /></button>
                       </div>
                     </div>

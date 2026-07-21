@@ -235,7 +235,7 @@ export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props
                   {item.adicional && <p className="text-xs text-neutral-400">+ {item.adicional}</p>}
                   {item.observacao && <p className="text-xs text-amber-500/80">Obs: {item.observacao}</p>}
                 </div>
-                <span className="text-[#FFD700] font-bold text-sm whitespace-nowrap">
+                <span className="text-[#22c55e] font-bold text-sm whitespace-nowrap">
                   {brl(item.quantidade * (item.preco_unitario + item.adicional_preco))}
                 </span>
                 <button
@@ -350,7 +350,7 @@ function AddItemModal({
                 }`}
               >
                 <span>{p.nome} <span className="text-neutral-500 text-xs">({p.tamanho || 'Único'})</span></span>
-                <span className="text-[#FFD700] font-semibold">{brl(p.preco)}</span>
+                <span className="text-[#22c55e] font-semibold">{brl(p.preco)}</span>
               </button>
             ))}
             {filtrados.length === 0 && <p className="text-center text-neutral-500 text-sm py-4">Nenhum produto encontrado.</p>}
@@ -449,7 +449,7 @@ function CloseMesaModal({
         <div className="p-4 space-y-4">
           <div className="text-center">
             <p className="text-neutral-400 text-sm">Total a pagar</p>
-            <p className="text-[#FFD700] font-black text-4xl mt-1">{brl(total)}</p>
+            <p className="text-[#22c55e] font-black text-4xl mt-1">{brl(total)}</p>
           </div>
           <div>
             <label className="block text-xs text-neutral-400 mb-2">Forma de pagamento</label>

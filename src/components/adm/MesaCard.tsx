@@ -66,7 +66,7 @@ export function MesaCard({ mesa, onClick }: { mesa: Mesa; onClick: () => void })
             <span className="text-neutral-600">•</span>
             <Users size={12} /> {qtdItens} {qtdItens === 1 ? 'item' : 'itens'}
           </div>
-          <p className="text-[#FFD700] font-bold text-lg leading-none">{brl(subtotal)}</p>
+          <p className="text-[#22c55e] font-bold text-lg leading-none">{brl(subtotal)}</p>
         </div>
       )}
     </button>
