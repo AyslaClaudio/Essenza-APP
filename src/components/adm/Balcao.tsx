@@ -4,8 +4,9 @@ import { useConfig } from '../../context/ConfigContext';
 import { brl } from '../../lib/format';
 import { printReceipt } from '../../lib/print';
 import type { Produto, Cliente, ItemPedido, TaxaEntrega, Adicional, Pedido } from '../../types';
-import { Search, Plus, Minus, X, ShoppingCart, Printer, Check, Phone, ArrowLeft } from 'lucide-react';
+import { Search, Plus, Minus, X, ShoppingCart, Printer, Check, Phone, ArrowLeft, CloudOff } from 'lucide-react';
 import { SenhaAdminModal } from '../SenhaAdminModal';
+import { queueOfflinePedido } from '../../lib/offlineQueue';
 
 interface CartItem extends ItemPedido {
   produto: Produto;
@@ -37,6 +38,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   const [itemObs, setItemObs] = useState('');
   const [printCozinha, setPrintCozinha] = useState(true);
   const [printCaixa, setPrintCaixa] = useState(true);
+  const [pedidoOffline, setPedidoOffline] = useState(false);
 
   const load = useCallback(async () => {
     const [p, a, t] = await Promise.all([
@@ -153,57 +155,69 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   const fecharPedido = async () => {
     if (cart.length === 0) return;
 
-    const { data: numData } = await supabase.rpc('get_next_pedido_numero').maybeSingle();
-    const numero = (numData as number) || 1;
-
     const custoTotal = cart.reduce((s, c) => s + c.quantidade * c.custo_unitario, 0);
     const lucro = subtotal - custoTotal;
 
-    // Get or create cliente
-    let clienteId = cliente?.id || null;
-    if (tipo === 'delivery' && !cliente && novoCliente.nome) {
-      const { data: nc } = await supabase.from('clientes').insert(novoCliente).select().maybeSingle();
-      clienteId = (nc as Cliente)?.id || null;
+    const itensBase = cart.map((c) => ({
+      produto_id: c.produto_id,
+      produto_nome: c.produto_nome,
+      quantidade: c.quantidade,
+      preco_unitario: c.preco_unitario,
+      custo_unitario: c.custo_unitario,
+      observacao: c.observacao,
+      sabor1: c.sabor1,
+      sabor2: c.sabor2,
+      adicional: c.adicional,
+      adicional_preco: c.adicional_preco,
+    }));
+
+    // Sem internet: não dá nem para tentar (a criação de cliente novo e o
+    // número sequencial dependem do banco) — vai direto para a fila offline.
+    if (!navigator.onLine) {
+      salvarPedidoOffline(custoTotal, lucro, itensBase);
+      return;
     }
 
-    const pedidoData = {
-      numero,
-      cliente_id: clienteId,
-      cliente_nome: cliente?.nome || novoCliente.nome || 'Consumidor',
-      cliente_telefone: cliente?.telefone || novoCliente.telefone || '',
-      cliente_endereco: cliente?.endereco || novoCliente.endereco || '',
-      cliente_bairro: cliente?.bairro || novoCliente.bairro || bairro || '',
-      tipo,
-      status: 'recebido' as const,
-      subtotal,
-      taxa_entrega: taxaEntrega,
-      desconto: 0,
-      total,
-      custo_total: custoTotal,
-      lucro,
-      forma_pagamento: formaPagamento,
-      observacao,
-      cupom: '',
-    };
+    try {
+      const { data: numData, error: numErr } = await supabase.rpc('get_next_pedido_numero').maybeSingle();
+      if (numErr) throw numErr;
+      const numero = (numData as number) || 1;
 
-    const { data: pedido } = await supabase.from('pedidos').insert(pedidoData).select().maybeSingle();
-    const pedidoId = (pedido as Pedido)?.id;
+      // Get or create cliente
+      let clienteId = cliente?.id || null;
+      if (tipo === 'delivery' && !cliente && novoCliente.nome) {
+        const { data: nc, error: cliErr } = await supabase.from('clientes').insert(novoCliente).select().maybeSingle();
+        if (cliErr) throw cliErr;
+        clienteId = (nc as Cliente)?.id || null;
+      }
 
-    if (pedidoId) {
-      const itens = cart.map((c) => ({
-        pedido_id: pedidoId,
-        produto_id: c.produto_id,
-        produto_nome: c.produto_nome,
-        quantidade: c.quantidade,
-        preco_unitario: c.preco_unitario,
-        custo_unitario: c.custo_unitario,
-        observacao: c.observacao,
-        sabor1: c.sabor1,
-        sabor2: c.sabor2,
-        adicional: c.adicional,
-        adicional_preco: c.adicional_preco,
-      }));
-      await supabase.from('itens_pedido').insert(itens);
+      const pedidoData = {
+        numero,
+        cliente_id: clienteId,
+        cliente_nome: cliente?.nome || novoCliente.nome || 'Consumidor',
+        cliente_telefone: cliente?.telefone || novoCliente.telefone || '',
+        cliente_endereco: cliente?.endereco || novoCliente.endereco || '',
+        cliente_bairro: cliente?.bairro || novoCliente.bairro || bairro || '',
+        tipo,
+        status: 'recebido' as const,
+        subtotal,
+        taxa_entrega: taxaEntrega,
+        desconto: 0,
+        total,
+        custo_total: custoTotal,
+        lucro,
+        forma_pagamento: formaPagamento,
+        observacao,
+        cupom: '',
+      };
+
+      const { data: pedido, error: pedErr } = await supabase.from('pedidos').insert(pedidoData).select().maybeSingle();
+      if (pedErr) throw pedErr;
+      const pedidoId = (pedido as Pedido)?.id;
+      if (!pedidoId) throw new Error('Falha ao criar pedido');
+
+      const { error: itensErr } = await supabase.from('itens_pedido').insert(itensBase.map((i) => ({ ...i, pedido_id: pedidoId })));
+      if (itensErr) throw itensErr;
 
       // Register in caixa
       await supabase.from('caixa').insert({
@@ -220,10 +234,64 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
       if (printCozinha && config) printReceipt(fullPedido, config, 'cozinha');
       if (printCaixa && config) printReceipt(fullPedido, config, 'caixa');
 
+      setPedidoOffline(false);
       setUltimoPedido(fullPedido);
       setStep('sucesso');
       onOrderComplete();
+    } catch (e) {
+      // Provavelmente caiu a internet no meio do processo — não perde o
+      // pedido, salva na fila local para sincronizar depois.
+      salvarPedidoOffline(custoTotal, lucro, itensBase);
     }
+  };
+
+  // Salva o pedido no navegador (localStorage) para envio automático assim
+  // que a internet voltar. Mostra um número temporário (não é o número
+  // sequencial oficial — esse só existe quando sincroniza com o servidor).
+  const salvarPedidoOffline = (custoTotal: number, lucro: number, itensBase: Record<string, any>[]) => {
+    const clienteNome = cliente?.nome || novoCliente.nome || 'Consumidor';
+    const pedidoData = {
+      cliente_id: cliente?.id || null,
+      cliente_nome: clienteNome,
+      cliente_telefone: cliente?.telefone || novoCliente.telefone || '',
+      cliente_endereco: cliente?.endereco || novoCliente.endereco || '',
+      cliente_bairro: cliente?.bairro || novoCliente.bairro || bairro || '',
+      tipo,
+      status: 'recebido' as const,
+      subtotal,
+      taxa_entrega: taxaEntrega,
+      desconto: 0,
+      total,
+      custo_total: custoTotal,
+      lucro,
+      forma_pagamento: formaPagamento,
+      observacao,
+      cupom: '',
+    };
+
+    const entry = queueOfflinePedido({ pedidoData, itens: itensBase, caixaDescricaoPrefixo: 'Pedido' });
+
+    // Número apenas de exibição/impressão enquanto não sincroniza (últimos 4
+    // dígitos do horário) — o número oficial e sequencial só existe após a
+    // sincronização com o servidor.
+    const localNumero = Number(String(Date.now()).slice(-4));
+    const fullPedido = {
+      ...pedidoData,
+      numero: localNumero,
+      id: entry.localId,
+      itens: cart,
+      created_at: entry.createdAt,
+      updated_at: entry.createdAt,
+      avaliacao: 0,
+    } as unknown as Pedido;
+
+    if (printCozinha && config) printReceipt(fullPedido, config, 'cozinha');
+    if (printCaixa && config) printReceipt(fullPedido, config, 'caixa');
+
+    setPedidoOffline(true);
+    setUltimoPedido(fullPedido);
+    setStep('sucesso');
+    onOrderComplete();
   };
 
   const reset = () => {
@@ -241,10 +309,20 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   if (step === 'sucesso') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] animate-fadeIn">
-        <div className="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
-          <Check size={48} className="text-green-400" />
+        <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-4 ${pedidoOffline ? 'bg-amber-500/20' : 'bg-green-500/20'}`}>
+          {pedidoOffline ? <CloudOff size={48} className="text-amber-400" /> : <Check size={48} className="text-green-400" />}
         </div>
-        <h2 className="text-3xl font-black text-white">PEDIDO #{ultimoPedido?.numero}</h2>
+        {pedidoOffline ? (
+          <>
+            <h2 className="text-2xl font-black text-amber-400">PEDIDO SALVO (SEM INTERNET)</h2>
+            <p className="text-neutral-400 mt-2 text-sm text-center max-w-sm">
+              Sem conexão no momento — o pedido foi guardado no aparelho e será enviado automaticamente ao banco assim que a internet voltar.
+              O número oficial será gerado na sincronização.
+            </p>
+          </>
+        ) : (
+          <h2 className="text-3xl font-black text-white">PEDIDO #{ultimoPedido?.numero}</h2>
+        )}
         <p className="text-neutral-400 mt-2">Total: <span className="text-white font-bold text-xl">{brl(ultimoPedido?.total || 0)}</span></p>
         <div className="flex gap-3 mt-6">
           {config && ultimoPedido && (

@@ -68,15 +68,16 @@ async function getRestaurantContext() {
     const { data: fees } = await supabase.from('taxa_entrega').select('*').eq('ativo', true);
     const { data: config } = await supabase.from('configuracoes').select('*').maybeSingle();
     const { data: conhecimento } = await supabase.from('ia_conhecimento').select('*').eq('ativo', true);
-    const { count } = await supabase
-      .from('pedidos')
-      .select('*', { count: 'exact', head: true })
-      .in('status', ['recebido', 'preparo', 'forno', 'saiu']);
+    // Usa a função segura get_active_pedidos_count() em vez de ler a tabela
+    // `pedidos` inteira — o robô fala com o banco pela chave pública (anon),
+    // que não tem mais permissão de leitura direta em `pedidos` (correção de
+    // segurança: essa tabela tem dados de clientes e faturamento).
+    const { data: activeCount } = await supabase.rpc('get_active_pedidos_count');
 
     const menuText = (products || []).map(p => `- ${p.nome} (${p.categoria_nome}) - R$${p.preco} (${p.tamanho || 'Único'})`).join('\n');
     const freteText = (fees || []).map(t => `- Bairro: ${t.bairro} - Taxa: R$${t.taxa}`).join('\n');
     const conhecimentoText = (conhecimento || []).map(c => `- [${c.topico}] ${c.conteudo}`).join('\n');
-    const activeOrders = count || 0;
+    const activeOrders = activeCount || 0;
     const computedWaitTime = baseWaitTime + (activeOrders * waitTimePerOrder);
 
     return {
@@ -341,12 +342,12 @@ async function createDatabaseOrder(orderDetails, phone, context) {
   
   try {
     // 1. Find or Create Customer
+    // Usa a função segura find_cliente_by_telefone() em vez de ler a tabela
+    // `clientes` inteira — evita duplicar cadastro sem reabrir a leitura
+    // pública de todos os clientes (correção de segurança).
     let clienteId = null;
-    const { data: existingCustomer } = await supabase
-      .from('clientes')
-      .select('*')
-      .eq('telefone', phone)
-      .maybeSingle();
+    const { data: existingCustomers } = await supabase.rpc('find_cliente_by_telefone', { p_telefone: phone });
+    const existingCustomer = existingCustomers?.[0] || null;
 
     if (existingCustomer) {
       clienteId = existingCustomer.id;

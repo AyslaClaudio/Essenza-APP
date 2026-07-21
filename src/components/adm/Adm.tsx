@@ -7,6 +7,7 @@ import { Flame, LayoutDashboard, UtensilsCrossed, ShoppingCart, Wallet, Settings
 import { Produtos } from './Produtos';
 import { Balcao } from './Balcao';
 import { Mesas } from './Mesas';
+import { OfflineBanner } from '../OfflineBanner';
 // Dashboard carrega o recharts (pesado); lazy-load para não onerar as demais telas.
 const Dashboard = lazy(() => import('./Dashboard').then((m) => ({ default: m.Dashboard })));
 import { Pedidos } from './Pedidos';
@@ -86,6 +87,7 @@ export function Adm() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex flex-col lg:flex-row">
+      <OfflineBanner />
       {/* Mobile header with dashboard strip */}
       <div className="lg:hidden sticky top-0 z-40 bg-[#141414] border-b border-essenza-dark-border">
         <div className="flex items-center justify-between px-4 py-3">

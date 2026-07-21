@@ -168,7 +168,16 @@ export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props
       onChanged();
       onBack();
     } catch (e: any) {
-      alert('Erro ao fechar a mesa: ' + (e.message || 'tente novamente'));
+      // Os itens da mesa já estão salvos no banco desde que foram lançados —
+      // se faltar internet agora, nada se perde: a mesa continua "ocupada"
+      // com os itens intactos e dá para tentar fechar de novo assim que a
+      // conexão voltar.
+      const semInternet = !navigator.onLine;
+      alert(
+        semInternet
+          ? 'Sem conexão com a internet no momento. Os itens da mesa continuam salvos — assim que a internet voltar, tente Fechar Mesa novamente.'
+          : 'Erro ao fechar a mesa: ' + (e.message || 'tente novamente'),
+      );
     } finally {
       setBusy(false);
     }
