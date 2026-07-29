@@ -57,13 +57,14 @@ function intervalos(filtro: Filtro): { ini: Date; fim: Date; iniPrev: Date; fimP
   };
 }
 
-// Agrega uma lista de pedidos (total/lucro/custo_total) em somatórios
+// Agrega uma lista de pedidos (total/lucro/custo_total) em somatórios.
+// "num" conta só pedidos entregues — confirmado ainda não é uma venda finalizada.
 function agregar(rows: any[]): Agregado {
   return {
     faturamento: rows.reduce((s, p) => s + Number(p.total || 0), 0),
     lucro: rows.reduce((s, p) => s + Number(p.lucro || 0), 0),
     custo: rows.reduce((s, p) => s + Number(p.custo_total || 0), 0),
-    num: rows.length,
+    num: rows.filter((p) => p.status === 'entregue').length,
   };
 }
 
@@ -76,6 +77,7 @@ export function Dashboard({ meta }: { meta: number }) {
   const [seteDias, setSeteDias] = useState<BarraDia[]>([]);
   const [topSabores, setTopSabores] = useState<SaborTop[]>([]);
   const [faturamentoHoje, setFaturamentoHoje] = useState(0);
+  const [formaPagamentoDominante, setFormaPagamentoDominante] = useState<{ forma: string; pct: number } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -85,17 +87,30 @@ export function Dashboard({ meta }: { meta: number }) {
     // 1. Pedidos do período atual (com id para buscar itens)
     const { data: rows } = await supabase
       .from('pedidos')
-      .select('id, total, lucro, custo_total, created_at')
+      .select('id, total, lucro, custo_total, status, forma_pagamento, created_at')
       .gte('created_at', dateTimeToISO(ini))
       .lte('created_at', dateTimeToISO(fim))
       .neq('status', 'cancelado');
     const pedidos = rows || [];
     setAtual(agregar(pedidos));
 
+    // Forma de pagamento mais usada no período (para sugerir diversificação)
+    const formaCount = new Map<string, number>();
+    pedidos.forEach((p: any) => {
+      const forma = p.forma_pagamento || 'Não informado';
+      formaCount.set(forma, (formaCount.get(forma) || 0) + 1);
+    });
+    if (formaCount.size > 0 && pedidos.length > 0) {
+      const [forma, count] = [...formaCount.entries()].sort((a, b) => b[1] - a[1])[0];
+      setFormaPagamentoDominante({ forma, pct: (count / pedidos.length) * 100 });
+    } else {
+      setFormaPagamentoDominante(null);
+    }
+
     // 2. Período anterior (só para o % de comparação)
     const { data: rowsPrev } = await supabase
       .from('pedidos')
-      .select('total, lucro, custo_total')
+      .select('total, lucro, custo_total, status')
       .gte('created_at', dateTimeToISO(iniPrev))
       .lte('created_at', dateTimeToISO(fimPrev))
       .neq('status', 'cancelado');
@@ -186,7 +201,7 @@ export function Dashboard({ meta }: { meta: number }) {
   const lucroPos = atual.lucro >= 0;
   const destTone = lucroPos
     ? { grad: 'bg-gradient-to-br from-green-500/20 to-green-500/5 border-green-500/30', text: 'text-green-500' }
-    : { grad: 'bg-gradient-to-br from-red-500/20 to-red-500/5 border-red-500/30', text: 'text-red-400' };
+    : { grad: 'bg-gradient-to-br from-red-500/20 to-red-500/5 border-red-500/30', text: 'text-red-600' };
 
   const cards = [
     { label: 'Faturamento', valor: brl(atual.faturamento), pct: pctChange(atual.faturamento, anterior.faturamento), icon: DollarSign, destaque: false },
@@ -199,17 +214,17 @@ export function Dashboard({ meta }: { meta: number }) {
     <div className="space-y-5 animate-fadeIn">
       {/* Cabeçalho + filtros */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h2 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
           Dashboard
           {loading && <RefreshCw size={16} className="animate-spin text-[#E50914]" />}
         </h2>
-        <div className="flex bg-neutral-900 p-1 rounded-xl border border-essenza-dark-border">
+        <div className="flex bg-neutral-100 p-1 rounded-xl border border-neutral-200">
           {(['hoje', 'semana', 'mes'] as Filtro[]).map((f) => (
             <button
               key={f}
               onClick={() => setFiltro(f)}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold capitalize transition-all ${
-                filtro === f ? 'bg-[#E50914] text-white' : 'text-neutral-400 hover:text-white'
+                filtro === f ? 'bg-[#E50914] text-white' : 'text-neutral-500 hover:text-neutral-900'
               }`}
             >
               {f === 'mes' ? 'Mês' : f}
@@ -226,17 +241,17 @@ export function Dashboard({ meta }: { meta: number }) {
             <div
               key={c.label}
               className={`rounded-2xl p-5 border ${
-                c.destaque ? destTone.grad : 'bg-essenza-dark-card border-essenza-dark-border'
+                c.destaque ? destTone.grad : 'bg-white border-neutral-200'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-neutral-400 text-xs uppercase tracking-wide">{c.label}</span>
+                <span className="text-neutral-500 text-xs uppercase tracking-wide">{c.label}</span>
                 <c.icon size={18} className={c.destaque ? destTone.text : 'text-neutral-500'} />
               </div>
-              <p className={`font-black text-2xl ${c.destaque ? destTone.text : 'text-white'}`}>{c.valor}</p>
-              <div className={`flex items-center gap-1 text-xs mt-1 ${subiu ? 'text-green-500' : 'text-red-400'}`}>
+              <p className={`font-black text-2xl ${c.destaque ? destTone.text : 'text-neutral-900'}`}>{c.valor}</p>
+              <div className={`flex items-center gap-1 text-xs mt-1 ${subiu ? 'text-green-500' : 'text-red-600'}`}>
                 {subiu ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                {Math.abs(c.pct).toFixed(0)}% <span className="text-neutral-600">{labelPrev}</span>
+                {Math.abs(c.pct).toFixed(0)}% <span className="text-neutral-400">{labelPrev}</span>
               </div>
             </div>
           );
@@ -248,9 +263,11 @@ export function Dashboard({ meta }: { meta: number }) {
         margem={margem}
         ticketMedio={ticketMedio}
         faturamento={atual.faturamento}
+        faturamentoAnterior={anterior.faturamento}
         meta={meta}
         seteDias={seteDias}
         topSabor={topSabores[0] || null}
+        formaPagamentoDominante={formaPagamentoDominante}
       />
 
       {/* Meta do dia */}

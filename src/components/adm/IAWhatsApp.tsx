@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useConfig } from '../../context/ConfigContext';
-import { brl } from '../../lib/format';
+import { brl, todayISO } from '../../lib/format';
 import { 
   Bot, Send, Smartphone, Settings, Key, Clock, Sparkles, 
   CheckCircle2, Trash2, RefreshCw, AlertTriangle, Play, HelpCircle
@@ -183,7 +183,7 @@ Importante:
       const { count } = await supabase
         .from('pedidos')
         .select('*', { count: 'exact', head: true })
-        .in('status', ['recebido', 'preparo', 'forno', 'saiu']);
+        .eq('status', 'confirmado');
       setActiveOrdersCount(count || 0);
 
       // 4. Load active knowledge base entries (staff-curated rules/answers)
@@ -376,7 +376,7 @@ Importante:
         cliente_endereco: isEntrega ? (orderDetails.customer_address || '') : '',
         cliente_bairro: isEntrega ? (orderDetails.customer_bairro || '') : '',
         tipo: isEntrega ? ('delivery' as const) : ('balcao' as const),
-        status: 'recebido' as const,
+        status: 'confirmado' as const,
         subtotal,
         taxa_entrega: taxaEntrega,
         desconto: 0,
@@ -413,7 +413,7 @@ Importante:
         valor: total,
         forma_pagamento: orderDetails.payment_method || 'Pix',
         pedido_id: createdPedido.id,
-        data: new Date().toISOString().slice(0, 10)
+        data: todayISO()
       });
 
       addMessage(chatId, 'system', `✅ Pedido #${numero} gravado com sucesso no banco de dados da Pizzaria! Ele já aparece na tela de pedidos da cozinha.`);
@@ -674,36 +674,36 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
   };
 
   return (
-    <div className="min-h-[80vh] flex flex-col bg-[#141414] rounded-2xl border border-essenza-dark-border overflow-hidden">
+    <div className="min-h-[80vh] flex flex-col bg-white rounded-2xl border border-neutral-200 overflow-hidden">
       {/* Header bar */}
-      <div className="p-4 border-b border-essenza-dark-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#1b1b1b]">
+      <div className="p-4 border-b border-neutral-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#E50914] flex items-center justify-center">
             <Bot size={22} className="text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-white text-lg">Agente de IA do WhatsApp</h3>
-            <p className="text-xs text-neutral-400">Atendimento automático integrado ao banco de dados</p>
+            <h3 className="font-bold text-neutral-900 text-lg">Agente de IA do WhatsApp</h3>
+            <p className="text-xs text-neutral-500">Atendimento automático integrado ao banco de dados</p>
           </div>
         </div>
 
         {/* Tab Selection */}
-        <div className="flex bg-neutral-900 p-1.5 rounded-xl border border-essenza-dark-border w-full sm:w-auto">
+        <div className="flex bg-neutral-100 p-1.5 rounded-xl border border-neutral-200 w-full sm:w-auto">
           <button 
             onClick={() => setActiveTab('simulator')} 
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'simulator' ? 'bg-[#E50914] text-white' : 'text-neutral-400 hover:text-white'}`}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'simulator' ? 'bg-[#E50914] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
           >
             <Smartphone size={14} /> Simulador
           </button>
           <button 
             onClick={() => setActiveTab('settings')} 
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'settings' ? 'bg-[#E50914] text-white' : 'text-neutral-400 hover:text-white'}`}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'settings' ? 'bg-[#E50914] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
           >
             <Settings size={14} /> Configurações
           </button>
           <button 
             onClick={() => setActiveTab('real-connection')} 
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'real-connection' ? 'bg-[#E50914] text-white' : 'text-neutral-400 hover:text-white'}`}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'real-connection' ? 'bg-[#E50914] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
           >
             <Play size={14} /> WhatsApp Real
           </button>
@@ -715,21 +715,21 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
         {activeTab === 'simulator' && (
           <>
             {/* Simulator Sidebar - Chat List */}
-            <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-essenza-dark-border flex flex-col bg-[#111]">
-              <div className="p-3 border-b border-essenza-dark-border flex justify-between items-center">
-                <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+            <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-neutral-200 flex flex-col bg-neutral-50">
+              <div className="p-3 border-b border-neutral-200 flex justify-between items-center">
+                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
                   Conversas Ativas
                   {dbLoading && <RefreshCw size={12} className="animate-spin text-[#E50914]" />}
                 </span>
                 <button 
                   onClick={createNewChat} 
-                  className="bg-neutral-800 hover:bg-[#E50914] text-white text-xs px-2.5 py-1.5 rounded-lg border border-essenza-dark-border transition-colors font-medium"
+                  className="bg-neutral-200 hover:bg-[#E50914] text-white text-xs px-2.5 py-1.5 rounded-lg border border-neutral-200 transition-colors font-medium"
                 >
                   Novo Chat
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto divide-y divide-essenza-dark-border/40">
+              <div className="flex-1 overflow-y-auto divide-y divide-neutral-200/40">
                 {chats.length === 0 ? (
                   <p className="text-center text-neutral-500 py-6 text-sm">Nenhuma conversa ativa.</p>
                 ) : (
@@ -740,18 +740,18 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                       <button 
                         key={chat.id}
                         onClick={() => setActiveChatId(chat.id)}
-                        className={`w-full p-4 flex flex-col gap-1 text-left transition-colors ${active ? 'bg-neutral-800/80 border-l-4 border-l-[#E50914]' : 'hover:bg-neutral-900/55'}`}
+                        className={`w-full p-4 flex flex-col gap-1 text-left transition-colors ${active ? 'bg-neutral-200/80 border-l-4 border-l-[#E50914]' : 'hover:bg-neutral-100/55'}`}
                       >
                         <div className="flex justify-between items-center w-full">
-                          <span className="font-bold text-white text-sm">{chat.name}</span>
+                          <span className="font-bold text-neutral-900 text-sm">{chat.name}</span>
                           <span className="text-[10px] text-neutral-500">
                             {lastMsg ? new Date(lastMsg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
                           </span>
                         </div>
-                        <p className="text-xs text-neutral-400 truncate w-full">
+                        <p className="text-xs text-neutral-500 truncate w-full">
                           {lastMsg ? lastMsg.text : 'Sem mensagens.'}
                         </p>
-                        <span className="text-[10px] text-neutral-600 block">{chat.phone}</span>
+                        <span className="text-[10px] text-neutral-400 block">{chat.phone}</span>
                       </button>
                     );
                   })
@@ -759,48 +759,48 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
               </div>
 
               {/* Status info bar */}
-              <div className="p-3 border-t border-essenza-dark-border bg-neutral-950 flex flex-col gap-1">
+              <div className="p-3 border-t border-neutral-200 bg-neutral-50 flex flex-col gap-1">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-400">Banco de Dados:</span>
+                  <span className="text-neutral-500">Banco de Dados:</span>
                   <span className="text-green-500 font-bold flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                     Supabase Conectado
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs mt-1">
-                  <span className="text-neutral-400">Produtos no Cardápio:</span>
-                  <span className="text-white font-semibold">{produtos.length} ativos</span>
+                  <span className="text-neutral-500">Produtos no Cardápio:</span>
+                  <span className="text-neutral-900 font-semibold">{produtos.length} ativos</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-400">Pedidos na Fila de Preparo:</span>
+                  <span className="text-neutral-500">Pedidos na Fila de Preparo:</span>
                   <span className="text-amber-500 font-bold">{activeOrdersCount}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-400">Tempo de Espera:</span>
+                  <span className="text-neutral-500">Tempo de Espera:</span>
                   <span className="text-[#22c55e] font-black">{baseWaitTime + (activeOrdersCount * waitTimePerOrder)} min</span>
                 </div>
               </div>
             </div>
 
             {/* Simulator Chat Area */}
-            <div className="flex-1 flex flex-col bg-[#0A0A0A] overflow-hidden relative">
+            <div className="flex-1 flex flex-col bg-[#FAF7F1] overflow-hidden relative">
               {/* Active Chat Header */}
               {activeChat ? (
                 <>
-                  <div className="px-4 py-3 bg-[#111] border-b border-essenza-dark-border flex justify-between items-center">
+                  <div className="px-4 py-3 bg-neutral-50 border-b border-neutral-200 flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-white font-bold text-sm">
+                      <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-900 font-bold text-sm">
                         {activeChat.name.charAt(0)}
                       </div>
                       <div>
-                        <h4 className="font-bold text-white text-sm">{activeChat.name}</h4>
-                        <p className="text-[10px] text-neutral-400">{activeChat.phone}</p>
+                        <h4 className="font-bold text-neutral-900 text-sm">{activeChat.name}</h4>
+                        <p className="text-[10px] text-neutral-500">{activeChat.phone}</p>
                       </div>
                     </div>
                     <button 
                       onClick={() => clearChatHistory(activeChat.id)} 
                       title="Limpar Histórico"
-                      className="p-1.5 text-neutral-400 hover:text-red-400 hover:bg-neutral-800 rounded-lg transition-colors"
+                      className="p-1.5 text-neutral-500 hover:text-red-600 hover:bg-neutral-200 rounded-lg transition-colors"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -811,7 +811,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                     {activeChat.messages.map((msg) => {
                       if (msg.sender === 'system') {
                         return (
-                          <div key={msg.id} className="mx-auto my-1 bg-neutral-900 border border-essenza-dark-border text-neutral-400 text-xs px-3 py-1.5 rounded-lg text-center max-w-[85%]">
+                          <div key={msg.id} className="mx-auto my-1 bg-neutral-100 border border-neutral-200 text-neutral-500 text-xs px-3 py-1.5 rounded-lg text-center max-w-[85%]">
                             {msg.text}
                           </div>
                         );
@@ -821,9 +821,9 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                         <div 
                           key={msg.id} 
                           className={`max-w-[75%] p-3 rounded-2xl flex flex-col ${
-                            isCustomer 
-                              ? 'bg-neutral-800 text-white rounded-br-none self-end' 
-                              : 'bg-gradient-to-br from-neutral-900 to-[#1b1b1b] border border-essenza-dark-border text-neutral-200 rounded-bl-none self-start'
+                            isCustomer
+                              ? 'bg-neutral-200 text-neutral-900 rounded-br-none self-end'
+                              : 'bg-red-50 border border-red-100 text-neutral-900 rounded-bl-none self-start'
                           }`}
                         >
                           <p className="text-sm whitespace-pre-line leading-relaxed">{msg.text}</p>
@@ -836,7 +836,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
 
                     {/* Typing Indicator */}
                     {isTyping && (
-                      <div className="bg-neutral-900 border border-essenza-dark-border text-neutral-400 rounded-2xl rounded-bl-none max-w-[50%] p-3 self-start flex items-center gap-2">
+                      <div className="bg-neutral-100 border border-neutral-200 text-neutral-500 rounded-2xl rounded-bl-none max-w-[50%] p-3 self-start flex items-center gap-2">
                         <Sparkles size={14} className="text-[#22c55e] animate-spin" />
                         <span className="text-xs">IA está digitando...</span>
                       </div>
@@ -845,7 +845,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                   </div>
 
                   {/* Input area */}
-                  <div className="p-3 border-t border-essenza-dark-border bg-[#111] flex gap-2">
+                  <div className="p-3 border-t border-neutral-200 bg-neutral-50 flex gap-2">
                     <input 
                       type="text"
                       value={inputText}
@@ -853,7 +853,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                       onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                       placeholder={isTyping ? "Aguardando resposta da IA..." : "Escreva uma mensagem simulando o cliente..."}
                       disabled={isTyping}
-                      className="flex-1 bg-neutral-900 text-white placeholder-neutral-500 border border-essenza-dark-border rounded-xl px-4 py-3 text-sm focus:border-[#E50914] focus:outline-none disabled:opacity-50"
+                      className="flex-1 bg-neutral-100 text-neutral-900 placeholder-neutral-500 border border-neutral-200 rounded-xl px-4 py-3 text-sm focus:border-[#E50914] focus:outline-none disabled:opacity-50"
                     />
                     <button 
                       onClick={handleSendMessage}
@@ -866,7 +866,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                 </>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-neutral-500 p-6 text-center">
-                  <Smartphone size={48} className="mb-2 text-neutral-600" />
+                  <Smartphone size={48} className="mb-2 text-neutral-400" />
                   <p className="text-sm">Selecione uma conversa ao lado ou clique em "Novo Chat" para iniciar.</p>
                 </div>
               )}
@@ -875,8 +875,8 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
         )}
 
         {activeTab === 'settings' && (
-          <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-[#0E0E0E]">
-            <div className="flex items-center gap-2 text-white font-bold text-base border-b border-essenza-dark-border pb-2">
+          <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-neutral-50">
+            <div className="flex items-center gap-2 text-neutral-900 font-bold text-base border-b border-neutral-200 pb-2">
               <Settings size={18} className="text-[#E50914]" />
               <span>Configurações do Agente de IA</span>
             </div>
@@ -895,75 +895,75 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left Column Settings */}
               <div className="space-y-4">
-                <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-white font-semibold text-sm">
+                <div className="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-neutral-900 font-semibold text-sm">
                     <Key size={16} className="text-[#E50914]" />
                     <span>Autenticação da IA</span>
                   </div>
                   <div>
-                    <label className="block text-xs text-neutral-400 mb-1">Chave de API do Gemini (Google AI Studio)</label>
+                    <label className="block text-xs text-neutral-500 mb-1">Chave de API do Gemini (Google AI Studio)</label>
                     <input 
                       type="password"
                       value={geminiKey}
                       onChange={(e) => setGeminiKey(e.target.value)}
                       placeholder="AIzaSy..."
-                      className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-3 py-2 text-sm text-white focus:border-[#E50914] focus:outline-none"
+                      className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#E50914] focus:outline-none"
                     />
                     <span className="text-[10px] text-neutral-500 block mt-1">Crie uma chave gratuita no Google AI Studio.</span>
                   </div>
                 </div>
 
-                <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-white font-semibold text-sm">
+                <div className="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-neutral-900 font-semibold text-sm">
                     <Clock size={16} className="text-[#E50914]" />
                     <span>Lógica de Tempo de Espera</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-neutral-400 mb-1">Espera Base (min)</label>
+                      <label className="block text-xs text-neutral-500 mb-1">Espera Base (min)</label>
                       <input 
                         type="number"
                         value={baseWaitTime}
                         onChange={(e) => setBaseWaitTime(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-3 py-2 text-sm text-white focus:border-[#E50914] focus:outline-none"
+                        className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#E50914] focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-neutral-400 mb-1">Acréscimo por Pedido (min)</label>
+                      <label className="block text-xs text-neutral-500 mb-1">Acréscimo por Pedido (min)</label>
                       <input 
                         type="number"
                         value={waitTimePerOrder}
                         onChange={(e) => setWaitTimePerOrder(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-3 py-2 text-sm text-white focus:border-[#E50914] focus:outline-none"
+                        className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#E50914] focus:outline-none"
                       />
                     </div>
                   </div>
                   <span className="text-[10px] text-neutral-500 block">Fórmula: Espera Base + (Pedidos Preparando × Acréscimo). A contagem de "Pedidos Preparando" já inclui automaticamente os pedidos do balcão/salão, não só delivery — então quando o salão está cheio, a IA já informa um tempo maior e mais honesto ao cliente do WhatsApp.</span>
                 </div>
 
-                <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-white font-semibold text-sm">
+                <div className="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-neutral-900 font-semibold text-sm">
                     <Smartphone size={16} className="text-[#E50914]" />
                     <span>Integração com WhatsApp Real</span>
                   </div>
                   <div>
-                    <label className="block text-xs text-neutral-400 mb-1">URL da API do WhatsApp</label>
+                    <label className="block text-xs text-neutral-500 mb-1">URL da API do WhatsApp</label>
                     <input 
                       type="text"
                       value={whatsappApiUrl}
                       onChange={(e) => setWhatsappApiUrl(e.target.value)}
                       placeholder="http://localhost:8000"
-                      className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-3 py-2 text-sm text-white focus:border-[#E50914] focus:outline-none"
+                      className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#E50914] focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-neutral-400 mb-1">Token / Chave de Segurança da API</label>
+                    <label className="block text-xs text-neutral-500 mb-1">Token / Chave de Segurança da API</label>
                     <input 
                       type="password"
                       value={whatsappToken}
                       onChange={(e) => setWhatsappToken(e.target.value)}
                       placeholder="Token de acesso"
-                      className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-3 py-2 text-sm text-white focus:border-[#E50914] focus:outline-none"
+                      className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#E50914] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -971,8 +971,8 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
 
               {/* Right Column Settings - System Prompt */}
               <div className="flex flex-col h-full">
-                <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-4 flex-1 flex flex-col gap-2 min-h-[300px]">
-                  <div className="flex items-center justify-between text-white font-semibold text-sm mb-1">
+                <div className="bg-white border border-neutral-200 rounded-xl p-4 flex-1 flex flex-col gap-2 min-h-[300px]">
+                  <div className="flex items-center justify-between text-neutral-900 font-semibold text-sm mb-1">
                     <div className="flex items-center gap-2">
                       <Sparkles size={16} className="text-[#22c55e]" />
                       <span>Instruções do Sistema (Prompt)</span>
@@ -984,7 +984,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                           window.location.reload();
                         }
                       }}
-                      className="text-neutral-500 hover:text-red-400 text-xs font-semibold"
+                      className="text-neutral-500 hover:text-red-600 text-xs font-semibold"
                     >
                       Resetar
                     </button>
@@ -992,7 +992,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                   <textarea 
                     value={systemPrompt}
                     onChange={(e) => setSystemPrompt(e.target.value)}
-                    className="flex-1 bg-neutral-900 border border-essenza-dark-border rounded-xl p-3 text-xs text-neutral-300 focus:border-[#E50914] focus:outline-none font-mono resize-none leading-relaxed"
+                    className="flex-1 bg-neutral-100 border border-neutral-200 rounded-xl p-3 text-xs text-neutral-700 focus:border-[#E50914] focus:outline-none font-mono resize-none leading-relaxed"
                   />
                 </div>
               </div>
@@ -1002,7 +1002,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
             <div className="flex justify-end gap-3 pt-2">
               <button 
                 onClick={loadDatabaseInfo} 
-                className="flex items-center gap-2 border border-essenza-dark-border hover:bg-neutral-900 text-neutral-300 text-sm px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95"
+                className="flex items-center gap-2 border border-neutral-200 hover:bg-neutral-100 text-neutral-700 text-sm px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95"
               >
                 <RefreshCw size={16} /> Atualizar Catálogo
               </button>
@@ -1017,41 +1017,41 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
         )}
 
         {activeTab === 'real-connection' && (
-          <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-[#0E0E0E]">
-            <div className="flex items-center gap-2 text-white font-bold text-base border-b border-essenza-dark-border pb-2">
+          <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-neutral-50">
+            <div className="flex items-center gap-2 text-neutral-900 font-bold text-base border-b border-neutral-200 pb-2">
               <Smartphone size={18} className="text-[#E50914]" />
               <span>Conectar Atendimento ao WhatsApp de Verdade</span>
             </div>
 
             <div className="max-w-3xl space-y-4">
-              <p className="text-sm text-neutral-300 leading-relaxed">
+              <p className="text-sm text-neutral-700 leading-relaxed">
                 Além do simulador no navegador, você pode conectar o robô de IA a um número real de WhatsApp da sua pizzaria. Ele usará as mesmas configurações de prompt, estimativa de tempo e cardápio sincronizados com o Supabase.
               </p>
 
-              <div className="bg-neutral-900 border border-essenza-dark-border rounded-xl p-5 space-y-4">
-                <h4 className="font-bold text-white text-sm flex items-center gap-2">
+              <div className="bg-neutral-100 border border-neutral-200 rounded-xl p-5 space-y-4">
+                <h4 className="font-bold text-neutral-900 text-sm flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-[#E50914] flex items-center justify-center text-xs text-white">1</span>
                   Preparando o Ambiente Local
                 </h4>
-                <p className="text-xs text-neutral-400 leading-relaxed">
+                <p className="text-xs text-neutral-500 leading-relaxed">
                   Para rodar o robô, já preparamos um script do Node.js completo na pasta do seu projeto. Siga os passos abaixo no terminal do seu computador para ligá-lo.
                 </p>
-                <div className="bg-black/90 p-4 rounded-lg font-mono text-xs text-green-400 space-y-1.5 border border-neutral-800">
+                <div className="bg-black/90 p-4 rounded-lg font-mono text-xs text-green-600 space-y-1.5 border border-neutral-200">
                   <p className="text-neutral-500"># 1. Entre na pasta raiz do projeto no seu terminal</p>
                   <p className="text-neutral-500"># 2. Rode o comando para instalar as dependências e iniciar o bot</p>
                   <p>npm run chatbot</p>
                 </div>
               </div>
 
-              <div className="bg-neutral-900 border border-essenza-dark-border rounded-xl p-5 space-y-3">
-                <h4 className="font-bold text-white text-sm flex items-center gap-2">
+              <div className="bg-neutral-100 border border-neutral-200 rounded-xl p-5 space-y-3">
+                <h4 className="font-bold text-neutral-900 text-sm flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-[#E50914] flex items-center justify-center text-xs text-white">2</span>
                   Escaneando o QR Code
                 </h4>
-                <p className="text-xs text-neutral-400 leading-relaxed">
+                <p className="text-xs text-neutral-500 leading-relaxed">
                   Ao rodar o comando acima, um **QR Code** será desenhado no seu terminal de texto.
                 </p>
-                <ul className="text-xs text-neutral-400 space-y-1.5 list-disc list-inside pl-1">
+                <ul className="text-xs text-neutral-500 space-y-1.5 list-disc list-inside pl-1">
                   <li>Abra o WhatsApp no celular do estabelecimento.</li>
                   <li>Vá em **Aparelhos Conectados** {'>'} **Conectar um aparelho**.</li>
                   <li>Aponte a câmera para o QR Code gerado no terminal.</li>
@@ -1059,10 +1059,10 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                 </ul>
               </div>
 
-              <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 flex gap-3 text-neutral-300">
+              <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 flex gap-3 text-neutral-700">
                 <HelpCircle size={22} className="flex-shrink-0 text-amber-500" />
                 <div className="text-xs leading-relaxed">
-                  <p className="font-bold text-white mb-1">Como funciona o sincronismo?</p>
+                  <p className="font-bold text-neutral-900 mb-1">Como funciona o sincronismo?</p>
                   Sempre que o cardápio for alterado no painel administrativo ou as taxas de entrega forem modificadas no Supabase, o bot de WhatsApp real as recarregará automaticamente a cada atendimento, garantindo informações de preço e sabores sempre atualizados e corretos para o cliente.
                 </div>
               </div>

@@ -20,18 +20,18 @@ export function MetaProgresso({ faturamento, meta }: { faturamento: number; meta
   }, [pctVisual]);
 
   return (
-    <div className={`bg-essenza-dark-card border rounded-2xl p-6 transition-colors ${bateu ? 'border-green-500/60' : 'border-essenza-dark-border'}`}>
+    <div className={`bg-white border rounded-2xl p-6 transition-colors ${bateu ? 'border-green-500/60' : 'border-neutral-200'}`}>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-neutral-300 font-semibold flex items-center gap-2">
+        <span className="text-neutral-700 font-semibold flex items-center gap-2">
           {bateu ? <Trophy size={18} className="text-green-500" /> : <Target size={18} className="text-[#E50914]" />}
           Meta do Dia
         </span>
-        <span className="text-white font-semibold text-sm">
+        <span className="text-neutral-900 font-semibold text-sm">
           {brl(faturamento)} <span className="text-neutral-500">/ {brl(meta)}</span>
         </span>
       </div>
 
-      <div className="h-5 bg-neutral-800 rounded-full overflow-hidden relative">
+      <div className="h-5 bg-neutral-200 rounded-full overflow-hidden relative">
         <div
           className={`h-full rounded-full transition-all duration-1000 ease-out ${
             bateu ? 'bg-gradient-to-r from-green-500 to-green-400 animate-pulse' : 'bg-gradient-to-r from-green-700 to-green-500'
@@ -39,7 +39,7 @@ export function MetaProgresso({ faturamento, meta }: { faturamento: number; meta
           style={{ width: `${width}%` }}
         />
         {bateu && (
-          <span className="absolute inset-0 flex items-center justify-center text-xs font-black text-white drop-shadow">
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-black text-neutral-900 drop-shadow">
             🎉 META BATIDA! 🎉
           </span>
         )}

@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useConfig } from '../../context/ConfigContext';
 import { brl } from '../../lib/format';
-import { Flame, LayoutDashboard, UtensilsCrossed, ShoppingCart, Wallet, Settings, Package, LogOut, Menu, X, TrendingUp, MessageSquare, Radio, LayoutGrid } from 'lucide-react';
+import { Flame, LayoutDashboard, UtensilsCrossed, ShoppingCart, Wallet, Settings, Package, LogOut, Menu, X, TrendingUp, MessageSquare, MessageCircle, Radio, LayoutGrid } from 'lucide-react';
 import { Produtos } from './Produtos';
 import { Balcao } from './Balcao';
 import { Mesas } from './Mesas';
@@ -16,8 +16,9 @@ import { Configuracoes } from './Configuracoes';
 import { Estoque } from './Estoque';
 import { IAWhatsApp } from './IAWhatsApp';
 import { Monitoramento } from './Monitoramento';
+import { WhatsAppPedidos } from './WhatsAppPedidos';
 
-type Tab = 'dashboard' | 'produtos' | 'balcao' | 'mesas' | 'pedidos' | 'financeiro' | 'estoque' | 'ia' | 'monitoramento' | 'config';
+type Tab = 'dashboard' | 'produtos' | 'balcao' | 'mesas' | 'pedidos' | 'financeiro' | 'estoque' | 'ia' | 'whatsapp' | 'monitoramento' | 'config';
 
 interface DashboardData {
   lucro: number;
@@ -48,7 +49,9 @@ export function Adm() {
     const valid = data || [];
     const faturamento = valid.reduce((s, p) => s + Number(p.total), 0);
     const lucro = valid.reduce((s, p) => s + Number(p.lucro), 0);
-    setDash({ lucro, faturamento, numPedidos: valid.length });
+    // "Pedidos" no topo conta só entregues — confirmado ainda não é uma venda finalizada.
+    const numPedidos = valid.filter((p) => p.status === 'entregue').length;
+    setDash({ lucro, faturamento, numPedidos });
   }, []);
 
   useEffect(() => {
@@ -66,6 +69,7 @@ export function Adm() {
     { id: 'financeiro', label: 'Financeiro', icon: Wallet },
     { id: 'estoque', label: 'Estoque', icon: Package },
     { id: 'ia', label: 'Agente de IA', icon: MessageSquare },
+    { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
     { id: 'monitoramento', label: 'Monitoramento', icon: Radio },
     { id: 'config', label: 'Config', icon: Settings },
   ];
@@ -80,22 +84,23 @@ export function Adm() {
       case 'financeiro': return <Financeiro />;
       case 'estoque': return <Estoque />;
       case 'ia': return <IAWhatsApp />;
+      case 'whatsapp': return <WhatsAppPedidos />;
       case 'monitoramento': return <Monitoramento />;
       case 'config': return <Configuracoes />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-[#FAF7F1] flex flex-col lg:flex-row">
       <OfflineBanner />
       {/* Mobile header with dashboard strip */}
-      <div className="lg:hidden sticky top-0 z-40 bg-[#141414] border-b border-essenza-dark-border">
+      <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-neutral-200">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <Flame size={24} className="text-[#E50914]" />
-            <span className="font-black text-white text-lg">ESSENZA</span>
+            <Flame size={20} className="text-[#E50914]" />
+            <span className="font-display font-bold text-neutral-900 text-lg">ESSENZA</span>
           </div>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 text-white">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 text-neutral-900">
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
@@ -109,17 +114,22 @@ export function Adm() {
       )}
       <aside className={`
         ${sidebarOpen ? 'fixed left-0 top-0 bottom-0 z-40' : 'hidden'} lg:relative lg:flex lg:flex-col
-        w-64 bg-[#141414] border-r border-essenza-dark-border min-h-screen
+        w-64 bg-white border-r border-neutral-200 min-h-screen
       `}>
         <div className="p-6 hidden lg:block">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#E50914] flex items-center justify-center">
-              <Flame size={22} className="text-white" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#E50914] to-essenza-terracotta flex items-center justify-center">
+              <Flame size={18} className="text-white" />
             </div>
             <div>
-              <h1 className="font-black text-white text-xl leading-none">ESSENZA</h1>
-              <p className="text-neutral-500 text-xs tracking-widest uppercase mt-0.5">Pizzaria</p>
+              <h1 className="font-display font-bold text-neutral-900 text-lg leading-none">ESSENZA</h1>
+              <p className="text-neutral-500 text-[10px] tracking-[0.15em] uppercase mt-0.5">Pizza Napoletana</p>
             </div>
+          </div>
+          <div className="flex items-center gap-1 mt-3">
+            <span className="w-4 h-[3px] rounded-full bg-essenza-italia-green" />
+            <span className="w-4 h-[3px] rounded-full bg-neutral-300" />
+            <span className="w-4 h-[3px] rounded-full bg-essenza-italia-red" />
           </div>
         </div>
 
@@ -131,7 +141,7 @@ export function Adm() {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-left ${
                 tab === item.id
                   ? 'bg-[#E50914] text-white font-semibold'
-                  : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-white'
+                  : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
               }`}
             >
               <item.icon size={20} />
@@ -140,14 +150,14 @@ export function Adm() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-essenza-dark-border">
-          <div className="text-sm text-neutral-400 mb-2 px-2">
+        <div className="p-4 border-t border-neutral-200">
+          <div className="text-sm text-neutral-500 mb-2 px-2">
             {usuario?.nome}
-            <span className="block text-xs text-neutral-600 capitalize">{usuario?.role}</span>
+            <span className="block text-xs text-neutral-400 capitalize">{usuario?.role}</span>
           </div>
           <button
             onClick={signOut}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900 transition-colors"
           >
             <LogOut size={18} />
             <span>Sair</span>
@@ -158,7 +168,7 @@ export function Adm() {
       {/* Main content */}
       <main className="flex-1 overflow-x-hidden">
         {/* Desktop profit dashboard - always fixed at top */}
-        <div className="hidden lg:block sticky top-0 z-20 bg-[#141414]/95 backdrop-blur border-b border-essenza-dark-border">
+        <div className="hidden lg:block sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-neutral-200">
           <ProfitStrip dash={dash} />
         </div>
         <div className="p-4 lg:p-6 max-w-7xl mx-auto">
@@ -176,7 +186,7 @@ function ProfitStrip({ dash }: { dash: DashboardData }) {
   const pos = dash.lucro >= 0;
   const tone = pos
     ? { bg: 'bg-green-500/10', icon: 'text-green-500', label: 'text-green-500/70', val: 'text-green-500' }
-    : { bg: 'bg-red-500/10', icon: 'text-red-400', label: 'text-red-400/70', val: 'text-red-400' };
+    : { bg: 'bg-red-500/10', icon: 'text-red-600', label: 'text-red-600/70', val: 'text-red-600' };
   return (
     <div className="flex items-center gap-4 px-4 py-2.5 overflow-x-auto">
       <div className={`flex items-center gap-2 ${tone.bg} rounded-lg px-3 py-1.5 flex-shrink-0`}>
@@ -186,16 +196,16 @@ function ProfitStrip({ dash }: { dash: DashboardData }) {
           <p className={`${tone.val} font-bold text-base leading-tight`}>{brl(dash.lucro)}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2 bg-neutral-800/50 rounded-lg px-3 py-1.5 flex-shrink-0">
+      <div className="flex items-center gap-2 bg-neutral-200/50 rounded-lg px-3 py-1.5 flex-shrink-0">
         <div>
           <p className="text-[10px] text-neutral-500 uppercase tracking-wide leading-none">Faturamento</p>
-          <p className="text-white font-bold text-base leading-tight">{brl(dash.faturamento)}</p>
+          <p className="text-neutral-900 font-bold text-base leading-tight">{brl(dash.faturamento)}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2 bg-neutral-800/50 rounded-lg px-3 py-1.5 flex-shrink-0">
+      <div className="flex items-center gap-2 bg-neutral-200/50 rounded-lg px-3 py-1.5 flex-shrink-0">
         <div>
           <p className="text-[10px] text-neutral-500 uppercase tracking-wide leading-none">Pedidos</p>
-          <p className="text-white font-bold text-base leading-tight">{dash.numPedidos}</p>
+          <p className="text-neutral-900 font-bold text-base leading-tight">{dash.numPedidos}</p>
         </div>
       </div>
     </div>

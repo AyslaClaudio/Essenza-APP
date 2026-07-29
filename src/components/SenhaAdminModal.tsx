@@ -32,7 +32,7 @@ export function SenhaAdminModal({
   };
 
   const iconBg = danger ? 'bg-red-500/20' : 'bg-[#E50914]/20';
-  const iconColor = danger ? 'text-red-400' : 'text-[#E50914]';
+  const iconColor = danger ? 'text-red-600' : 'text-[#E50914]';
   const Icon = danger ? AlertTriangle : ShieldCheck;
   const btnBg = danger
     ? 'bg-red-600 hover:bg-red-700 text-white'
@@ -41,7 +41,7 @@ export function SenhaAdminModal({
   return (
     <div className="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-4" onClick={onCancel}>
       <div
-        className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-6 w-full max-w-sm"
+        className="bg-white border border-neutral-200 rounded-2xl p-6 w-full max-w-sm"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 mb-4">
@@ -49,13 +49,13 @@ export function SenhaAdminModal({
             <Icon size={24} className={iconColor} />
           </div>
           <div>
-            <h3 className="text-white font-bold text-lg">{title}</h3>
-            <p className="text-neutral-400 text-sm">{description}</p>
+            <h3 className="text-neutral-900 font-bold text-lg">{title}</h3>
+            <p className="text-neutral-500 text-sm">{description}</p>
           </div>
         </div>
 
         <div className="mb-4">
-          <label className="text-neutral-400 text-sm flex items-center gap-1.5 mb-1.5">
+          <label className="text-neutral-500 text-sm flex items-center gap-1.5 mb-1.5">
             <Lock size={14} /> Senha do Administrador
           </label>
           <input
@@ -64,14 +64,14 @@ export function SenhaAdminModal({
             onChange={(e) => { setSenha(e.target.value); setError(null); }}
             onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
             placeholder="Digite a senha para autorizar"
-            className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white focus:border-[#E50914] focus:outline-none"
+            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none"
             autoFocus
           />
-          {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
+          {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
         </div>
 
         <div className="flex gap-2">
-          <button onClick={onCancel} className="flex-1 py-3 bg-neutral-800 text-neutral-300 rounded-xl font-medium">
+          <button onClick={onCancel} className="flex-1 py-3 bg-neutral-200 text-neutral-700 rounded-xl font-medium">
             Cancelar
           </button>
           <button

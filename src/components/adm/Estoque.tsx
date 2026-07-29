@@ -11,13 +11,13 @@ export function Estoque() {
 
   return (
     <div className="space-y-4 animate-fadeIn">
-      <h2 className="text-2xl font-bold text-white">Estoque & Custo</h2>
+      <h2 className="text-2xl font-bold text-neutral-900">Estoque & Custo</h2>
 
       <div className="flex gap-2">
-        <button onClick={() => setTab('ingredientes')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium ${tab === 'ingredientes' ? 'bg-[#E50914] text-white' : 'bg-neutral-800 text-neutral-400'}`}>
+        <button onClick={() => setTab('ingredientes')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium ${tab === 'ingredientes' ? 'bg-[#E50914] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
           <Package size={16} /> Ingredientes
         </button>
-        <button onClick={() => setTab('ficha')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium ${tab === 'ficha' ? 'bg-[#E50914] text-white' : 'bg-neutral-800 text-neutral-400'}`}>
+        <button onClick={() => setTab('ficha')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium ${tab === 'ficha' ? 'bg-[#E50914] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
           <FlaskConical size={16} /> Ficha Técnica
         </button>
       </div>
@@ -64,7 +64,7 @@ function Ingredientes() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-neutral-400 text-sm">Cadastro de ingredientes e controle de estoque</p>
+        <p className="text-neutral-500 text-sm">Cadastro de ingredientes e controle de estoque</p>
         <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 bg-[#E50914] text-white px-4 py-2 rounded-xl text-sm font-semibold">
           <Plus size={18} /> Novo
         </button>
@@ -73,10 +73,10 @@ function Ingredientes() {
       {/* Low stock alerts */}
       {ingredientes.filter((i) => i.estoque_atual <= i.estoque_minimo && i.estoque_minimo > 0).length > 0 && (
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-2"><AlertTriangle size={20} className="text-yellow-400" /><span className="text-yellow-400 font-medium text-sm">Estoque Baixo</span></div>
+          <div className="flex items-center gap-2 mb-2"><AlertTriangle size={20} className="text-amber-700" /><span className="text-amber-700 font-medium text-sm">Estoque Baixo</span></div>
           <div className="space-y-1">
             {ingredientes.filter((i) => i.estoque_atual <= i.estoque_minimo && i.estoque_minimo > 0).map((i) => (
-              <p key={i.id} className="text-yellow-400/70 text-sm">{i.nome}: {i.estoque_atual} {i.unidade} (mín: {i.estoque_minimo})</p>
+              <p key={i.id} className="text-amber-700/70 text-sm">{i.nome}: {i.estoque_atual} {i.unidade} (mín: {i.estoque_minimo})</p>
             ))}
           </div>
         </div>
@@ -84,27 +84,27 @@ function Ingredientes() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {ingredientes.map((ing) => (
-          <div key={ing.id} className="bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-4">
+          <div key={ing.id} className="bg-white border border-neutral-200 rounded-xl p-4">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-white font-medium">{ing.nome}</p>
-                <p className="text-neutral-400 text-sm">{brl(ing.custo_por_unidade)} / {ing.unidade}</p>
+                <p className="text-neutral-900 font-medium">{ing.nome}</p>
+                <p className="text-neutral-500 text-sm">{brl(ing.custo_por_unidade)} / {ing.unidade}</p>
               </div>
               <div className="flex gap-1">
-                <button onClick={() => { setEditing(ing); setShowForm(true); }} className="p-1 text-neutral-400 hover:text-white"><Pencil size={14} /></button>
-                <button onClick={() => remove(ing.id)} className="p-1 text-neutral-400 hover:text-red-400"><Trash2 size={14} /></button>
+                <button onClick={() => { setEditing(ing); setShowForm(true); }} className="p-1 text-neutral-500 hover:text-neutral-900"><Pencil size={14} /></button>
+                <button onClick={() => remove(ing.id)} className="p-1 text-neutral-500 hover:text-red-600"><Trash2 size={14} /></button>
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-essenza-dark-border">
+            <div className="mt-3 pt-3 border-t border-neutral-200">
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-500">Estoque:</span>
-                <span className={ing.estoque_atual <= ing.estoque_minimo && ing.estoque_minimo > 0 ? 'text-yellow-400 font-semibold' : 'text-white'}>
+                <span className={ing.estoque_atual <= ing.estoque_minimo && ing.estoque_minimo > 0 ? 'text-amber-600 font-semibold' : 'text-neutral-900'}>
                   {ing.estoque_atual} {ing.unidade}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-500">Mínimo:</span>
-                <span className="text-neutral-400">{ing.estoque_minimo} {ing.unidade}</span>
+                <span className="text-neutral-500">{ing.estoque_minimo} {ing.unidade}</span>
               </div>
             </div>
           </div>
@@ -138,36 +138,36 @@ function IngredienteForm({ ingrediente, onClose, onSave }: { ingrediente: Ingred
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-white font-bold text-lg mb-4">{ingrediente ? 'Editar' : 'Novo'} Ingrediente</h3>
+      <div className="bg-white border border-neutral-200 rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-neutral-900 font-bold text-lg mb-4">{ingrediente ? 'Editar' : 'Novo'} Ingrediente</h3>
         <div className="space-y-3">
           <div>
-            <label className="text-neutral-400 text-sm">Nome</label>
-            <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-2.5 text-white mt-1 focus:border-[#E50914] focus:outline-none" />
+            <label className="text-neutral-500 text-sm">Nome</label>
+            <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none" />
           </div>
           <div>
-            <label className="text-neutral-400 text-sm">Unidade</label>
-            <select value={unidade} onChange={(e) => setUnidade(e.target.value)} className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-2.5 text-white mt-1">
+            <label className="text-neutral-500 text-sm">Unidade</label>
+            <select value={unidade} onChange={(e) => setUnidade(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1">
               <option value="kg">kg</option><option value="g">g</option><option value="L">L</option><option value="ml">ml</option><option value="un">unidade</option>
             </select>
           </div>
           <div>
-            <label className="text-neutral-400 text-sm">Custo por {unidade} (R$)</label>
-            <input type="number" step="0.01" value={custo} onChange={(e) => setCusto(e.target.value)} className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-2.5 text-white mt-1 focus:border-[#E50914] focus:outline-none" />
+            <label className="text-neutral-500 text-sm">Custo por {unidade} (R$)</label>
+            <input type="number" step="0.01" value={custo} onChange={(e) => setCusto(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-neutral-400 text-sm">Estoque Atual</label>
-              <input type="number" step="0.001" value={estoque} onChange={(e) => setEstoque(e.target.value)} className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-2.5 text-white mt-1 focus:border-[#E50914] focus:outline-none" />
+              <label className="text-neutral-500 text-sm">Estoque Atual</label>
+              <input type="number" step="0.001" value={estoque} onChange={(e) => setEstoque(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none" />
             </div>
             <div>
-              <label className="text-neutral-400 text-sm">Estoque Mínimo</label>
-              <input type="number" step="0.001" value={minimo} onChange={(e) => setMinimo(e.target.value)} className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-2.5 text-white mt-1 focus:border-[#E50914] focus:outline-none" />
+              <label className="text-neutral-500 text-sm">Estoque Mínimo</label>
+              <input type="number" step="0.001" value={minimo} onChange={(e) => setMinimo(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none" />
             </div>
           </div>
         </div>
         <div className="flex gap-2 mt-5">
-          <button onClick={onClose} className="flex-1 py-3 bg-neutral-800 text-neutral-400 rounded-xl">Cancelar</button>
+          <button onClick={onClose} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
           <button onClick={save} disabled={!nome} className="flex-1 py-3 bg-[#E50914] text-white rounded-xl font-semibold disabled:opacity-50">Salvar</button>
         </div>
       </div>
@@ -218,18 +218,18 @@ function FichaTecnicaView() {
 
   return (
     <div className="space-y-4">
-      <p className="text-neutral-400 text-sm">Vincule ingredientes aos produtos. O custo do produto é recalculado automaticamente.</p>
+      <p className="text-neutral-500 text-sm">Vincule ingredientes aos produtos. O custo do produto é recalculado automaticamente.</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Product list */}
-        <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-4">
-          <h3 className="text-white font-semibold mb-3">Produtos</h3>
+        <div className="bg-white border border-neutral-200 rounded-2xl p-4">
+          <h3 className="text-neutral-900 font-semibold mb-3">Produtos</h3>
           <div className="space-y-1 max-h-[400px] overflow-y-auto">
             {produtos.map((p) => (
               <button
                 key={p.id}
                 onClick={() => { setSelectedProduto(p); loadFichas(p.id); }}
-                className={`w-full text-left p-3 rounded-xl flex items-center justify-between ${selectedProduto?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-900 text-neutral-300 hover:bg-neutral-800'}`}
+                className={`w-full text-left p-3 rounded-xl flex items-center justify-between ${selectedProduto?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'}`}
               >
                 <div>
                   <span className="font-medium text-sm">{p.nome}</span>
@@ -242,12 +242,12 @@ function FichaTecnicaView() {
         </div>
 
         {/* Ficha técnica */}
-        <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-4">
+        <div className="bg-white border border-neutral-200 rounded-2xl p-4">
           {selectedProduto ? (
             <>
-              <h3 className="text-white font-semibold mb-2">Ficha Técnica: {selectedProduto.nome}</h3>
+              <h3 className="text-neutral-900 font-semibold mb-2">Ficha Técnica: {selectedProduto.nome}</h3>
               <div className="flex items-center gap-2 mb-3 text-sm">
-                <span className="text-neutral-400">Custo Atual:</span>
+                <span className="text-neutral-500">Custo Atual:</span>
                 <span className="text-[#22c55e] font-bold">{brl(custoCalculado || selectedProduto.custo)}</span>
               </div>
 
@@ -257,15 +257,15 @@ function FichaTecnicaView() {
                   const ing = ingredientes.find((i) => i.id === f.ingrediente_id);
                   if (!ing) return null;
                   return (
-                    <div key={f.id} className="flex items-center justify-between bg-neutral-900 rounded-xl p-2.5">
+                    <div key={f.id} className="flex items-center justify-between bg-neutral-100 rounded-xl p-2.5">
                       <div className="flex items-center gap-2">
                         <Link2 size={14} className="text-[#E50914]" />
-                        <span className="text-white text-sm">{ing.nome}</span>
+                        <span className="text-neutral-900 text-sm">{ing.nome}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-neutral-400 text-sm">{f.quantidade} {ing.unidade}</span>
+                        <span className="text-neutral-500 text-sm">{f.quantidade} {ing.unidade}</span>
                         <span className="text-[#22c55e] text-sm">{brl(ing.custo_por_unidade * f.quantidade)}</span>
-                        <button onClick={() => removeFicha(f.id)} className="text-neutral-400 hover:text-red-400"><X size={14} /></button>
+                        <button onClick={() => removeFicha(f.id)} className="text-neutral-500 hover:text-red-600"><X size={14} /></button>
                       </div>
                     </div>
                   );
@@ -291,11 +291,11 @@ function AddIngredienteRow({ ingredientes, onAdd }: { ingredientes: Ingrediente[
 
   return (
     <div className="flex gap-2">
-      <select value={selId} onChange={(e) => setSelId(e.target.value)} className="flex-1 bg-neutral-900 border border-essenza-dark-border rounded-xl px-3 py-2 text-white text-sm focus:border-[#E50914] focus:outline-none">
+      <select value={selId} onChange={(e) => setSelId(e.target.value)} className="flex-1 bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 text-sm focus:border-[#E50914] focus:outline-none">
         <option value="">Ingrediente...</option>
         {ingredientes.map((i) => <option key={i.id} value={i.id}>{i.nome} ({brl(i.custo_por_unidade)}/{i.unidade})</option>)}
       </select>
-      <input type="number" step="0.001" value={qtd} onChange={(e) => setQtd(e.target.value)} placeholder="Qtd" className="w-20 bg-neutral-900 border border-essenza-dark-border rounded-xl px-3 py-2 text-white text-sm focus:border-[#E50914] focus:outline-none" />
+      <input type="number" step="0.001" value={qtd} onChange={(e) => setQtd(e.target.value)} placeholder="Qtd" className="w-20 bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 text-sm focus:border-[#E50914] focus:outline-none" />
       <button onClick={() => { if (selId && qtd) { onAdd(selId, parseFloat(qtd)); setSelId(''); setQtd(''); } }} className="px-3 py-2 bg-[#E50914] text-white rounded-xl">
         <Plus size={16} />
       </button>

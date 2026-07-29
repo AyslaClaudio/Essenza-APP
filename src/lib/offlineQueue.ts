@@ -1,3 +1,4 @@
+import { todayISO } from './format';
 import { supabase } from './supabase';
 import { logger } from './logger';
 
@@ -111,7 +112,7 @@ export async function syncOfflineQueue(): Promise<number> {
           valor: entry.pedidoData.total,
           forma_pagamento: entry.pedidoData.forma_pagamento,
           pedido_id: pedidoId,
-          data: new Date().toISOString().slice(0, 10),
+          data: todayISO(),
         });
 
         // Sucesso: remove esse item específico da fila (não a fila inteira,

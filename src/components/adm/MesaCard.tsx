@@ -47,10 +47,10 @@ export function MesaCard({ mesa, onClick }: { mesa: Mesa; onClick: () => void })
   return (
     <button
       onClick={onClick}
-      className={`bg-essenza-dark-card border-2 ${style.ring} rounded-2xl p-4 text-left transition-all active:scale-95 flex flex-col gap-3 min-h-[130px]`}
+      className={`bg-white border-2 ${style.ring} rounded-2xl p-4 text-left transition-all active:scale-95 flex flex-col gap-3 min-h-[130px]`}
     >
       <div className="flex items-center justify-between">
-        <span className="text-white font-black text-2xl leading-none">{mesa.numero}</span>
+        <span className="text-neutral-900 font-black text-2xl leading-none">{mesa.numero}</span>
         <span className={`flex items-center gap-1.5 text-xs font-bold ${style.text}`}>
           <span className={`w-2 h-2 rounded-full ${style.dot} ${mesa.status !== 'livre' ? 'animate-pulse' : ''}`} />
           {style.label}
@@ -58,15 +58,22 @@ export function MesaCard({ mesa, onClick }: { mesa: Mesa; onClick: () => void })
       </div>
 
       {mesa.status === 'livre' ? (
-        <span className="text-neutral-600 text-sm mt-auto">Toque para abrir</span>
+        <span className="text-neutral-500 text-sm mt-auto">Toque para abrir</span>
       ) : (
         <div className="mt-auto space-y-1">
-          <div className="flex items-center gap-1.5 text-neutral-400 text-xs">
+          <div className="flex items-center gap-1.5 text-neutral-500 text-xs">
             <Clock size={12} /> {elapsedLabel(mesa.abertura_at)}
-            <span className="text-neutral-600">•</span>
+            <span className="text-neutral-500">•</span>
             <Users size={12} /> {qtdItens} {qtdItens === 1 ? 'item' : 'itens'}
           </div>
           <p className="text-[#22c55e] font-bold text-lg leading-none">{brl(subtotal)}</p>
+          {(mesa.garcom || mesa.observacao) && (
+            <p className="text-neutral-500 text-[11px] truncate">
+              {mesa.garcom && <span>{mesa.garcom}</span>}
+              {mesa.garcom && mesa.observacao && <span> • </span>}
+              {mesa.observacao && <span className="text-amber-500/80">{mesa.observacao}</span>}
+            </p>
+          )}
         </div>
       )}
     </button>

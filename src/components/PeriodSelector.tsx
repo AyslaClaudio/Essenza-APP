@@ -86,7 +86,7 @@ export function PeriodSelector({ onPeriodChange, defaultPeriod = 'mes' }: Period
             className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
               activePeriod === period
                 ? 'bg-[#E50914] text-white'
-                : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-700'
             }`}
           >
             {periodos[period].label}
@@ -97,7 +97,7 @@ export function PeriodSelector({ onPeriodChange, defaultPeriod = 'mes' }: Period
           className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1 ${
             activePeriod === 'custom'
               ? 'bg-[#E50914] text-white'
-              : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+              : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-700'
           }`}
         >
           <Calendar size={16} /> Customizado
@@ -105,30 +105,30 @@ export function PeriodSelector({ onPeriodChange, defaultPeriod = 'mes' }: Period
       </div>
 
       {/* Display current range */}
-      <div className="text-neutral-400 text-sm">
-        Período: <span className="text-white font-medium">{displayRange}</span>
+      <div className="text-neutral-500 text-sm">
+        Período: <span className="text-neutral-900 font-medium">{displayRange}</span>
       </div>
 
       {/* Custom date picker */}
       {showCustom && (
-        <div className="bg-neutral-900/50 border border-essenza-dark-border rounded-xl p-4 space-y-3">
+        <div className="bg-neutral-100/50 border border-neutral-200 rounded-xl p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-neutral-400 text-xs uppercase block mb-2">Data Inicial</label>
+              <label className="text-neutral-500 text-xs uppercase block mb-2">Data Inicial</label>
               <input
                 type="date"
                 value={dataInicio}
                 onChange={(e) => setDataInicio(e.target.value)}
-                className="w-full bg-neutral-900 border border-essenza-dark-border rounded-lg px-3 py-2 text-white focus:border-[#E50914] focus:outline-none text-sm"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-lg px-3 py-2 text-neutral-900 focus:border-[#E50914] focus:outline-none text-sm"
               />
             </div>
             <div>
-              <label className="text-neutral-400 text-xs uppercase block mb-2">Data Final</label>
+              <label className="text-neutral-500 text-xs uppercase block mb-2">Data Final</label>
               <input
                 type="date"
                 value={dataFim}
                 onChange={(e) => setDataFim(e.target.value)}
-                className="w-full bg-neutral-900 border border-essenza-dark-border rounded-lg px-3 py-2 text-white focus:border-[#E50914] focus:outline-none text-sm"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-lg px-3 py-2 text-neutral-900 focus:border-[#E50914] focus:outline-none text-sm"
               />
             </div>
           </div>

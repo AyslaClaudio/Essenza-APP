@@ -1,5 +1,6 @@
 import type { Pedido, ItemPedido, Configuracao, ItemMesa } from '../types';
 import { brl, fmtHora } from './format';
+import { impressoraConectada, imprimirViaBluetooth } from './bluetoothPrinter';
 
 /**
  * ESC/POS commands for 80mm thermal printers.
@@ -87,8 +88,18 @@ export function buildCashReceipt(pedido: Pedido, config: Configuracao): string {
 /**
  * Renders an HTML receipt for browser-based printing.
  * Uses CSS to style as 80mm thermal receipt.
+ *
+ * Se houver uma impressora Bluetooth conectada (Configurações > Impressoras),
+ * imprime direto nela via ESC/POS em vez de abrir o diálogo de impressão do
+ * navegador — mais rápido e sem depender de driver/spooler do sistema.
  */
-export function printReceipt(pedido: Pedido, config: Configuracao, via: 'cozinha' | 'caixa') {
+export async function printReceipt(pedido: Pedido, config: Configuracao, via: 'cozinha' | 'caixa') {
+  if (impressoraConectada()) {
+    const texto = via === 'cozinha' ? buildKitchenReceipt(pedido, config) : buildCashReceipt(pedido, config);
+    const ok = await imprimirViaBluetooth(texto);
+    if (ok) return;
+  }
+
   const existing = document.getElementById('print-area');
   if (existing) existing.remove();
 
@@ -112,7 +123,31 @@ export function printReceipt(pedido: Pedido, config: Configuracao, via: 'cozinha
  * Diferente do pedido de delivery/balcão, uma mesa manda várias comandas ao longo da
  * refeição (uma a cada rodada de itens). `itens` aqui são apenas os itens recém-lançados.
  */
-export function printMesaComanda(numeroMesa: number, itens: ItemMesa[], config: Configuracao) {
+function buildMesaComandaEscPos(numeroMesa: number, itens: ItemMesa[], config: Configuracao): string {
+  const lines: string[] = [];
+  lines.push(CENTER + BOLD_ON + (config.nome_loja || 'ESSENZA') + BOLD_OFF);
+  lines.push(CENTER + '*** COZINHA ***');
+  lines.push(CENTER + BOLD_ON + `MESA ${numeroMesa}` + BOLD_OFF);
+  lines.push(LEFT + `Hora: ${fmtHora(new Date().toISOString())}`);
+  lines.push(LINE);
+  itens.forEach((item) => {
+    lines.push(BOLD_ON + `${item.quantidade}x ${item.produto_nome}` + BOLD_OFF);
+    if (item.sabor1 || item.sabor2) {
+      lines.push(BOLD_ON + `  Sabores: ${[item.sabor1, item.sabor2].filter(Boolean).join(' / ')}` + BOLD_OFF);
+    }
+    if (item.adicional) lines.push(BOLD_ON + `  Adic: ${item.adicional}` + BOLD_OFF);
+    if (item.observacao) lines.push(BOLD_ON + `  Obs: ${item.observacao.toUpperCase()}` + BOLD_OFF);
+  });
+  lines.push(LINE);
+  return INIT + lines.join('\n') + '\n\n\n';
+}
+
+export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], config: Configuracao) {
+  if (impressoraConectada()) {
+    const ok = await imprimirViaBluetooth(buildMesaComandaEscPos(numeroMesa, itens, config));
+    if (ok) return;
+  }
+
   const existing = document.getElementById('print-area');
   if (existing) existing.remove();
 
@@ -147,13 +182,43 @@ export function printMesaComanda(numeroMesa: number, itens: ItemMesa[], config: 
 /**
  * Conta (extrato) da MESA — impressa no fechamento, com todos os itens acumulados.
  */
-export function printMesaConta(
+function buildMesaContaEscPos(numeroMesa: number, itens: ItemMesa[], total: number, formaPagamento: string, config: Configuracao): string {
+  const lines: string[] = [];
+  lines.push(CENTER + BOLD_ON + (config.nome_loja || 'ESSENZA') + BOLD_OFF);
+  if (config.endereco_loja) lines.push(CENTER + config.endereco_loja);
+  if (config.telefone_loja) lines.push(CENTER + `Tel: ${config.telefone_loja}`);
+  lines.push(LINE);
+  lines.push(CENTER + BOLD_ON + `CONTA DA MESA ${numeroMesa}` + BOLD_OFF);
+  lines.push(LEFT + `Data: ${fmtHora(new Date().toISOString())}`);
+  lines.push(LINE);
+  itens.forEach((item) => {
+    lines.push(`${item.quantidade}x ${item.produto_nome}`);
+    if (item.sabor1 || item.sabor2) lines.push(`  ${[item.sabor1, item.sabor2].filter(Boolean).join(' / ')}`);
+    if (item.adicional) lines.push(`  + ${item.adicional}`);
+    if (item.observacao) lines.push(`  Obs: ${item.observacao}`);
+    lines.push(`  ${brl(item.quantidade * (item.preco_unitario + item.adicional_preco))}`);
+  });
+  lines.push(LINE);
+  lines.push(BOLD_ON + `TOTAL:       ${brl(total)}` + BOLD_OFF);
+  lines.push(`Pagamento:   ${formaPagamento || '-'}`);
+  lines.push(LINE);
+  lines.push(CENTER + 'Obrigado! Volte Sempre');
+  lines.push(CENTER + 'ESSENZA Pizzaria');
+  return INIT + lines.join('\n') + '\n\n\n';
+}
+
+export async function printMesaConta(
   numeroMesa: number,
   itens: ItemMesa[],
   total: number,
   formaPagamento: string,
   config: Configuracao,
 ) {
+  if (impressoraConectada()) {
+    const ok = await imprimirViaBluetooth(buildMesaContaEscPos(numeroMesa, itens, total, formaPagamento, config));
+    if (ok) return;
+  }
+
   const existing = document.getElementById('print-area');
   if (existing) existing.remove();
 

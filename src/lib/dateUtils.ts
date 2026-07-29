@@ -49,8 +49,14 @@ export function addDays(date: Date, days: number): Date {
   return d;
 }
 
+// Data local (não UTC) no formato yyyy-mm-dd, pra usar em <input type="date">.
+// toISOString() converte pra UTC antes de fatiar, o que faz o dia mudar perto da
+// meia-noite em fusos negativos (Brasil é UTC-3) — por isso NÃO usa toISOString aqui.
 export function dateToISO(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export function dateTimeToISO(date: Date): string {

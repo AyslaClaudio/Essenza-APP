@@ -53,30 +53,35 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#FAF7F1] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-[#E50914] mb-4 shadow-lg shadow-red-900/50">
-            <Flame size={40} className="text-white" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[#E50914] to-essenza-terracotta mb-4 shadow-lg shadow-red-900/20">
+            <Flame size={26} className="text-white" />
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-white">ESSENZA</h1>
-          <p className="text-neutral-500 text-sm mt-1 tracking-widest uppercase">Pizzaria</p>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-neutral-900">ESSENZA</h1>
+          <p className="text-neutral-500 text-xs mt-1 tracking-[0.2em] uppercase">Pizza Napoletana</p>
+          <div className="flex items-center justify-center gap-1 mt-3">
+            <span className="w-5 h-1 rounded-full bg-essenza-italia-green" />
+            <span className="w-5 h-1 rounded-full bg-neutral-300" />
+            <span className="w-5 h-1 rounded-full bg-essenza-italia-red" />
+          </div>
         </div>
 
         {/* Mode toggle */}
-        <div className="flex gap-2 mb-6 bg-neutral-900 p-1 rounded-xl">
+        <div className="flex gap-2 mb-6 bg-neutral-100 p-1 rounded-xl">
           <button
             onClick={() => { setMode('login'); setError(null); setSuccess(null); }}
-            className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-colors ${mode === 'login' ? 'bg-[#E50914] text-white' : 'text-neutral-400'}`}
+            className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-colors ${mode === 'login' ? 'bg-[#E50914] text-white' : 'text-neutral-500'}`}
           >Entrar</button>
           <button
             onClick={() => { setMode('signup'); setError(null); setSuccess(null); }}
-            className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-colors ${mode === 'signup' ? 'bg-[#E50914] text-white' : 'text-neutral-400'}`}
+            className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-colors ${mode === 'signup' ? 'bg-[#E50914] text-white' : 'text-neutral-500'}`}
           >Criar Conta</button>
         </div>
 
         {success && (
-          <div className="bg-green-950/50 border border-green-900 rounded-xl px-4 py-3 text-green-400 text-sm mb-4">
+          <div className="bg-green-950/50 border border-green-900 rounded-xl px-4 py-3 text-green-600 text-sm mb-4">
             {success}
           </div>
         )}
@@ -84,29 +89,29 @@ export function Login() {
         {mode === 'login' ? (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-neutral-400 text-sm mb-1.5">Email</label>
+              <label className="block text-neutral-500 text-sm mb-1.5">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3.5 text-white text-lg focus:border-[#E50914] focus:outline-none transition-colors"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#E50914] focus:outline-none transition-colors"
                 placeholder="seu@email.com"
                 required
               />
             </div>
             <div>
-              <label className="block text-neutral-400 text-sm mb-1.5">Senha</label>
+              <label className="block text-neutral-500 text-sm mb-1.5">Senha</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3.5 text-white text-lg focus:border-[#E50914] focus:outline-none transition-colors"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#E50914] focus:outline-none transition-colors"
                 placeholder="••••••••"
                 required
               />
             </div>
             {error && (
-              <div className="bg-red-950/50 border border-red-900 rounded-xl px-4 py-3 text-red-400 text-sm">
+              <div className="bg-red-950/50 border border-red-900 rounded-xl px-4 py-3 text-red-600 text-sm">
                 {error}
               </div>
             )}
@@ -121,45 +126,45 @@ export function Login() {
         ) : (
           <form onSubmit={handleSignUp} className="space-y-4">
             <div>
-              <label className="block text-neutral-400 text-sm mb-1.5">Nome</label>
+              <label className="block text-neutral-500 text-sm mb-1.5">Nome</label>
               <input
                 type="text"
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3.5 text-white text-lg focus:border-[#E50914] focus:outline-none transition-colors"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#E50914] focus:outline-none transition-colors"
                 placeholder="Seu nome"
                 required
               />
             </div>
             <div>
-              <label className="block text-neutral-400 text-sm mb-1.5">Email</label>
+              <label className="block text-neutral-500 text-sm mb-1.5">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3.5 text-white text-lg focus:border-[#E50914] focus:outline-none transition-colors"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#E50914] focus:outline-none transition-colors"
                 placeholder="seu@email.com"
                 required
               />
             </div>
             <div>
-              <label className="block text-neutral-400 text-sm mb-1.5">Senha</label>
+              <label className="block text-neutral-500 text-sm mb-1.5">Senha</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3.5 text-white text-lg focus:border-[#E50914] focus:outline-none transition-colors"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#E50914] focus:outline-none transition-colors"
                 placeholder="Mínimo 6 caracteres"
                 minLength={6}
                 required
               />
             </div>
             <div>
-              <label className="block text-neutral-400 text-sm mb-1.5">Nível de Acesso</label>
+              <label className="block text-neutral-500 text-sm mb-1.5">Nível de Acesso</label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as typeof role)}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3.5 text-white text-lg focus:border-[#E50914] focus:outline-none transition-colors"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#E50914] focus:outline-none transition-colors"
               >
                 <option value="gerente">Gerente (acesso total)</option>
                 <option value="caixa">Caixa</option>
@@ -167,7 +172,7 @@ export function Login() {
               </select>
             </div>
             {error && (
-              <div className="bg-red-950/50 border border-red-900 rounded-xl px-4 py-3 text-red-400 text-sm">
+              <div className="bg-red-950/50 border border-red-900 rounded-xl px-4 py-3 text-red-600 text-sm">
                 {error}
               </div>
             )}
@@ -181,7 +186,7 @@ export function Login() {
           </form>
         )}
 
-        <div className="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-4 text-center">
+        <div className="mt-6 bg-neutral-100/60 border border-neutral-200 rounded-xl p-4 text-center">
           <p className="text-neutral-500 text-xs">
             {mode === 'login' ? 'Primeiro acesso? Clique em "Criar Conta"' : 'Já tem conta? Clique em "Entrar"'}
           </p>

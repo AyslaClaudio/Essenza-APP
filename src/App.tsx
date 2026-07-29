@@ -13,7 +13,7 @@ function AppInner() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAF7F1] flex items-center justify-center">
         <div className="animate-pulse">
           <Flame size={48} className="text-[#E50914]" />
         </div>
@@ -37,28 +37,33 @@ function AppInner() {
 
   // Selection screen
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center px-4">
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-[#E50914] mb-4 shadow-2xl shadow-red-900/50">
-          <Flame size={48} className="text-white" />
+    <div className="min-h-screen bg-[#FAF7F1] flex flex-col items-center justify-center px-4">
+      <div className="text-center mb-10">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#E50914] to-essenza-terracotta mb-4 shadow-lg shadow-red-900/20">
+          <Flame size={28} className="text-white" />
         </div>
-        <h1 className="text-5xl font-black tracking-tight text-white">ESSENZA</h1>
-        <p className="text-neutral-500 text-sm mt-2 tracking-[0.3em] uppercase">Pizzaria Artesanal</p>
+        <h1 className="font-display text-4xl font-bold tracking-tight text-neutral-900">ESSENZA</h1>
+        <p className="text-neutral-500 text-xs mt-2 tracking-[0.3em] uppercase">Pizza Napoletana</p>
+        <div className="flex items-center justify-center gap-1 mt-3">
+          <span className="w-5 h-1 rounded-full bg-essenza-italia-green" />
+          <span className="w-5 h-1 rounded-full bg-neutral-300" />
+          <span className="w-5 h-1 rounded-full bg-essenza-italia-red" />
+        </div>
       </div>
 
-      <div className="w-full max-w-sm space-y-4">
+      <div className="w-full max-w-sm space-y-3">
         <button
           onClick={() => setMode('cliente')}
-          className="w-full bg-[#E50914] hover:bg-[#f6121d] text-white font-bold text-xl py-6 rounded-2xl transition-all active:scale-95 flex flex-col items-center gap-2"
+          className="group w-full bg-[#E50914] hover:bg-[#f6121d] text-white font-bold text-lg py-5 rounded-2xl transition-all hover:shadow-lg hover:shadow-red-900/20 hover:-translate-y-0.5 active:scale-95 flex flex-col items-center gap-1.5"
         >
-          <Flame size={28} />
+          <Flame size={22} />
           <span>FAZER PEDIDO</span>
-          <span className="text-xs font-normal opacity-70">Cardápio e entrega</span>
+          <span className="text-xs font-normal opacity-80">Cardápio e entrega</span>
         </button>
 
         <button
           onClick={() => setMode('adm')}
-          className="w-full bg-neutral-900 hover:bg-neutral-800 border border-essenza-dark-border text-white font-bold text-xl py-6 rounded-2xl transition-all active:scale-95 flex flex-col items-center gap-2"
+          className="w-full bg-white hover:bg-neutral-50 border border-neutral-200 text-neutral-900 font-bold text-lg py-5 rounded-2xl transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-95 flex flex-col items-center gap-1.5"
         >
           <span>Painel Administrativo</span>
           <span className="text-xs font-normal text-neutral-500">Acesso restrito - funcionários</span>

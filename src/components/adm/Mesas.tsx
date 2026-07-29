@@ -41,16 +41,29 @@ export function Mesas() {
   useEffect(() => {
     loadMesas();
     loadProdutos();
-    // Atualiza o grid a cada 20s para refletir mudanças de outros atendentes
+
+    // Sincroniza em tempo real entre terminais (garçom lança item em uma mesa,
+    // outro terminal vê na hora) — com polling de 20s como rede de segurança
+    // caso a conexão realtime caia.
+    const channel = supabase
+      .channel('mesas-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mesas' }, loadMesas)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'itens_mesa' }, loadMesas)
+      .subscribe();
+
     const id = setInterval(loadMesas, 20000);
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      supabase.removeChannel(channel);
+    };
   }, [loadMesas, loadProdutos]);
 
   const selectedMesa = mesas.find((m) => m.id === selectedId) || null;
 
   // Contadores por status para o resumo do topo
   const livres = mesas.filter((m) => m.status === 'livre').length;
-  const ocupadas = mesas.filter((m) => m.status !== 'livre').length;
+  const ocupadas = mesas.filter((m) => m.status === 'ocupada').length;
+  const fechando = mesas.filter((m) => m.status === 'fechando').length;
 
   // ----- Visão de detalhe -----
   if (selectedMesa) {
@@ -71,7 +84,7 @@ export function Mesas() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2">
           <LayoutGrid size={24} className="text-[#E50914]" />
-          <h2 className="text-2xl font-bold text-white">Mesas do Salão</h2>
+          <h2 className="text-2xl font-bold text-neutral-900">Mesas do Salão</h2>
         </div>
         <div className="flex items-center gap-3 text-xs">
           <span className="flex items-center gap-1.5 text-green-500 font-semibold">
@@ -80,9 +93,14 @@ export function Mesas() {
           <span className="flex items-center gap-1.5 text-amber-500 font-semibold">
             <span className="w-2 h-2 rounded-full bg-amber-500" /> {ocupadas} em uso
           </span>
+          {fechando > 0 && (
+            <span className="flex items-center gap-1.5 text-red-600 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> {fechando} pedindo conta
+            </span>
+          )}
           <button
             onClick={loadMesas}
-            className="p-2 rounded-lg border border-essenza-dark-border text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+            className="p-2 rounded-lg border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200 transition-colors"
             title="Atualizar"
           >
             <RefreshCw size={14} />
@@ -95,7 +113,7 @@ export function Mesas() {
           <RefreshCw size={16} className="animate-spin" /> Carregando mesas...
         </div>
       ) : mesas.length === 0 ? (
-        <div className="p-12 text-center text-neutral-500 bg-essenza-dark-card border border-essenza-dark-border rounded-2xl">
+        <div className="p-12 text-center text-neutral-500 bg-white border border-neutral-200 rounded-2xl">
           Nenhuma mesa cadastrada. Rode a migration de mesas no banco para criar as mesas do salão.
         </div>
       ) : (

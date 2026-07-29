@@ -17,27 +17,27 @@ function TooltipDark({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload as BarraDia;
   return (
-    <div className="bg-neutral-900 border border-essenza-dark-border rounded-lg px-3 py-2 text-xs">
-      <p className="text-neutral-400">{p.label}</p>
+    <div className="bg-neutral-100 border border-neutral-200 rounded-lg px-3 py-2 text-xs">
+      <p className="text-neutral-500">{p.label}</p>
       <p className="text-green-500 font-bold">{brl(p.valor)}</p>
     </div>
   );
 }
 
-export function GraficoBarras({ data }: { data: BarraDia[] }) {
-  const semDados = data.every((d) => d.valor === 0);
+export function GraficoBarras({ data, titulo = 'Faturamento — últimos 7 dias' }: { data: BarraDia[]; titulo?: string }) {
+  const semDados = data.length === 0 || data.every((d) => d.valor === 0);
 
   return (
-    <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-5">
-      <h3 className="text-white font-bold mb-4">Faturamento — últimos 7 dias</h3>
+    <div className="bg-white border border-neutral-200 rounded-2xl p-5">
+      <h3 className="text-neutral-900 font-bold mb-4">{titulo}</h3>
       {semDados ? (
         <p className="text-neutral-500 text-sm text-center py-12">Sem vendas registradas no período.</p>
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
-            <XAxis dataKey="dia" tick={{ fill: '#a3a3a3', fontSize: 12 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: '#737373', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}`} />
-            <Tooltip content={<TooltipDark />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+            <XAxis dataKey="dia" tick={{ fill: '#737373', fontSize: 12 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: '#a3a3a3', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}`} />
+            <Tooltip content={<TooltipDark />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
             <Bar dataKey="valor" radius={[6, 6, 0, 0]}>
               {data.map((_, i) => (
                 // Faturamento é sempre positivo → verde. Hoje (última barra) em verde

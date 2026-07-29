@@ -26,8 +26,15 @@ export function fmtHora(d: string | Date): string {
   return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
+// Data local de hoje em yyyy-mm-dd. Não usa toISOString() (que converte pra UTC)
+// porque isso faz a data virar cedo demais à noite em fusos negativos como o
+// do Brasil (UTC-3) — um pedido às 22h viraria "amanhã" no caixa/relatórios.
 export function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 export function isToday(d: string): boolean {

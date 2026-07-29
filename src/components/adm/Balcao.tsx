@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useConfig } from '../../context/ConfigContext';
-import { brl } from '../../lib/format';
+import { brl, todayISO } from '../../lib/format';
 import { printReceipt } from '../../lib/print';
 import type { Produto, Cliente, ItemPedido, TaxaEntrega, Adicional, Pedido } from '../../types';
 import { Search, Plus, Minus, X, ShoppingCart, Printer, Check, Phone, ArrowLeft, CloudOff } from 'lucide-react';
+import { ProductPlaceholder, usaImagemPadrao } from '../ProductPlaceholder';
 import { SenhaAdminModal } from '../SenhaAdminModal';
 import { queueOfflinePedido } from '../../lib/offlineQueue';
 
@@ -199,7 +200,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
         cliente_endereco: cliente?.endereco || novoCliente.endereco || '',
         cliente_bairro: cliente?.bairro || novoCliente.bairro || bairro || '',
         tipo,
-        status: 'recebido' as const,
+        status: 'confirmado' as const,
         subtotal,
         taxa_entrega: taxaEntrega,
         desconto: 0,
@@ -226,7 +227,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
         valor: total,
         forma_pagamento: formaPagamento,
         pedido_id: pedidoId,
-        data: new Date().toISOString().slice(0, 10),
+        data: todayISO(),
       });
 
       const fullPedido = { ...pedidoData, id: pedidoId, itens: cart, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), avaliacao: 0 } as Pedido;
@@ -257,7 +258,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
       cliente_endereco: cliente?.endereco || novoCliente.endereco || '',
       cliente_bairro: cliente?.bairro || novoCliente.bairro || bairro || '',
       tipo,
-      status: 'recebido' as const,
+      status: 'confirmado' as const,
       subtotal,
       taxa_entrega: taxaEntrega,
       desconto: 0,
@@ -310,27 +311,27 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] animate-fadeIn">
         <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-4 ${pedidoOffline ? 'bg-amber-500/20' : 'bg-green-500/20'}`}>
-          {pedidoOffline ? <CloudOff size={48} className="text-amber-400" /> : <Check size={48} className="text-green-400" />}
+          {pedidoOffline ? <CloudOff size={48} className="text-amber-700" /> : <Check size={48} className="text-green-600" />}
         </div>
         {pedidoOffline ? (
           <>
-            <h2 className="text-2xl font-black text-amber-400">PEDIDO SALVO (SEM INTERNET)</h2>
-            <p className="text-neutral-400 mt-2 text-sm text-center max-w-sm">
+            <h2 className="text-2xl font-black text-amber-700">PEDIDO SALVO (SEM INTERNET)</h2>
+            <p className="text-neutral-500 mt-2 text-sm text-center max-w-sm">
               Sem conexão no momento — o pedido foi guardado no aparelho e será enviado automaticamente ao banco assim que a internet voltar.
               O número oficial será gerado na sincronização.
             </p>
           </>
         ) : (
-          <h2 className="text-3xl font-black text-white">PEDIDO #{ultimoPedido?.numero}</h2>
+          <h2 className="text-3xl font-black text-neutral-900">PEDIDO #{ultimoPedido?.numero}</h2>
         )}
-        <p className="text-neutral-400 mt-2">Total: <span className="text-white font-bold text-xl">{brl(ultimoPedido?.total || 0)}</span></p>
+        <p className="text-neutral-500 mt-2">Total: <span className="text-neutral-900 font-bold text-xl">{brl(ultimoPedido?.total || 0)}</span></p>
         <div className="flex gap-3 mt-6">
           {config && ultimoPedido && (
             <>
-              <button onClick={() => printReceipt(ultimoPedido, config, 'cozinha')} className="flex items-center gap-2 bg-neutral-800 text-white px-5 py-3 rounded-xl font-medium hover:bg-neutral-700">
+              <button onClick={() => printReceipt(ultimoPedido, config, 'cozinha')} className="flex items-center gap-2 bg-neutral-200 text-neutral-900 px-5 py-3 rounded-xl font-medium hover:bg-neutral-700">
                 <Printer size={20} /> Cozinha
               </button>
-              <button onClick={() => printReceipt(ultimoPedido, config, 'caixa')} className="flex items-center gap-2 bg-neutral-800 text-white px-5 py-3 rounded-xl font-medium hover:bg-neutral-700">
+              <button onClick={() => printReceipt(ultimoPedido, config, 'caixa')} className="flex items-center gap-2 bg-neutral-200 text-neutral-900 px-5 py-3 rounded-xl font-medium hover:bg-neutral-700">
                 <Printer size={20} /> Caixa
               </button>
             </>
@@ -346,8 +347,8 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   return (
     <div className="space-y-4 animate-fadeIn">
       {/* Header with cart button */}
-      <div className="flex items-center justify-between gap-3 sticky top-0 lg:top-[57px] z-10 bg-[#0A0A0A] py-2">
-        <h2 className="text-2xl font-bold text-white">Balcão Rápido</h2>
+      <div className="flex items-center justify-between gap-3 sticky top-0 lg:top-[57px] z-10 bg-[#FAF7F1] py-2">
+        <h2 className="text-2xl font-bold text-neutral-900">Balcão Rápido</h2>
         <button
           onClick={() => setStep('carrinho')}
           className="relative flex items-center gap-2 bg-[#E50914] text-white px-5 py-3 rounded-xl font-bold text-lg active:scale-95"
@@ -372,7 +373,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
                 value={filtro}
                 onChange={(e) => setFiltro(e.target.value)}
                 placeholder="Buscar produto..."
-                className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl pl-10 pr-4 py-3 text-white text-lg focus:border-[#E50914] focus:outline-none"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-3 text-neutral-900 text-lg focus:border-[#E50914] focus:outline-none"
               />
             </div>
           </div>
@@ -381,13 +382,13 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
           <div className="flex gap-2 overflow-x-auto pb-1">
             <button
               onClick={() => setCatFiltro('todas')}
-              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${catFiltro === 'todas' ? 'bg-[#E50914] text-white' : 'bg-neutral-800 text-neutral-400'}`}
+              className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === 'todas' ? 'bg-[#E50914] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900'}`}
             >Todos</button>
             {categorias.map((c) => (
               <button
                 key={c}
                 onClick={() => setCatFiltro(c)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${catFiltro === c ? 'bg-[#E50914] text-white' : 'bg-neutral-800 text-neutral-400'}`}
+                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === c ? 'bg-[#E50914] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900'}`}
               >{c}</button>
             ))}
           </div>
@@ -398,21 +399,23 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
               <button
                 key={p.id}
                 onClick={() => handleProductClick(p)}
-                className="group bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-4 text-left hover:border-[#E50914] active:scale-95 transition-all min-h-[110px] flex flex-col justify-between"
+                className="group bg-white border border-neutral-200 rounded-2xl p-4 text-left hover:border-[#E50914]/70 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/40 active:scale-95 transition-all min-h-[110px] flex flex-col justify-between"
               >
                 <div>
-                  <p className="text-white font-bold text-base leading-tight">{p.nome}</p>
+                  <p className="text-neutral-900 font-bold text-base leading-tight">{p.nome}</p>
                   <p className="text-neutral-500 text-xs mt-0.5">{p.categoria_nome}</p>
                 </div>
                 <div className="flex items-end justify-between mt-2">
                   <span className="text-[#E50914] font-black text-xl">{brl(p.preco)}</span>
-                  {p.foto && (
+                  {p.foto && !usaImagemPadrao(p.categoria_nome) ? (
                     <img
                       src={p.foto}
                       alt={p.nome}
                       loading="lazy"
-                      className="w-14 h-14 rounded-lg object-cover aspect-square"
+                      className="w-14 h-14 rounded-lg object-cover aspect-square transition-transform duration-200 group-hover:scale-110"
                     />
+                  ) : (
+                    <ProductPlaceholder categoriaNome={p.categoria_nome} className="w-14 h-14 rounded-lg aspect-square" />
                   )}
                 </div>
               </button>
@@ -425,10 +428,10 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
       {step === 'carrinho' && (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <button onClick={() => setStep('produtos')} className="flex items-center gap-1.5 text-neutral-400 hover:text-white text-sm font-medium bg-neutral-800 px-3 py-2 rounded-xl">
+            <button onClick={() => setStep('produtos')} className="flex items-center gap-1.5 text-neutral-500 hover:text-neutral-900 text-sm font-medium bg-neutral-200 px-3 py-2 rounded-xl">
               <ArrowLeft size={16} /> Voltar
             </button>
-            <h3 className="text-xl font-bold text-white">Carrinho</h3>
+            <h3 className="text-xl font-bold text-neutral-900">Carrinho</h3>
           </div>
 
           {cart.length === 0 ? (
@@ -437,33 +440,33 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
             <>
               <div className="space-y-2">
                 {cart.map((c, i) => (
-                  <div key={i} className="bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-3 flex items-center gap-3">
+                  <div key={i} className="bg-white border border-neutral-200 rounded-xl p-3 flex items-center gap-3">
                     <div className="flex-1">
-                      <p className="text-white font-semibold text-sm">{c.produto_nome}</p>
-                      {c.adicional && <p className="text-neutral-400 text-xs">+ {c.adicional} ({brl(c.adicional_preco)})</p>}
-                      {c.observacao && <p className="text-yellow-400 text-xs">Obs: {c.observacao}</p>}
+                      <p className="text-neutral-900 font-semibold text-sm">{c.produto_nome}</p>
+                      {c.adicional && <p className="text-neutral-500 text-xs">+ {c.adicional} ({brl(c.adicional_preco)})</p>}
+                      {c.observacao && <p className="text-amber-700 text-xs">Obs: {c.observacao}</p>}
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => updateQty(i, -1)} className="w-8 h-8 bg-neutral-800 text-white rounded-lg flex items-center justify-center"><Minus size={16} /></button>
-                      <span className="text-white font-bold w-6 text-center">{c.quantidade}</span>
-                      <button onClick={() => updateQty(i, 1)} className="w-8 h-8 bg-neutral-800 text-white rounded-lg flex items-center justify-center"><Plus size={16} /></button>
+                      <button onClick={() => updateQty(i, -1)} className="w-8 h-8 bg-neutral-200 text-neutral-900 rounded-lg flex items-center justify-center"><Minus size={16} /></button>
+                      <span className="text-neutral-900 font-bold w-6 text-center">{c.quantidade}</span>
+                      <button onClick={() => updateQty(i, 1)} className="w-8 h-8 bg-neutral-200 text-neutral-900 rounded-lg flex items-center justify-center"><Plus size={16} /></button>
                     </div>
                     <span className="text-[#22c55e] font-bold w-20 text-right">{brl(c.quantidade * (c.preco_unitario + c.adicional_preco))}</span>
-                    <button onClick={() => removeFromCart(i)} className="text-neutral-500 hover:text-red-400"><X size={18} /></button>
+                    <button onClick={() => removeFromCart(i)} className="text-neutral-500 hover:text-red-600"><X size={18} /></button>
                   </div>
                 ))}
               </div>
 
               {/* Type selector */}
               <div className="flex gap-2">
-                <button onClick={() => setTipo('balcao')} className={`flex-1 py-3 rounded-xl font-semibold ${tipo === 'balcao' ? 'bg-[#E50914] text-white' : 'bg-neutral-800 text-neutral-400'}`}>Balcão</button>
-                <button onClick={() => setTipo('delivery')} className={`flex-1 py-3 rounded-xl font-semibold ${tipo === 'delivery' ? 'bg-[#E50914] text-white' : 'bg-neutral-800 text-neutral-400'}`}>Entrega</button>
+                <button onClick={() => setTipo('balcao')} className={`flex-1 py-3 rounded-xl font-semibold ${tipo === 'balcao' ? 'bg-[#E50914] text-white' : 'bg-neutral-200 text-neutral-500'}`}>Balcão</button>
+                <button onClick={() => setTipo('delivery')} className={`flex-1 py-3 rounded-xl font-semibold ${tipo === 'delivery' ? 'bg-[#E50914] text-white' : 'bg-neutral-200 text-neutral-500'}`}>Entrega</button>
               </div>
 
               {tipo === 'delivery' && (
                 <div>
-                  <label className="text-neutral-400 text-sm">Bairro</label>
-                  <select value={bairro} onChange={(e) => setBairro(e.target.value)} className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white mt-1 focus:border-[#E50914] focus:outline-none">
+                  <label className="text-neutral-500 text-sm">Bairro</label>
+                  <select value={bairro} onChange={(e) => setBairro(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none">
                     <option value="">Selecione...</option>
                     {taxas.map((t) => <option key={t.id} value={t.bairro}>{t.bairro} - {brl(t.taxa)}</option>)}
                   </select>
@@ -471,10 +474,10 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
               )}
 
               {/* Totals */}
-              <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-4 space-y-2">
-                <div className="flex justify-between text-neutral-400"><span>Subtotal</span><span className="text-white">{brl(subtotal)}</span></div>
-                {tipo === 'delivery' && <div className="flex justify-between text-neutral-400"><span>Entrega</span><span className="text-white">{brl(taxaEntrega)}</span></div>}
-                <div className="flex justify-between text-xl font-bold border-t border-essenza-dark-border pt-2"><span className="text-white">Total</span><span className="text-[#22c55e]">{brl(total)}</span></div>
+              <div className="bg-white border border-neutral-200 rounded-2xl p-4 space-y-2">
+                <div className="flex justify-between text-neutral-500"><span>Subtotal</span><span className="text-neutral-900">{brl(subtotal)}</span></div>
+                {tipo === 'delivery' && <div className="flex justify-between text-neutral-500"><span>Entrega</span><span className="text-neutral-900">{brl(taxaEntrega)}</span></div>}
+                <div className="flex justify-between text-xl font-bold border-t border-neutral-200 pt-2"><span className="text-neutral-900">Total</span><span className="text-[#22c55e]">{brl(total)}</span></div>
               </div>
 
               <button onClick={() => setStep('cliente')} className="w-full bg-[#E50914] text-white py-4 rounded-xl font-bold text-lg active:scale-95">
@@ -490,10 +493,10 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
       {step === 'cliente' && (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <button onClick={() => setStep('carrinho')} className="flex items-center gap-1.5 text-neutral-400 hover:text-white text-sm font-medium bg-neutral-800 px-3 py-2 rounded-xl">
+            <button onClick={() => setStep('carrinho')} className="flex items-center gap-1.5 text-neutral-500 hover:text-neutral-900 text-sm font-medium bg-neutral-200 px-3 py-2 rounded-xl">
               <ArrowLeft size={16} /> Voltar
             </button>
-            <h3 className="text-xl font-bold text-white">Cliente</h3>
+            <h3 className="text-xl font-bold text-neutral-900">Cliente</h3>
           </div>
 
           {/* Search existing */}
@@ -503,16 +506,16 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
               value={clienteBusca}
               onChange={(e) => buscaCliente(e.target.value)}
               placeholder="Buscar por nome ou telefone..."
-              className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#E50914] focus:outline-none"
+              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none"
             />
           </div>
 
           {clientes.length > 0 && (
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {clientes.map((c) => (
-                <button key={c.id} onClick={() => { setCliente(c); setBairro(c.bairro); setClienteBusca(''); setClientes([]); setStep('pagamento'); }} className="w-full text-left bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-3 hover:border-[#E50914]">
-                  <p className="text-white font-medium">{c.nome}</p>
-                  <p className="text-neutral-400 text-sm flex items-center gap-1"><Phone size={12} /> {c.telefone} · {c.bairro}</p>
+                <button key={c.id} onClick={() => { setCliente(c); setBairro(c.bairro); setClienteBusca(''); setClientes([]); setStep('pagamento'); }} className="w-full text-left bg-white border border-neutral-200 rounded-xl p-3 hover:border-[#E50914]">
+                  <p className="text-neutral-900 font-medium">{c.nome}</p>
+                  <p className="text-neutral-500 text-sm flex items-center gap-1"><Phone size={12} /> {c.telefone} · {c.bairro}</p>
                 </button>
               ))}
             </div>
@@ -520,20 +523,20 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
 
           {/* Skip to balcao */}
           {tipo === 'balcao' && (
-            <button onClick={() => { setCliente(null); setStep('pagamento'); }} className="w-full py-3 bg-neutral-800 text-white rounded-xl font-medium">
+            <button onClick={() => { setCliente(null); setStep('pagamento'); }} className="w-full py-3 bg-neutral-200 text-neutral-900 rounded-xl font-medium">
               Consumidor (sem cadastro)
             </button>
           )}
 
           {/* New customer form */}
-          <div className="border-t border-essenza-dark-border pt-4 space-y-3">
-            <p className="text-neutral-400 text-sm">Novo cliente</p>
-            <input value={novoCliente.nome} onChange={(e) => setNovoCliente({ ...novoCliente, nome: e.target.value })} placeholder="Nome" className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white focus:border-[#E50914] focus:outline-none" />
-            <input value={novoCliente.telefone} onChange={(e) => setNovoCliente({ ...novoCliente, telefone: e.target.value })} placeholder="Telefone" className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white focus:border-[#E50914] focus:outline-none" />
+          <div className="border-t border-neutral-200 pt-4 space-y-3">
+            <p className="text-neutral-500 text-sm">Novo cliente</p>
+            <input value={novoCliente.nome} onChange={(e) => setNovoCliente({ ...novoCliente, nome: e.target.value })} placeholder="Nome" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
+            <input value={novoCliente.telefone} onChange={(e) => setNovoCliente({ ...novoCliente, telefone: e.target.value })} placeholder="Telefone" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
             {tipo === 'delivery' && (
               <>
-                <input value={novoCliente.endereco} onChange={(e) => setNovoCliente({ ...novoCliente, endereco: e.target.value })} placeholder="Endereço" className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white focus:border-[#E50914] focus:outline-none" />
-                <input value={novoCliente.bairro} onChange={(e) => { setNovoCliente({ ...novoCliente, bairro: e.target.value }); setBairro(e.target.value); }} placeholder="Bairro" className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white focus:border-[#E50914] focus:outline-none" />
+                <input value={novoCliente.endereco} onChange={(e) => setNovoCliente({ ...novoCliente, endereco: e.target.value })} placeholder="Endereço" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
+                <input value={novoCliente.bairro} onChange={(e) => { setNovoCliente({ ...novoCliente, bairro: e.target.value }); setBairro(e.target.value); }} placeholder="Bairro" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
               </>
             )}
           </div>
@@ -548,14 +551,14 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
       {step === 'pagamento' && (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <button onClick={() => setStep('cliente')} className="flex items-center gap-1.5 text-neutral-400 hover:text-white text-sm font-medium bg-neutral-800 px-3 py-2 rounded-xl">
+            <button onClick={() => setStep('cliente')} className="flex items-center gap-1.5 text-neutral-500 hover:text-neutral-900 text-sm font-medium bg-neutral-200 px-3 py-2 rounded-xl">
               <ArrowLeft size={16} /> Voltar
             </button>
-            <h3 className="text-xl font-bold text-white">Pagamento</h3>
+            <h3 className="text-xl font-bold text-neutral-900">Pagamento</h3>
           </div>
 
-          <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-4 text-center">
-            <p className="text-neutral-400 text-sm">Total a Pagar</p>
+          <div className="bg-white border border-neutral-200 rounded-2xl p-4 text-center">
+            <p className="text-neutral-500 text-sm">Total a Pagar</p>
             <p className="text-[#22c55e] font-black text-4xl">{brl(total)}</p>
           </div>
 
@@ -564,22 +567,22 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
               <button
                 key={f}
                 onClick={() => setFormaPagamento(f)}
-                className={`py-4 rounded-xl font-bold text-lg ${formaPagamento === f ? 'bg-[#E50914] text-white' : 'bg-neutral-800 text-neutral-400'}`}
+                className={`py-4 rounded-xl font-bold text-lg ${formaPagamento === f ? 'bg-[#E50914] text-white' : 'bg-neutral-200 text-neutral-500'}`}
               >{f}</button>
             ))}
           </div>
 
           <div>
-            <label className="text-neutral-400 text-sm">Observação geral</label>
-            <input value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Ex: sem cebola, troco para R$50..." className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white mt-1 focus:border-[#E50914] focus:outline-none" />
+            <label className="text-neutral-500 text-sm">Observação geral</label>
+            <input value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Ex: sem cebola, troco para R$50..." className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none" />
           </div>
 
           {/* Print options */}
           <div className="flex gap-4">
-            <label className="flex items-center gap-2 text-neutral-300 text-sm">
+            <label className="flex items-center gap-2 text-neutral-700 text-sm">
               <input type="checkbox" checked={printCozinha} onChange={(e) => setPrintCozinha(e.target.checked)} className="w-4 h-4 accent-[#E50914]" /> Imprimir Cozinha
             </label>
-            <label className="flex items-center gap-2 text-neutral-300 text-sm">
+            <label className="flex items-center gap-2 text-neutral-700 text-sm">
               <input type="checkbox" checked={printCaixa} onChange={(e) => setPrintCaixa(e.target.checked)} className="w-4 h-4 accent-[#E50914]" /> Imprimir Caixa
             </label>
           </div>
@@ -587,7 +590,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
           <button onClick={() => setShowSenhaAdmin(true)} className="w-full bg-green-500 hover:bg-green-600 text-white py-5 rounded-2xl font-black text-xl active:scale-95">
             FECHAR PEDIDO
           </button>
-          <button onClick={() => setStep('carrinho')} className="w-full py-3 text-neutral-400 text-sm">Voltar</button>
+          <button onClick={() => setStep('carrinho')} className="w-full py-3 text-neutral-500 text-sm">Voltar</button>
         </div>
       )}
 
@@ -644,19 +647,19 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white border border-neutral-200 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-bold text-lg">{produto.categoria_nome}</h3>
-          <button onClick={onClose} className="text-neutral-400 hover:text-white"><X size={20} /></button>
+          <h3 className="text-neutral-900 font-bold text-lg">{produto.categoria_nome}</h3>
+          <button onClick={onClose} className="text-neutral-500 hover:text-neutral-900"><X size={20} /></button>
         </div>
 
-        <p className="text-neutral-400 text-sm mb-2">Sabor 1 {sabor2 ? '(meio a meio)' : ''}</p>
+        <p className="text-neutral-500 text-sm mb-2">Sabor 1 {sabor2 ? '(meio a meio)' : ''}</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">
           {mesmoTamanho.map((p) => (
             <button
               key={p.id}
               onClick={() => setSabor1(p)}
-              className={`p-3 rounded-xl text-left ${sabor1?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-900 text-neutral-300 border border-essenza-dark-border'}`}
+              className={`p-3 rounded-xl text-left ${sabor1?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
             >
               <p className="font-medium text-sm">{p.nome}</p>
               <p className="text-xs opacity-70">{brl(p.preco)}</p>
@@ -664,13 +667,13 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
           ))}
         </div>
 
-        <p className="text-neutral-400 text-sm mb-2">Sabor 2 (opcional)</p>
+        <p className="text-neutral-500 text-sm mb-2">Sabor 2 (opcional)</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">
           {mesmoTamanho.map((p) => (
             <button
               key={p.id}
               onClick={() => setSabor2(sabor2?.id === p.id ? null : p)}
-              className={`p-3 rounded-xl text-left ${sabor2?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-900 text-neutral-300 border border-essenza-dark-border'}`}
+              className={`p-3 rounded-xl text-left ${sabor2?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
             >
               <p className="font-medium text-sm">{p.nome}</p>
               <p className="text-xs opacity-70">{brl(p.preco)}</p>
@@ -678,16 +681,16 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
           ))}
         </div>
 
-        <p className="text-neutral-400 text-sm mb-2">Borda / Adicional</p>
+        <p className="text-neutral-500 text-sm mb-2">Borda / Adicional</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-          <button onClick={() => setSelectedAdicional(null)} className={`p-3 rounded-xl text-left ${!selectedAdicional ? 'bg-[#E50914] text-white' : 'bg-neutral-900 text-neutral-300 border border-essenza-dark-border'}`}>
+          <button onClick={() => setSelectedAdicional(null)} className={`p-3 rounded-xl text-left ${!selectedAdicional ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}>
             <p className="font-medium text-sm">Nenhum</p>
           </button>
           {adicionais.map((a) => (
             <button
               key={a.id}
               onClick={() => setSelectedAdicional(a)}
-              className={`p-3 rounded-xl text-left ${selectedAdicional?.id === a.id ? 'bg-[#E50914] text-white' : 'bg-neutral-900 text-neutral-300 border border-essenza-dark-border'}`}
+              className={`p-3 rounded-xl text-left ${selectedAdicional?.id === a.id ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
             >
               <p className="font-medium text-sm">{a.nome}</p>
               <p className="text-xs opacity-70">+{brl(a.preco)}</p>
@@ -696,12 +699,12 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
         </div>
 
         <div className="mb-4">
-          <label className="text-neutral-400 text-sm">Observação</label>
-          <input value={itemObs} onChange={(e) => setItemObs(e.target.value)} placeholder="Ex: sem cebola, bem assada..." className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white mt-1 focus:border-[#E50914] focus:outline-none" />
+          <label className="text-neutral-500 text-sm">Observação</label>
+          <input value={itemObs} onChange={(e) => setItemObs(e.target.value)} placeholder="Ex: sem cebola, bem assada..." className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none" />
         </div>
 
-        <div className="flex items-center justify-between bg-neutral-900 rounded-xl p-3 mb-4">
-          <span className="text-neutral-400">Preço</span>
+        <div className="flex items-center justify-between bg-neutral-100 rounded-xl p-3 mb-4">
+          <span className="text-neutral-500">Preço</span>
           <span className="text-[#22c55e] font-bold text-xl">{brl(precoFinal + (selectedAdicional?.preco || 0))}</span>
         </div>
 

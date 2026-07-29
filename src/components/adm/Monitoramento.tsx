@@ -10,27 +10,27 @@ export function Monitoramento() {
   const [tab, setTab] = useState<'conversas' | 'conhecimento'>('conversas');
 
   return (
-    <div className="min-h-[80vh] flex flex-col bg-[#141414] rounded-2xl border border-essenza-dark-border overflow-hidden">
-      <div className="p-4 border-b border-essenza-dark-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#1b1b1b]">
+    <div className="min-h-[80vh] flex flex-col bg-white rounded-2xl border border-neutral-200 overflow-hidden">
+      <div className="p-4 border-b border-neutral-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#E50914] flex items-center justify-center">
             <Radio size={22} className="text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-white text-lg">Monitoramento do Agente de IA</h3>
-            <p className="text-xs text-neutral-400">Acompanhe conversas reais do WhatsApp em tempo real</p>
+            <h3 className="font-bold text-neutral-900 text-lg">Monitoramento do Agente de IA</h3>
+            <p className="text-xs text-neutral-500">Acompanhe conversas reais do WhatsApp em tempo real</p>
           </div>
         </div>
-        <div className="flex bg-neutral-900 p-1.5 rounded-xl border border-essenza-dark-border w-full sm:w-auto">
+        <div className="flex bg-neutral-100 p-1.5 rounded-xl border border-neutral-200 w-full sm:w-auto">
           <button
             onClick={() => setTab('conversas')}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${tab === 'conversas' ? 'bg-[#E50914] text-white' : 'text-neutral-400 hover:text-white'}`}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${tab === 'conversas' ? 'bg-[#E50914] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
           >
             <MessagesSquare size={14} /> Conversas
           </button>
           <button
             onClick={() => setTab('conhecimento')}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${tab === 'conhecimento' ? 'bg-[#E50914] text-white' : 'text-neutral-400 hover:text-white'}`}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${tab === 'conhecimento' ? 'bg-[#E50914] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
           >
             <BookOpen size={14} /> Base de Conhecimento
           </button>
@@ -43,10 +43,10 @@ export function Monitoramento() {
 }
 
 function statusBadge(conversa: IaConversa) {
-  if (conversa.precisa_atencao) return { label: 'Precisa Atenção', className: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
-  if (conversa.status === 'humano') return { label: 'Atendente Humano', className: 'bg-blue-500/15 text-blue-400 border-blue-500/30' };
-  if (conversa.status === 'resolvida') return { label: 'Resolvida', className: 'bg-neutral-700/40 text-neutral-400 border-neutral-600/40' };
-  return { label: 'IA Atendendo', className: 'bg-green-500/15 text-green-400 border-green-500/30' };
+  if (conversa.precisa_atencao) return { label: 'Precisa Atenção', className: 'bg-amber-500/15 text-amber-700 border-amber-500/30' };
+  if (conversa.status === 'humano') return { label: 'Atendente Humano', className: 'bg-blue-500/15 text-blue-600 border-blue-500/30' };
+  if (conversa.status === 'resolvida') return { label: 'Resolvida', className: 'bg-neutral-200 text-neutral-600 border-neutral-300' };
+  return { label: 'IA Atendendo', className: 'bg-green-500/15 text-green-600 border-green-500/30' };
 }
 
 function ConversasPanel() {
@@ -142,14 +142,14 @@ function ConversasPanel() {
   return (
     <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-[500px]">
       {/* Conversation list */}
-      <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-essenza-dark-border flex flex-col bg-[#111]">
-        <div className="p-3 border-b border-essenza-dark-border flex justify-between items-center">
-          <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Conversas Reais (WhatsApp)</span>
-          <button onClick={loadConversas} className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800">
+      <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-neutral-200 flex flex-col bg-neutral-50">
+        <div className="p-3 border-b border-neutral-200 flex justify-between items-center">
+          <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Conversas Reais (WhatsApp)</span>
+          <button onClick={loadConversas} className="p-1.5 text-neutral-500 hover:text-neutral-900 rounded-lg hover:bg-neutral-200">
             <RefreshCw size={14} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto divide-y divide-essenza-dark-border/40">
+        <div className="flex-1 overflow-y-auto divide-y divide-neutral-200/40">
           {conversas.length === 0 ? (
             <p className="text-center text-neutral-500 py-6 text-sm px-4">Nenhuma conversa registrada ainda. Elas aparecem aqui assim que o robô do WhatsApp real (`npm run chatbot`) começar a atender clientes.</p>
           ) : (
@@ -160,14 +160,14 @@ function ConversasPanel() {
                 <button
                   key={conversa.id}
                   onClick={() => setActiveId(conversa.id)}
-                  className={`w-full p-4 flex flex-col gap-1.5 text-left transition-colors ${active ? 'bg-neutral-800/80 border-l-4 border-l-[#E50914]' : 'hover:bg-neutral-900/55'}`}
+                  className={`w-full p-4 flex flex-col gap-1.5 text-left transition-colors ${active ? 'bg-neutral-200/80 border-l-4 border-l-[#E50914]' : 'hover:bg-neutral-100/55'}`}
                 >
                   <div className="flex justify-between items-center w-full gap-2">
-                    <span className="font-bold text-white text-sm truncate">{conversa.cliente_nome || conversa.telefone}</span>
-                    {conversa.precisa_atencao && <AlertTriangle size={14} className="text-amber-400 flex-shrink-0" />}
+                    <span className="font-bold text-neutral-900 text-sm truncate">{conversa.cliente_nome || conversa.telefone}</span>
+                    {conversa.precisa_atencao && <AlertTriangle size={14} className="text-amber-700 flex-shrink-0" />}
                   </div>
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border inline-block w-fit ${badge.className}`}>{badge.label}</span>
-                  <span className="text-[10px] text-neutral-600 block">{conversa.telefone}</span>
+                  <span className="text-[10px] text-neutral-400 block">{conversa.telefone}</span>
                 </button>
               );
             })
@@ -176,15 +176,15 @@ function ConversasPanel() {
       </div>
 
       {/* Active conversation */}
-      <div className="flex-1 flex flex-col bg-[#0A0A0A] overflow-hidden relative">
+      <div className="flex-1 flex flex-col bg-[#FAF7F1] overflow-hidden relative">
         {activeConversa ? (
           <>
-            <div className="px-4 py-3 bg-[#111] border-b border-essenza-dark-border flex flex-col sm:flex-row justify-between gap-3 sm:items-center">
+            <div className="px-4 py-3 bg-neutral-50 border-b border-neutral-200 flex flex-col sm:flex-row justify-between gap-3 sm:items-center">
               <div>
-                <h4 className="font-bold text-white text-sm">{activeConversa.cliente_nome || 'Cliente'}</h4>
-                <p className="text-[10px] text-neutral-400">{activeConversa.telefone}</p>
+                <h4 className="font-bold text-neutral-900 text-sm">{activeConversa.cliente_nome || 'Cliente'}</h4>
+                <p className="text-[10px] text-neutral-500">{activeConversa.telefone}</p>
                 {activeConversa.precisa_atencao && (
-                  <p className="text-[10px] text-amber-400 mt-1 flex items-center gap-1"><AlertTriangle size={11} /> {activeConversa.motivo_atencao || 'Marcada para revisão'}</p>
+                  <p className="text-[10px] text-amber-700 mt-1 flex items-center gap-1"><AlertTriangle size={11} /> {activeConversa.motivo_atencao || 'Marcada para revisão'}</p>
                 )}
               </div>
               <div className="flex gap-2 flex-wrap">
@@ -193,7 +193,7 @@ function ConversasPanel() {
                     <UserCog size={14} /> Tomar Posse
                   </button>
                 ) : (
-                  <button onClick={devolverParaIA} className="flex items-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors">
+                  <button onClick={devolverParaIA} className="flex items-center gap-1.5 bg-neutral-200 hover:bg-neutral-700 text-neutral-900 text-xs font-semibold px-3 py-2 rounded-lg transition-colors">
                     <Bot size={14} /> Devolver para IA
                   </button>
                 )}
@@ -209,7 +209,7 @@ function ConversasPanel() {
               {mensagens.map(msg => {
                 if (msg.remetente === 'sistema') {
                   return (
-                    <div key={msg.id} className="mx-auto my-1 bg-neutral-900 border border-essenza-dark-border text-neutral-400 text-xs px-3 py-1.5 rounded-lg text-center max-w-[85%]">
+                    <div key={msg.id} className="mx-auto my-1 bg-neutral-100 border border-neutral-200 text-neutral-500 text-xs px-3 py-1.5 rounded-lg text-center max-w-[85%]">
                       {msg.texto}
                     </div>
                   );
@@ -220,10 +220,10 @@ function ConversasPanel() {
                   <div key={msg.id} className={`max-w-[75%] flex flex-col gap-1 ${isCustomer ? 'self-end items-end' : 'self-start items-start'}`}>
                     <div className={`p-3 rounded-2xl ${
                       isCustomer
-                        ? 'bg-neutral-800 text-white rounded-br-none'
+                        ? 'bg-neutral-200 text-neutral-900 rounded-br-none'
                         : isIa
-                          ? 'bg-gradient-to-br from-neutral-900 to-[#1b1b1b] border border-essenza-dark-border text-neutral-200 rounded-bl-none'
-                          : 'bg-blue-950/60 border border-blue-800/50 text-blue-100 rounded-bl-none'
+                          ? 'bg-red-50 border border-red-100 text-neutral-900 rounded-bl-none'
+                          : 'bg-blue-50 border border-blue-100 text-neutral-900 rounded-bl-none'
                     }`}>
                       {!isCustomer && (
                         <span className="text-[9px] font-bold uppercase tracking-wide opacity-60 block mb-1">{isIa ? 'IA' : 'Atendente'}</span>
@@ -232,10 +232,10 @@ function ConversasPanel() {
                     </div>
                     {isIa && (
                       <div className="flex gap-1">
-                        <button onClick={() => darFeedback(msg.id, 'positivo')} className={`p-1 rounded ${msg.feedback === 'positivo' ? 'text-green-400' : 'text-neutral-600 hover:text-green-400'}`}>
+                        <button onClick={() => darFeedback(msg.id, 'positivo')} className={`p-1 rounded ${msg.feedback === 'positivo' ? 'text-green-600' : 'text-neutral-400 hover:text-green-600'}`}>
                           <ThumbsUp size={12} />
                         </button>
-                        <button onClick={() => darFeedback(msg.id, 'negativo')} className={`p-1 rounded ${msg.feedback === 'negativo' ? 'text-red-400' : 'text-neutral-600 hover:text-red-400'}`}>
+                        <button onClick={() => darFeedback(msg.id, 'negativo')} className={`p-1 rounded ${msg.feedback === 'negativo' ? 'text-red-600' : 'text-neutral-400 hover:text-red-600'}`}>
                           <ThumbsDown size={12} />
                         </button>
                       </div>
@@ -247,7 +247,7 @@ function ConversasPanel() {
             </div>
 
             {activeConversa.status === 'humano' && (
-              <div className="p-3 border-t border-essenza-dark-border bg-[#111] flex gap-2">
+              <div className="p-3 border-t border-neutral-200 bg-neutral-50 flex gap-2">
                 <input
                   type="text"
                   value={inputText}
@@ -255,7 +255,7 @@ function ConversasPanel() {
                   onKeyDown={(e) => e.key === 'Enter' && enviarComoHumano()}
                   placeholder="Responder como atendente humano..."
                   disabled={sending}
-                  className="flex-1 bg-neutral-900 text-white placeholder-neutral-500 border border-essenza-dark-border rounded-xl px-4 py-3 text-sm focus:border-[#E50914] focus:outline-none disabled:opacity-50"
+                  className="flex-1 bg-neutral-100 text-neutral-900 placeholder-neutral-500 border border-neutral-200 rounded-xl px-4 py-3 text-sm focus:border-[#E50914] focus:outline-none disabled:opacity-50"
                 />
                 <button
                   onClick={enviarComoHumano}
@@ -269,7 +269,7 @@ function ConversasPanel() {
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-neutral-500 p-6 text-center">
-            <MessagesSquare size={48} className="mb-2 text-neutral-600" />
+            <MessagesSquare size={48} className="mb-2 text-neutral-400" />
             <p className="text-sm max-w-xs">Selecione uma conversa ao lado para ver o histórico e, se precisar, tomar posse do atendimento.</p>
           </div>
         )}
@@ -312,25 +312,25 @@ function ConhecimentoPanel() {
   };
 
   return (
-    <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-[#0E0E0E]">
-      <p className="text-sm text-neutral-400 leading-relaxed max-w-2xl">
+    <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-neutral-50">
+      <p className="text-sm text-neutral-500 leading-relaxed max-w-2xl">
         Adicione aqui regras, respostas corretas ou tópicos que a IA deve sempre seguir — por exemplo, uma política de troca, uma promoção específica, ou um assunto que ela deve sempre delegar para um humano. Cada entrada ativa é injetada automaticamente no contexto da IA em toda conversa (simulador e WhatsApp real).
       </p>
 
-      <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-4 space-y-3 max-w-2xl">
+      <div className="bg-white border border-neutral-200 rounded-xl p-4 space-y-3 max-w-2xl">
         <input
           type="text"
           value={topico}
           onChange={(e) => setTopico(e.target.value)}
           placeholder="Tópico (ex: Política de Troca)"
-          className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-3 py-2 text-sm text-white focus:border-[#E50914] focus:outline-none"
+          className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#E50914] focus:outline-none"
         />
         <textarea
           value={conteudo}
           onChange={(e) => setConteudo(e.target.value)}
           placeholder="Conteúdo / regra / resposta que a IA deve seguir..."
           rows={3}
-          className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-3 py-2 text-sm text-white focus:border-[#E50914] focus:outline-none resize-none"
+          className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#E50914] focus:outline-none resize-none"
         />
         <button
           onClick={addItem}
@@ -346,20 +346,20 @@ function ConhecimentoPanel() {
           <p className="text-sm text-neutral-500">Nenhuma entrada cadastrada ainda.</p>
         ) : (
           items.map(item => (
-            <div key={item.id} className={`bg-essenza-dark-card border rounded-xl p-4 ${item.ativo ? 'border-essenza-dark-border' : 'border-neutral-800 opacity-50'}`}>
+            <div key={item.id} className={`bg-white border rounded-xl p-4 ${item.ativo ? 'border-neutral-200' : 'border-neutral-200 opacity-50'}`}>
               <div className="flex justify-between items-start gap-3">
                 <div>
-                  <h4 className="font-bold text-white text-sm">{item.topico}</h4>
-                  <p className="text-neutral-400 text-xs mt-1 whitespace-pre-line">{item.conteudo}</p>
+                  <h4 className="font-bold text-neutral-900 text-sm">{item.topico}</h4>
+                  <p className="text-neutral-500 text-xs mt-1 whitespace-pre-line">{item.conteudo}</p>
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
                   <button
                     onClick={() => toggleAtivo(item)}
-                    className={`text-[10px] font-semibold px-2 py-1 rounded-lg border ${item.ativo ? 'bg-green-500/15 text-green-400 border-green-500/30' : 'bg-neutral-800 text-neutral-500 border-neutral-700'}`}
+                    className={`text-[10px] font-semibold px-2 py-1 rounded-lg border ${item.ativo ? 'bg-green-500/15 text-green-600 border-green-500/30' : 'bg-neutral-200 text-neutral-500 border-neutral-700'}`}
                   >
                     {item.ativo ? 'Ativo' : 'Inativo'}
                   </button>
-                  <button onClick={() => removeItem(item.id)} className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-neutral-800 rounded-lg transition-colors">
+                  <button onClick={() => removeItem(item.id)} className="p-1.5 text-neutral-500 hover:text-red-600 hover:bg-neutral-200 rounded-lg transition-colors">
                     <Trash2 size={14} />
                   </button>
                 </div>

@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useConfig } from '../context/ConfigContext';
-import { brl } from '../lib/format';
+import { brl, todayISO } from '../lib/format';
 import type { Produto, Cliente, TaxaEntrega, Adicional, ItemPedido } from '../types';
-import { Flame, ShoppingCart, Search, X, Plus, Minus, Check, ChevronLeft } from 'lucide-react';
+import { Flame, ShoppingCart, Search, X, Plus, Minus, Check, ChevronLeft, Star } from 'lucide-react';
+import { ProductPlaceholder, usaImagemPadrao } from './ProductPlaceholder';
 
 interface CartItem extends ItemPedido {
   produto: Produto;
@@ -119,7 +120,7 @@ export function Cliente() {
     const pedidoData = {
       numero, cliente_id: clienteId, cliente_nome: cliente.nome, cliente_telefone: cliente.telefone,
       cliente_endereco: cliente.endereco, cliente_bairro: cliente.bairro || bairro,
-      tipo: 'cliente' as const, status: 'recebido' as const,
+      tipo: 'cliente' as const, status: 'confirmado' as const,
       subtotal, taxa_entrega: taxaEntrega, desconto: 0, total, custo_total: custoTotal, lucro,
       forma_pagamento: formaPagamento, observacao, cupom: '',
     };
@@ -130,7 +131,7 @@ export function Cliente() {
         quantidade: c.quantidade, preco_unitario: c.preco_unitario, custo_unitario: c.custo_unitario,
         observacao: c.observacao, sabor1: c.sabor1, sabor2: c.sabor2, adicional: c.adicional, adicional_preco: c.adicional_preco,
       })));
-      await supabase.from('caixa').insert({ tipo: 'entrada', descricao: `Pedido #${numero} - ${cliente.nome}`, valor: total, forma_pagamento: formaPagamento, pedido_id: (pedido as { id: string }).id, data: new Date().toISOString().slice(0, 10) });
+      await supabase.from('caixa').insert({ tipo: 'entrada', descricao: `Pedido #${numero} - ${cliente.nome}`, valor: total, forma_pagamento: formaPagamento, pedido_id: (pedido as { id: string }).id, data: todayISO() });
     }
     setUltimoNum(numero);
     setStep('sucesso');
@@ -139,13 +140,13 @@ export function Cliente() {
 
   if (step === 'sucesso') {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen bg-[#FAF7F1] flex flex-col items-center justify-center px-4">
         <div className="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center mb-6">
-          <Check size={48} className="text-green-400" />
+          <Check size={48} className="text-green-600" />
         </div>
-        <h1 className="text-3xl font-black text-white text-center">Pedido Recebido!</h1>
-        <p className="text-neutral-400 mt-2 text-center">Seu pedido <span className="text-[#E50914] font-bold">#{ultimoNum}</span> foi confirmado.</p>
-        <p className="text-neutral-500 text-sm mt-1 text-center">Acompanhe o status: Recebido {'>'} Preparo {'>'} Forno {'>'} Saiu {'>'} Entregue</p>
+        <h1 className="font-display text-3xl font-bold text-neutral-900 text-center">Pedido Recebido!</h1>
+        <p className="text-neutral-500 mt-2 text-center">Seu pedido <span className="text-[#E50914] font-bold">#{ultimoNum}</span> foi confirmado.</p>
+        <p className="text-neutral-500 text-sm mt-1 text-center">Acompanhe o status: Confirmado {'>'} Entregue</p>
         <button onClick={() => { setStep('menu'); setCliente({ nome: '', telefone: '', endereco: '', bairro: '', cep: '', referencia: '' }); }} className="mt-8 bg-[#E50914] text-white px-8 py-3 rounded-xl font-bold">
           Fazer Novo Pedido
         </button>
@@ -154,30 +155,35 @@ export function Cliente() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className="min-h-screen bg-[#FAF7F1]">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-[#0A0A0A]/95 backdrop-blur border-b border-essenza-dark-border">
+      <header className="sticky top-0 z-30 bg-[#FAF7F1]/95 backdrop-blur border-b border-neutral-200">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-[#E50914] flex items-center justify-center">
-              <Flame size={22} className="text-white" />
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#E50914] to-essenza-terracotta flex items-center justify-center shadow-sm">
+              <Flame size={18} className="text-white" />
             </div>
             <div>
-              <h1 className="font-black text-white text-xl leading-none">ESSENZA</h1>
-              <p className="text-neutral-500 text-xs">Pizzaria</p>
+              <h1 className="font-display font-bold text-neutral-900 text-lg leading-none tracking-wide">ESSENZA</h1>
+              <p className="text-neutral-500 text-[10px] tracking-[0.15em] uppercase">Pizza Napoletana</p>
             </div>
           </div>
           <button
             onClick={() => setShowCart(true)}
-            className="relative flex items-center gap-2 bg-[#E50914] text-white px-4 py-2.5 rounded-xl font-semibold active:scale-95"
+            className="relative flex items-center gap-2 bg-[#E50914] text-white px-3.5 py-2 rounded-xl font-semibold text-sm active:scale-95 hover:bg-red-600 hover:shadow-md transition-all"
           >
-            <ShoppingCart size={20} />
+            <ShoppingCart size={18} />
             {cart.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-[#22c55e] text-black text-xs font-black w-6 h-6 rounded-full flex items-center justify-center">
+              <span className="absolute -top-2 -right-2 bg-essenza-italia-green text-white text-xs font-black w-5 h-5 rounded-full flex items-center justify-center">
                 {cart.reduce((s, c) => s + c.quantidade, 0)}
               </span>
             )}
           </button>
+        </div>
+        <div className="h-[3px] flex">
+          <span className="flex-1 bg-essenza-italia-green" />
+          <span className="flex-1 bg-white" />
+          <span className="flex-1 bg-essenza-italia-red" />
         </div>
       </header>
 
@@ -188,9 +194,12 @@ export function Cliente() {
         </div>
       ) : (
         <div className="max-w-4xl mx-auto px-4 pt-4">
-          <div className="bg-gradient-to-r from-[#E50914]/30 to-[#0A0A0A] rounded-2xl p-6 border border-essenza-dark-border">
-            <h2 className="text-white font-black text-2xl">As melhores pizzas da cidade</h2>
-            <p className="text-neutral-400 text-sm mt-1">Massa artesanal, ingredientes frescos, sabor inigualável.</p>
+          <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-gradient-to-br from-essenza-terracotta/15 via-white to-essenza-olive/10 p-6">
+            <span className="inline-flex items-center gap-1.5 text-essenza-italia-green text-xs font-bold tracking-[0.2em] uppercase mb-2">
+              🇮🇹 Essência da pizza napolitana
+            </span>
+            <h2 className="font-display text-neutral-900 font-bold text-3xl leading-tight">As melhores pizzas da cidade</h2>
+            <p className="text-neutral-500 text-sm mt-2">Massa de fermentação lenta (24h a 48h), ingredientes frescos, sabor inigualável.</p>
           </div>
         </div>
       )}
@@ -203,7 +212,7 @@ export function Cliente() {
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
             placeholder="Buscar no cardápio..."
-            className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl pl-10 pr-4 py-3 text-white focus:border-[#E50914] focus:outline-none"
+            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none"
           />
         </div>
       </div>
@@ -211,42 +220,52 @@ export function Cliente() {
       {/* Categories */}
       <div className="max-w-4xl mx-auto px-4 mt-3">
         <div className="flex gap-2 overflow-x-auto pb-1">
-          <button onClick={() => setCatFiltro('todas')} className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${catFiltro === 'todas' ? 'bg-[#E50914] text-white' : 'bg-neutral-800 text-neutral-400'}`}>Todos</button>
+          <button onClick={() => setCatFiltro('todas')} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === 'todas' ? 'bg-[#E50914] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-600'}`}>Todos</button>
           {categorias.map((c) => (
-            <button key={c} onClick={() => setCatFiltro(c)} className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${catFiltro === c ? 'bg-[#E50914] text-white' : 'bg-neutral-800 text-neutral-400'}`}>{c}</button>
+            <button key={c} onClick={() => setCatFiltro(c)} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === c ? 'bg-[#E50914] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-600'}`}>{c}</button>
           ))}
         </div>
       </div>
 
       {/* Product cards */}
-      <div className="max-w-4xl mx-auto px-4 py-4 space-y-6 pb-24">
+      <div className="max-w-4xl mx-auto px-4 py-4 space-y-7 pb-24">
         {categorias.filter((c) => catFiltro === 'todas' || catFiltro === c).map((cat) => {
           const items = filtered.filter((p) => p.categoria_nome === cat);
           if (items.length === 0) return null;
           return (
             <div key={cat}>
-              <h3 className="text-white font-bold text-lg mb-3">{cat}</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <h3 className="font-display text-neutral-900 font-semibold text-xl mb-3">{cat}</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {items.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => handleProductClick(p)}
-                    className="group bg-essenza-dark-card border border-essenza-dark-border rounded-2xl overflow-hidden text-left hover:border-[#E50914] active:scale-95 transition-all flex"
+                    className="group relative bg-white border border-neutral-200 rounded-2xl overflow-hidden text-left hover:border-[#E50914]/60 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/40 active:scale-95 transition-all"
                   >
-                    <div className="flex-1 p-4">
-                      <p className="text-white font-bold">{p.nome}</p>
-                      <p className="text-neutral-500 text-xs mt-0.5">{p.categoria_nome}</p>
-                      <p className="text-[#E50914] font-black text-xl mt-2">{brl(p.preco)}</p>
+                    <div className="relative aspect-square w-full overflow-hidden">
+                      {p.foto && !usaImagemPadrao(p.categoria_nome) ? (
+                        <img
+                          src={p.foto}
+                          alt={p.nome}
+                          loading="lazy"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        />
+                      ) : (
+                        <ProductPlaceholder categoriaNome={p.categoria_nome} className="w-full h-full" />
+                      )}
+                      {p.destaque && (
+                        <span className="absolute top-2 left-2 flex items-center gap-1 bg-essenza-gold text-black text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-wide">
+                          <Star size={10} fill="currentColor" /> Destaque
+                        </span>
+                      )}
+                      <span className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-[#E50914] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                        <Plus size={18} />
+                      </span>
                     </div>
-                    {p.foto ? (
-                      <div className="w-28 h-28 flex-shrink-0">
-                        <img src={p.foto} alt={p.nome} loading="lazy" className="w-full h-full object-cover aspect-square" />
-                      </div>
-                    ) : (
-                      <div className="w-28 h-28 flex-shrink-0 bg-gradient-to-br from-[#E50914]/20 to-neutral-900 flex items-center justify-center">
-                        <Flame size={32} className="text-[#E50914]/40" />
-                      </div>
-                    )}
+                    <div className="p-3">
+                      <p className="text-neutral-900 font-semibold text-sm leading-tight line-clamp-2">{p.nome}</p>
+                      <p className="text-[#E50914] font-black text-lg mt-1.5">{brl(p.preco)}</p>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -259,10 +278,10 @@ export function Cliente() {
       {showCart && (
         <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setShowCart(false)}>
           <div className="absolute inset-0 bg-black/60" />
-          <div className="relative w-full max-w-md bg-[#0A0A0A] border-l border-essenza-dark-border h-full overflow-y-auto animate-slideUp" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-[#0A0A0A] border-b border-essenza-dark-border p-4 flex items-center justify-between">
-              <h3 className="text-white font-bold text-lg">Carrinho</h3>
-              <button onClick={() => setShowCart(false)} className="text-neutral-400 hover:text-white"><X size={22} /></button>
+          <div className="relative w-full max-w-md bg-[#FAF7F1] border-l border-neutral-200 h-full overflow-y-auto animate-slideUp" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-[#FAF7F1] border-b border-neutral-200 p-4 flex items-center justify-between">
+              <h3 className="text-neutral-900 font-bold text-lg">Carrinho</h3>
+              <button onClick={() => setShowCart(false)} className="text-neutral-500 hover:text-neutral-900"><X size={22} /></button>
             </div>
             <div className="p-4 space-y-3">
               {cart.length === 0 ? (
@@ -270,29 +289,29 @@ export function Cliente() {
               ) : (
                 <>
                   {cart.map((c, i) => (
-                    <div key={i} className="bg-essenza-dark-card border border-essenza-dark-border rounded-xl p-3">
+                    <div key={i} className="bg-white border border-neutral-200 rounded-xl p-3">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <p className="text-white font-medium text-sm">{c.produto_nome}</p>
-                          {c.adicional && <p className="text-neutral-400 text-xs">+ {c.adicional}</p>}
-                          {c.observacao && <p className="text-yellow-400 text-xs">Obs: {c.observacao}</p>}
+                          <p className="text-neutral-900 font-medium text-sm">{c.produto_nome}</p>
+                          {c.adicional && <p className="text-neutral-500 text-xs">+ {c.adicional}</p>}
+                          {c.observacao && <p className="text-amber-700 text-xs">Obs: {c.observacao}</p>}
                         </div>
-                        <button onClick={() => removeFromCart(i)} className="text-neutral-500 hover:text-red-400"><X size={16} /></button>
+                        <button onClick={() => removeFromCart(i)} className="text-neutral-500 hover:text-red-600"><X size={16} /></button>
                       </div>
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-2">
-                          <button onClick={() => updateQty(i, -1)} className="w-8 h-8 bg-neutral-800 text-white rounded-lg flex items-center justify-center"><Minus size={16} /></button>
-                          <span className="text-white font-bold w-6 text-center">{c.quantidade}</span>
-                          <button onClick={() => updateQty(i, 1)} className="w-8 h-8 bg-neutral-800 text-white rounded-lg flex items-center justify-center"><Plus size={16} /></button>
+                          <button onClick={() => updateQty(i, -1)} className="w-8 h-8 bg-neutral-200 text-neutral-900 rounded-lg flex items-center justify-center"><Minus size={16} /></button>
+                          <span className="text-neutral-900 font-bold w-6 text-center">{c.quantidade}</span>
+                          <button onClick={() => updateQty(i, 1)} className="w-8 h-8 bg-neutral-200 text-neutral-900 rounded-lg flex items-center justify-center"><Plus size={16} /></button>
                         </div>
                         <span className="text-[#22c55e] font-bold">{brl(c.quantidade * (c.preco_unitario + c.adicional_preco))}</span>
                       </div>
                     </div>
                   ))}
-                  <div className="border-t border-essenza-dark-border pt-3 space-y-1">
-                    <div className="flex justify-between text-neutral-400 text-sm"><span>Subtotal</span><span className="text-white">{brl(subtotal)}</span></div>
-                    <div className="flex justify-between text-neutral-400 text-sm"><span>Entrega</span><span className="text-white">{brl(taxaEntrega)}</span></div>
-                    <div className="flex justify-between font-bold text-lg border-t border-essenza-dark-border pt-2"><span className="text-white">Total</span><span className="text-[#22c55e]">{brl(total)}</span></div>
+                  <div className="border-t border-neutral-200 pt-3 space-y-1">
+                    <div className="flex justify-between text-neutral-500 text-sm"><span>Subtotal</span><span className="text-neutral-900">{brl(subtotal)}</span></div>
+                    <div className="flex justify-between text-neutral-500 text-sm"><span>Entrega</span><span className="text-neutral-900">{brl(taxaEntrega)}</span></div>
+                    <div className="flex justify-between font-bold text-lg border-t border-neutral-200 pt-2"><span className="text-neutral-900">Total</span><span className="text-[#22c55e]">{brl(total)}</span></div>
                   </div>
                   <button onClick={() => { setShowCart(false); setStep('checkout'); }} className="w-full bg-[#E50914] text-white py-4 rounded-xl font-bold text-lg active:scale-95">
                     Finalizar Pedido
@@ -306,44 +325,44 @@ export function Cliente() {
 
       {/* Checkout */}
       {step === 'checkout' && (
-        <div className="fixed inset-0 z-50 bg-[#0A0A0A] overflow-y-auto">
-          <div className="sticky top-0 bg-[#0A0A0A] border-b border-essenza-dark-border p-4 flex items-center gap-3">
-            <button onClick={() => setStep('menu')} className="text-neutral-400 hover:text-white"><ChevronLeft size={24} /></button>
-            <h3 className="text-white font-bold text-lg">Finalizar Pedido</h3>
+        <div className="fixed inset-0 z-50 bg-[#FAF7F1] overflow-y-auto">
+          <div className="sticky top-0 bg-[#FAF7F1] border-b border-neutral-200 p-4 flex items-center gap-3">
+            <button onClick={() => setStep('menu')} className="text-neutral-500 hover:text-neutral-900"><ChevronLeft size={24} /></button>
+            <h3 className="text-neutral-900 font-bold text-lg">Finalizar Pedido</h3>
           </div>
           <div className="max-w-md mx-auto p-4 space-y-4">
             {/* Customer data */}
             <div className="space-y-3">
-              <h4 className="text-white font-semibold">Seus dados</h4>
-              <input value={cliente.nome} onChange={(e) => setCliente({ ...cliente, nome: e.target.value })} placeholder="Nome completo" className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white focus:border-[#E50914] focus:outline-none" />
-              <input value={cliente.telefone} onChange={(e) => setCliente({ ...cliente, telefone: e.target.value })} placeholder="Telefone / WhatsApp" className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white focus:border-[#E50914] focus:outline-none" />
-              <input value={cliente.endereco} onChange={(e) => setCliente({ ...cliente, endereco: e.target.value })} placeholder="Endereço (rua, número)" className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white focus:border-[#E50914] focus:outline-none" />
-              <select value={cliente.bairro || bairro} onChange={(e) => { setCliente({ ...cliente, bairro: e.target.value }); setBairro(e.target.value); }} className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white focus:border-[#E50914] focus:outline-none">
+              <h4 className="text-neutral-900 font-semibold">Seus dados</h4>
+              <input value={cliente.nome} onChange={(e) => setCliente({ ...cliente, nome: e.target.value })} placeholder="Nome completo" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
+              <input value={cliente.telefone} onChange={(e) => setCliente({ ...cliente, telefone: e.target.value })} placeholder="Telefone / WhatsApp" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
+              <input value={cliente.endereco} onChange={(e) => setCliente({ ...cliente, endereco: e.target.value })} placeholder="Endereço (rua, número)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
+              <select value={cliente.bairro || bairro} onChange={(e) => { setCliente({ ...cliente, bairro: e.target.value }); setBairro(e.target.value); }} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none">
                 <option value="">Selecione o bairro...</option>
                 {taxas.map((t) => <option key={t.id} value={t.bairro}>{t.bairro} - Entrega {brl(t.taxa)}</option>)}
               </select>
-              <input value={cliente.referencia} onChange={(e) => setCliente({ ...cliente, referencia: e.target.value })} placeholder="Ponto de referência (opcional)" className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white focus:border-[#E50914] focus:outline-none" />
+              <input value={cliente.referencia} onChange={(e) => setCliente({ ...cliente, referencia: e.target.value })} placeholder="Ponto de referência (opcional)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
             </div>
 
             {/* Payment */}
             <div className="space-y-3">
-              <h4 className="text-white font-semibold">Pagamento</h4>
+              <h4 className="text-neutral-900 font-semibold">Pagamento</h4>
               <div className="grid grid-cols-3 gap-2">
                 {['Pix', 'Cartão', 'Dinheiro'].map((f) => (
-                  <button key={f} onClick={() => setFormaPagamento(f)} className={`py-3 rounded-xl font-medium ${formaPagamento === f ? 'bg-[#E50914] text-white' : 'bg-neutral-800 text-neutral-400'}`}>{f}</button>
+                  <button key={f} onClick={() => setFormaPagamento(f)} className={`py-3 rounded-xl font-medium ${formaPagamento === f ? 'bg-[#E50914] text-white' : 'bg-neutral-200 text-neutral-500'}`}>{f}</button>
                 ))}
               </div>
             </div>
 
             <div>
-              <input value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Observação (ex: sem cebola, troco para R$50)" className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white focus:border-[#E50914] focus:outline-none" />
+              <input value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Observação (ex: sem cebola, troco para R$50)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
             </div>
 
             {/* Summary */}
-            <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-4 space-y-2">
-              <div className="flex justify-between text-neutral-400 text-sm"><span>Subtotal</span><span className="text-white">{brl(subtotal)}</span></div>
-              <div className="flex justify-between text-neutral-400 text-sm"><span>Entrega</span><span className="text-white">{brl(taxaEntrega)}</span></div>
-              <div className="flex justify-between font-bold text-lg border-t border-essenza-dark-border pt-2"><span className="text-white">Total</span><span className="text-[#22c55e]">{brl(total)}</span></div>
+            <div className="bg-white border border-neutral-200 rounded-2xl p-4 space-y-2">
+              <div className="flex justify-between text-neutral-500 text-sm"><span>Subtotal</span><span className="text-neutral-900">{brl(subtotal)}</span></div>
+              <div className="flex justify-between text-neutral-500 text-sm"><span>Entrega</span><span className="text-neutral-900">{brl(taxaEntrega)}</span></div>
+              <div className="flex justify-between font-bold text-lg border-t border-neutral-200 pt-2"><span className="text-neutral-900">Total</span><span className="text-[#22c55e]">{brl(total)}</span></div>
             </div>
 
             <button onClick={finalizar} disabled={!cliente.nome || !cliente.telefone || !cliente.endereco || cart.length === 0} className="w-full bg-green-500 hover:bg-green-600 text-white py-5 rounded-2xl font-black text-lg disabled:opacity-50 active:scale-95">
@@ -395,55 +414,59 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white border border-neutral-200 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-bold text-lg">Monte sua Pizza</h3>
-          <button onClick={onClose} className="text-neutral-400 hover:text-white"><X size={20} /></button>
+          <h3 className="font-display text-neutral-900 font-bold text-xl">Monte sua Pizza</h3>
+          <button onClick={onClose} className="text-neutral-500 hover:text-neutral-900"><X size={20} /></button>
         </div>
 
-        <p className="text-neutral-400 text-sm mb-2">Sabor 1</p>
+        <p className="text-neutral-500 text-sm mb-2">Sabor 1</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">
           {mesmoTamanho.map((p) => (
-            <button key={p.id} onClick={() => setSabor1(p)} className={`p-3 rounded-xl text-left ${sabor1?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-900 text-neutral-300 border border-essenza-dark-border'}`}>
+            <button key={p.id} onClick={() => setSabor1(p)} className={`p-3 rounded-xl text-left transition-colors ${sabor1?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
               <p className="font-medium text-sm">{p.nome}</p>
               <p className="text-xs opacity-70">{brl(p.preco)}</p>
             </button>
           ))}
         </div>
 
-        <p className="text-neutral-400 text-sm mb-2">Sabor 2 — meio a meio (cobra o mais caro)</p>
+        <p className="text-neutral-500 text-sm mb-2">Sabor 2 — meio a meio (cobra o mais caro)</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">
           {mesmoTamanho.map((p) => (
-            <button key={p.id} onClick={() => setSabor2(sabor2?.id === p.id ? null : p)} className={`p-3 rounded-xl text-left ${sabor2?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-900 text-neutral-300 border border-essenza-dark-border'}`}>
+            <button key={p.id} onClick={() => setSabor2(sabor2?.id === p.id ? null : p)} className={`p-3 rounded-xl text-left transition-colors ${sabor2?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
               <p className="font-medium text-sm">{p.nome}</p>
               <p className="text-xs opacity-70">{brl(p.preco)}</p>
             </button>
           ))}
         </div>
 
-        <p className="text-neutral-400 text-sm mb-2">Borda / Adicional</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-          <button onClick={() => setSelectedAdicional(null)} className={`p-3 rounded-xl text-left ${!selectedAdicional ? 'bg-[#E50914] text-white' : 'bg-neutral-900 text-neutral-300 border border-essenza-dark-border'}`}>
-            <p className="font-medium text-sm">Nenhum</p>
-          </button>
-          {adicionais.map((a) => (
-            <button key={a.id} onClick={() => setSelectedAdicional(a)} className={`p-3 rounded-xl text-left ${selectedAdicional?.id === a.id ? 'bg-[#E50914] text-white' : 'bg-neutral-900 text-neutral-300 border border-essenza-dark-border'}`}>
-              <p className="font-medium text-sm">{a.nome}</p>
-              <p className="text-xs opacity-70">+{brl(a.preco)}</p>
-            </button>
-          ))}
-        </div>
+        {adicionais.length > 0 && (
+          <>
+            <p className="text-neutral-500 text-sm mb-2">Adicionais</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+              <button onClick={() => setSelectedAdicional(null)} className={`p-3 rounded-xl text-left transition-colors ${!selectedAdicional ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
+                <p className="font-medium text-sm">Nenhum</p>
+              </button>
+              {adicionais.map((a) => (
+                <button key={a.id} onClick={() => setSelectedAdicional(a)} className={`p-3 rounded-xl text-left transition-colors ${selectedAdicional?.id === a.id ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
+                  <p className="font-medium text-sm">{a.nome}</p>
+                  <p className="text-xs opacity-70">+{brl(a.preco)}</p>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
         <div className="mb-4">
-          <input value={itemObs} onChange={(e) => setItemObs(e.target.value)} placeholder="Observação (ex: sem cebola)" className="w-full bg-neutral-900 border border-essenza-dark-border rounded-xl px-4 py-3 text-white focus:border-[#E50914] focus:outline-none" />
+          <input value={itemObs} onChange={(e) => setItemObs(e.target.value)} placeholder="Observação (ex: sem cebola)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
         </div>
 
-        <div className="flex items-center justify-between bg-neutral-900 rounded-xl p-3 mb-4">
-          <span className="text-neutral-400">Preço</span>
+        <div className="flex items-center justify-between bg-neutral-100 rounded-xl p-3 mb-4">
+          <span className="text-neutral-500">Preço</span>
           <span className="text-[#22c55e] font-bold text-xl">{brl(precoFinal + (selectedAdicional?.preco || 0))}</span>
         </div>
 
-        <button onClick={onConfirm} disabled={!sabor1} className="w-full bg-green-500 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50 active:scale-95">
+        <button onClick={onConfirm} disabled={!sabor1} className="w-full bg-green-500 hover:bg-green-600 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50 active:scale-95 transition-colors">
           ADICIONAR
         </button>
       </div>

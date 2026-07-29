@@ -16,8 +16,8 @@ export function GraficoRosca({ custo, lucro }: { custo: number; lucro: number })
   const semDados = totalBruto === 0;
 
   return (
-    <div className="bg-essenza-dark-card border border-essenza-dark-border rounded-2xl p-5">
-      <h3 className="text-white font-bold mb-4">Custo vs Lucro</h3>
+    <div className="bg-white border border-neutral-200 rounded-2xl p-5">
+      <h3 className="text-neutral-900 font-bold mb-4">Custo vs Lucro</h3>
       {semDados ? (
         <p className="text-neutral-500 text-sm text-center py-12">Sem dados no período.</p>
       ) : (
@@ -30,26 +30,26 @@ export function GraficoRosca({ custo, lucro }: { custo: number; lucro: number })
                 </Pie>
                 <Tooltip
                   formatter={(v: any, n: any) => [brl(Number(v)), n]}
-                  contentStyle={{ background: '#171717', border: '1px solid #262626', borderRadius: 8, fontSize: 12 }}
+                  contentStyle={{ background: '#ffffff', border: '1px solid #e5e5e5', borderRadius: 8, fontSize: 12 }}
                 />
               </PieChart>
             </ResponsiveContainer>
             {/* Margem no centro da rosca */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-white font-black text-xl leading-none">{margem.toFixed(0)}%</span>
+              <span className="text-neutral-900 font-black text-xl leading-none">{margem.toFixed(0)}%</span>
               <span className="text-[10px] text-neutral-500">margem</span>
             </div>
           </div>
           <div className="space-y-2 text-sm">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-sm bg-green-500" />
-              <span className="text-neutral-400">Lucro:</span>
-              <span className="text-white font-semibold">{brl(lucro)}</span>
+              <span className="text-neutral-500">Lucro:</span>
+              <span className="text-neutral-900 font-semibold">{brl(lucro)}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-sm bg-[#E50914]" />
-              <span className="text-neutral-400">Custo:</span>
-              <span className="text-white font-semibold">{brl(custo)}</span>
+              <span className="text-neutral-500">Custo:</span>
+              <span className="text-neutral-900 font-semibold">{brl(custo)}</span>
             </div>
           </div>
         </div>

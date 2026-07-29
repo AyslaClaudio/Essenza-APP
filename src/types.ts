@@ -61,7 +61,7 @@ export interface Cliente {
   referencia: string;
 }
 
-export type PedidoStatus = 'recebido' | 'preparo' | 'forno' | 'saiu' | 'entregue' | 'cancelado';
+export type PedidoStatus = 'confirmado' | 'entregue' | 'cancelado';
 
 export interface Pedido {
   id: string;
