@@ -58,6 +58,57 @@ if (geminiApiKey) {
 // In-memory chat history (Map: phone -> Array of messages)
 const chatHistories = new Map();
 
+// ===== Atendimento híbrido (bot + dono pelo próprio celular) =====
+// IDs de mensagens que o BOT/equipe enviou, para distinguir das mensagens que
+// o dono digita manualmente no WhatsApp (ambas chegam como `fromMe`).
+const selfSentIds = new Set();
+// Momento (ms) em que o dono respondeu manualmente pela última vez, por telefone.
+const humanTakeoverAt = new Map();
+// Tempo mínimo de silêncio do dono antes de o bot poder retomar uma conversa.
+const RESUME_COOLDOWN_MS = (parseInt(process.env.HUMAN_RESUME_COOLDOWN_MIN || '3', 10)) * 60 * 1000;
+
+// Envia uma mensagem e registra o ID para não confundir com resposta manual do dono.
+async function sendWA(sock, jid, content) {
+  const r = await sock.sendMessage(jid, content);
+  if (r?.key?.id) {
+    selfSentIds.add(r.key.id);
+    if (selfSentIds.size > 2000) selfSentIds.clear();
+  }
+  return r;
+}
+
+// Decide, via IA, se o atendente humano já resolveu o problema/dúvida e se é
+// seguro o bot retomar o atendimento automático desta conversa.
+async function shouldBotResume(phone, newText) {
+  if (!genAI) return false;
+  try {
+    const history = chatHistories.get(phone) || [];
+    const recent = history.slice(-8)
+      .map(h => `${h.role === 'user' ? 'Cliente' : 'Atendente'}: ${h.text}`)
+      .join('\n');
+    const model = genAI.getGenerativeModel({ model: 'gemini-flash-lite-latest' });
+    const prompt = `Um atendente humano da pizzaria assumiu esta conversa no WhatsApp para resolver um problema ou dúvida do cliente. Abaixo está o histórico recente e a NOVA mensagem do cliente.
+
+Histórico recente:
+${recent || '(sem histórico)'}
+
+Nova mensagem do cliente: "${newText}"
+
+Decida se o atendente humano JÁ resolveu o problema/dúvida e se esta nova mensagem é uma solicitação NORMAL dentro do escopo da pizzaria (fazer um novo pedido, perguntar cardápio, horário, entrega, etc.) que o assistente virtual pode voltar a atender com segurança.
+
+Responda APENAS em JSON: {"resume": true} se for seguro o assistente virtual retomar, ou {"resume": false} se o assunto ainda está em aberto, é uma reclamação/assunto sensível, ou ainda requer o humano. Na dúvida, responda false.`;
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 50, temperature: 0 }
+    });
+    const clean = result.response.text().trim().replace(/^```json\s*/i, '').replace(/```$/, '');
+    return JSON.parse(clean).resume === true;
+  } catch (e) {
+    console.error('Erro no shouldBotResume (mantendo humano por segurança):', e);
+    return false; // padrão seguro: continua com o humano
+  }
+}
+
 // Helper to format BRL currency
 const brl = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
@@ -146,7 +197,7 @@ async function sendOwnerAlert(customerName, phone, motivo) {
   if (!ownerAlertPhone || !activeSock) return;
   try {
     const jid = `${ownerAlertPhone.replace(/\D/g, '')}@s.whatsapp.net`;
-    await activeSock.sendMessage(jid, {
+    await sendWA(activeSock, jid, {
       text: `🚩 *Atenção necessária no WhatsApp da loja*\n\nCliente: ${customerName || 'Não informado'}\nTelefone: ${phone}\nMotivo: ${motivo || 'A IA sinalizou incerteza nesta conversa'}\n\nAbra o painel de Monitoramento para acompanhar ou assumir a conversa.`
     });
   } catch (e) {
@@ -173,7 +224,7 @@ function startHumanMessagePoller() {
       for (const msg of pending || []) {
         const phone = msg.ia_conversas?.telefone;
         if (!phone) continue;
-        await activeSock.sendMessage(`${phone}@s.whatsapp.net`, { text: msg.texto });
+        await sendWA(activeSock,`${phone}@s.whatsapp.net`, { text: msg.texto });
         await supabase.from('ia_mensagens').update({ enviado: true }).eq('id', msg.id);
         console.log(`👤 [${phone}] Atendente humano: ${msg.texto.slice(0, 80)}`);
       }
@@ -552,28 +603,61 @@ async function connectToWhatsApp() {
 
   // Handle incoming messages
   sock.ev.on('messages.upsert', async (m) => {
+    console.log(`🔎 DEBUG upsert: type=${m.type} qtd=${m.messages?.length} fromMe=${m.messages?.[0]?.key?.fromMe} jid=${m.messages?.[0]?.key?.remoteJid}`);
     const msg = m.messages[0];
-    if (!msg.message || msg.key.fromMe) return;
+    if (!msg.message) return;
 
     // Check if it is a private chat
     const from = msg.key.remoteJid;
-    if (!from.endsWith('@s.whatsapp.net')) return;
+    if (!from || !from.endsWith('@s.whatsapp.net')) return;
 
     const senderPhone = from.split('@')[0];
     const text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
     const audioMessage = msg.message.audioMessage;
+
+    // ===== Dono respondendo manualmente pelo próprio celular =====
+    // Mensagens `fromMe` são ou do bot (enviadas por código) ou digitadas pelo
+    // dono direto no WhatsApp. Se for do dono, ele assume a conversa e o bot recua.
+    if (msg.key.fromMe) {
+      if (selfSentIds.has(msg.key.id)) { selfSentIds.delete(msg.key.id); return; }
+      if (!text.trim()) return;
+      try {
+        const conversa = await getOrCreateConversa(senderPhone, msg.pushName || 'Cliente');
+        if (conversa && conversa.status !== 'humano') {
+          await supabase.from('ia_conversas').update({ status: 'humano' }).eq('id', conversa.id);
+          console.log(`👤 [${senderPhone}] Dono assumiu a conversa pelo celular — bot pausado.`);
+        }
+        if (conversa) await insertMensagem(conversa.id, 'humano', text);
+        humanTakeoverAt.set(senderPhone, Date.now());
+      } catch (e) {
+        console.error('Erro ao processar resposta manual do dono:', e);
+      }
+      return;
+    }
 
     if (!text.trim() && !audioMessage) return;
 
     // Track this conversation for the Monitoramento dashboard
     const conversa = await getOrCreateConversa(senderPhone, msg.pushName || 'Cliente');
 
-    // If a staff member has taken over this conversation, just log the customer's
-    // message for the dashboard and let the human handle it — the AI stays silent.
+    // If a human has taken over this conversation, keep the AI silent — but decide
+    // intelligently when the issue is resolved so the bot can resume on its own.
     if (conversa?.status === 'humano') {
       await insertMensagem(conversa.id, 'cliente', text || '[Mensagem de áudio]');
       await sock.readMessages([msg.key]);
-      return;
+
+      // Nunca retoma enquanto o dono acabou de responder (evita cortar o humano).
+      const lastHuman = humanTakeoverAt.get(senderPhone) || 0;
+      if (Date.now() - lastHuman < RESUME_COOLDOWN_MS) return;
+
+      // Só considera retomar em mensagens de texto (áudio/reclamação fica com humano).
+      const canResume = audioMessage ? false : await shouldBotResume(senderPhone, text);
+      if (!canResume) return;
+
+      await supabase.from('ia_conversas').update({ status: 'ia' }).eq('id', conversa.id);
+      humanTakeoverAt.delete(senderPhone);
+      console.log(`🤖 [${senderPhone}] Problema resolvido — bot retomou o atendimento.`);
+      // Segue o fluxo normal abaixo e responde o cliente.
     }
 
     // Download and prepare audio for Gemini (voice notes / audio files)
@@ -607,21 +691,21 @@ async function connectToWhatsApp() {
     // Send normal reply message
     if (result.reply) {
       await sock.sendPresenceUpdate('paused', from);
-      await sock.sendMessage(from, { text: result.reply });
+      await sendWA(sock, from,{ text: result.reply });
       console.log(`🤖 [${senderPhone}] Bot: ${result.reply.slice(0, 100).replace(/\n/g, ' ')}...`);
     }
 
     // Send the official menu PDF when the AI decides it's time to show it
     if (result.attach_menu) {
       try {
-        await sock.sendMessage(from, {
+        await sendWA(sock, from,{
           document: fs.readFileSync(CARDAPIO_PDF_PATH),
           mimetype: 'application/pdf',
           fileName: 'Cardapio ESSENZA.pdf'
         });
       } catch (e) {
         console.error('Erro ao enviar PDF do cardápio:', e);
-        await sock.sendMessage(from, { text: `Segue nosso cardápio completo: ${CARDAPIO_LINK}` });
+        await sendWA(sock, from,{ text: `Segue nosso cardápio completo: ${CARDAPIO_LINK}` });
       }
     }
 
@@ -654,12 +738,12 @@ ${orderResult.isEntrega ? `📍 *Endereço:* ${result.order_details.customer_add
 
 Nossa equipe já está preparando! Qualquer dúvida, nos avise. Obrigado!`;
 
-        await sock.sendMessage(from, { text: confirmationMsg });
+        await sendWA(sock, from,{ text: confirmationMsg });
         await insertMensagem(conversa?.id, 'ia', confirmationMsg);
         console.log(`🤖 [${senderPhone}] Bot: Pedido #${orderResult.numero} confirmado e enviado.`);
       } else {
         const failMsg = 'Desculpe, tive um problema ao salvar seu pedido no sistema. Por favor, fale com um atendente humano para confirmar.';
-        await sock.sendMessage(from, { text: failMsg });
+        await sendWA(sock, from,{ text: failMsg });
         await insertMensagem(conversa?.id, 'ia', failMsg);
       }
     }
@@ -678,12 +762,12 @@ Nossa equipe já está preparando! Qualquer dúvida, nos avise. Obrigado!`;
 
 Nossa equipe vai confirmar a disponibilidade da mesa e te avisa por aqui em breve. Até já! 🍕`;
 
-        await sock.sendMessage(from, { text: confirmationMsg });
+        await sendWA(sock, from,{ text: confirmationMsg });
         await insertMensagem(conversa?.id, 'ia', confirmationMsg);
         console.log(`🤖 [${senderPhone}] Bot: Reserva confirmada e enviada.`);
       } else {
         const failMsg = 'Desculpe, tive um problema ao registrar sua reserva no sistema. Por favor, fale com um atendente humano para confirmar.';
-        await sock.sendMessage(from, { text: failMsg });
+        await sendWA(sock, from,{ text: failMsg });
         await insertMensagem(conversa?.id, 'ia', failMsg);
       }
     }
