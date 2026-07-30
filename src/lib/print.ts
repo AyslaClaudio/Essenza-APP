@@ -16,9 +16,29 @@ const CENTER = `${ESC}a\x01`;
 const LEFT = `${ESC}a\x00`;
 const LINE = '--------------------------------';
 
+// Marca d'água leve no topo de cada recibo — só texto (funciona em qualquer
+// impressora térmica/Bluetooth, sem gastar tinta com uma imagem). Aprovada
+// pela usuária: faixa de 3 marcas (lembrando a faixa verde/branco/vermelho
+// da logo oficial) + nome da loja + "Pizzaria".
+function marcaEscPos(nomeLoja: string): string {
+  return [
+    CENTER + '*  *  *',
+    CENTER + BOLD_ON + (nomeLoja || 'ESSENZA') + BOLD_OFF,
+    CENTER + 'PIZZARIA',
+  ].join('\n');
+}
+
+function marcaHtml(nomeLoja: string): string {
+  return `
+    <div class="center">* &nbsp; * &nbsp; *</div>
+    <div class="center"><b>${nomeLoja || 'ESSENZA'}</b></div>
+    <div class="center">PIZZARIA</div>
+  `;
+}
+
 export function buildKitchenReceipt(pedido: Pedido, config: Configuracao): string {
   const lines: string[] = [];
-  lines.push(CENTER + BOLD_ON + (config.nome_loja || 'ESSENZA') + BOLD_OFF);
+  lines.push(marcaEscPos(config.nome_loja));
   lines.push(CENTER + 'COZINHA');
   lines.push('');
   lines.push(LEFT + `Pedido #: ${pedido.numero}`);
@@ -50,7 +70,7 @@ export function buildKitchenReceipt(pedido: Pedido, config: Configuracao): strin
 
 export function buildCashReceipt(pedido: Pedido, config: Configuracao): string {
   const lines: string[] = [];
-  lines.push(CENTER + BOLD_ON + (config.nome_loja || 'ESSENZA') + BOLD_OFF);
+  lines.push(marcaEscPos(config.nome_loja));
   if (config.endereco_loja) lines.push(CENTER + config.endereco_loja);
   if (config.telefone_loja) lines.push(CENTER + `Tel: ${config.telefone_loja}`);
   lines.push(LINE);
@@ -125,7 +145,7 @@ export async function printReceipt(pedido: Pedido, config: Configuracao, via: 'c
  */
 function buildMesaComandaEscPos(numeroMesa: number, itens: ItemMesa[], config: Configuracao): string {
   const lines: string[] = [];
-  lines.push(CENTER + BOLD_ON + (config.nome_loja || 'ESSENZA') + BOLD_OFF);
+  lines.push(marcaEscPos(config.nome_loja));
   lines.push(CENTER + '*** COZINHA ***');
   lines.push(CENTER + BOLD_ON + `MESA ${numeroMesa}` + BOLD_OFF);
   lines.push(LEFT + `Hora: ${fmtHora(new Date().toISOString())}`);
@@ -166,7 +186,7 @@ export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], co
   div.id = 'print-area';
   div.className = 'print-receipt';
   div.innerHTML = `
-    <div class="center"><b>${config.nome_loja || 'ESSENZA'}</b></div>
+    ${marcaHtml(config.nome_loja)}
     <div class="center">*** COZINHA ***</div>
     <div class="center"><b>MESA ${numeroMesa}</b></div>
     <div>Hora: ${fmtHora(new Date().toISOString())}</div>
@@ -184,7 +204,7 @@ export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], co
  */
 function buildMesaContaEscPos(numeroMesa: number, itens: ItemMesa[], total: number, formaPagamento: string, config: Configuracao): string {
   const lines: string[] = [];
-  lines.push(CENTER + BOLD_ON + (config.nome_loja || 'ESSENZA') + BOLD_OFF);
+  lines.push(marcaEscPos(config.nome_loja));
   if (config.endereco_loja) lines.push(CENTER + config.endereco_loja);
   if (config.telefone_loja) lines.push(CENTER + `Tel: ${config.telefone_loja}`);
   lines.push(LINE);
@@ -238,7 +258,7 @@ export async function printMesaConta(
   div.id = 'print-area';
   div.className = 'print-receipt';
   div.innerHTML = `
-    <div class="center"><b>${config.nome_loja || 'ESSENZA'}</b></div>
+    ${marcaHtml(config.nome_loja)}
     ${config.endereco_loja ? `<div class="center">${config.endereco_loja}</div>` : ''}
     ${config.telefone_loja ? `<div class="center">Tel: ${config.telefone_loja}</div>` : ''}
     <div class="sep">--------------------------------</div>
@@ -270,7 +290,7 @@ function kitchenHTML(pedido: Pedido, config: Configuracao): string {
     if (item.observacao) itens += `<div class="sub"><b>Obs: ${item.observacao.toUpperCase()}</b></div>`;
   });
   return `
-    <div class="center"><b>${config.nome_loja || 'ESSENZA'}</b></div>
+    ${marcaHtml(config.nome_loja)}
     <div class="center">*** COZINHA ***</div>
     <div>Pedido #: ${pedido.numero}</div>
     <div>Hora: ${fmtHora(pedido.created_at)}</div>
@@ -296,7 +316,7 @@ function cashHTML(pedido: Pedido, config: Configuracao): string {
     itens += `<div class="right">${brl(item.quantidade * (item.preco_unitario + item.adicional_preco))}</div>`;
   });
   return `
-    <div class="center"><b>${config.nome_loja || 'ESSENZA'}</b></div>
+    ${marcaHtml(config.nome_loja)}
     ${config.endereco_loja ? `<div class="center">${config.endereco_loja}</div>` : ''}
     ${config.telefone_loja ? `<div class="center">Tel: ${config.telefone_loja}</div>` : ''}
     <div class="sep">--------------------------------</div>

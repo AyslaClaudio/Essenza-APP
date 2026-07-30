@@ -97,7 +97,7 @@ export function Adm() {
       <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-neutral-200">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <Flame size={20} className="text-[#E50914]" />
+            <img src="/logo.png" alt="ESSENZA" className="w-8 h-8 rounded-lg object-cover" />
             <span className="font-display font-bold text-neutral-900 text-lg">ESSENZA</span>
           </div>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 text-neutral-900">
@@ -118,9 +118,7 @@ export function Adm() {
       `}>
         <div className="p-6 hidden lg:block">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#E50914] to-essenza-terracotta flex items-center justify-center">
-              <Flame size={18} className="text-white" />
-            </div>
+            <img src="/logo.png" alt="ESSENZA" className="w-9 h-9 rounded-lg object-cover" />
             <div>
               <h1 className="font-display font-bold text-neutral-900 text-lg leading-none">ESSENZA</h1>
               <p className="text-neutral-500 text-[10px] tracking-[0.15em] uppercase mt-0.5">Pizza Napoletana</p>

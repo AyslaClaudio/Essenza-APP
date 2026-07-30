@@ -48,16 +48,7 @@ function AppInner() {
       </button>
 
       <div className="text-center mb-10">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#E50914] to-essenza-terracotta mb-4 shadow-lg shadow-red-900/20">
-          <Flame size={28} className="text-white" />
-        </div>
-        <h1 className="font-display text-4xl font-bold tracking-tight text-neutral-900">ESSENZA</h1>
-        <p className="text-neutral-500 text-xs mt-2 tracking-[0.3em] uppercase">Pizza Napoletana</p>
-        <div className="flex items-center justify-center gap-1 mt-3">
-          <span className="w-5 h-1 rounded-full bg-essenza-italia-green" />
-          <span className="w-5 h-1 rounded-full bg-neutral-300" />
-          <span className="w-5 h-1 rounded-full bg-essenza-italia-red" />
-        </div>
+        <img src="/logo.png" alt="ESSENZA Pizzaria" className="w-44 h-auto mx-auto rounded-2xl shadow-lg shadow-black/20" />
       </div>
 
       <div className="w-full max-w-sm">

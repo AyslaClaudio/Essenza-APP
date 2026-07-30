@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useConfig } from '../context/ConfigContext';
 import { brl, todayISO } from '../lib/format';
 import type { Produto, Cliente, TaxaEntrega, Adicional, ItemPedido } from '../types';
-import { Flame, ShoppingCart, Search, X, Plus, Minus, Check, ChevronLeft, Star } from 'lucide-react';
+import { ShoppingCart, Search, X, Plus, Minus, Check, ChevronLeft, Star } from 'lucide-react';
 import { ProductPlaceholder, usaImagemPadrao } from './ProductPlaceholder';
 
 interface CartItem extends ItemPedido {
@@ -160,9 +160,7 @@ export function Cliente() {
       <header className="sticky top-0 z-30 bg-[#FAF7F1]/95 backdrop-blur border-b border-neutral-200">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#E50914] to-essenza-terracotta flex items-center justify-center shadow-sm">
-              <Flame size={18} className="text-white" />
-            </div>
+            <img src="/logo.png" alt="ESSENZA" className="w-9 h-9 rounded-lg object-cover shadow-sm" />
             <div>
               <h1 className="font-display font-bold text-neutral-900 text-lg leading-none tracking-wide">ESSENZA</h1>
               <p className="text-neutral-500 text-[10px] tracking-[0.15em] uppercase">Pizza Napoletana</p>

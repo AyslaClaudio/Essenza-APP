@@ -484,19 +484,24 @@ function ConfigUsuarios() {
 
   const createUser = async () => {
     if (!email || !password || !nome) return;
-    const { data: authData, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
-    if (error || !authData.user) {
-      // Fallback: sign up normally and then insert profile
-      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({ email, password });
-      if (signUpErr || !signUpData.user) { alert('Erro: ' + (signUpErr?.message || 'unknown')); return; }
-      await supabase.from('usuarios').insert({ user_id: signUpData.user.id, nome, role });
-    } else {
-      await supabase.from('usuarios').insert({ user_id: authData.user.id, nome, role });
+    // O app só tem a chave anon (sem service role), então auth.admin.createUser
+    // sempre falha aqui — o fallback é signUp(), que troca a sessão ativa pra do
+    // usuário recém-criado. Sem restaurar a sessão do gerente logo em seguida,
+    // ele seria deslogado da própria conta ao criar um funcionário novo.
+    const { data: sessionData } = await supabase.auth.getSession();
+    const gerenteSession = sessionData.session;
+
+    const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({ email, password });
+    if (signUpErr || !signUpData.user) { alert('Erro: ' + (signUpErr?.message || 'desconhecido')); return; }
+    await supabase.from('usuarios').insert({ user_id: signUpData.user.id, nome, role });
+
+    if (gerenteSession) {
+      await supabase.auth.setSession({
+        access_token: gerenteSession.access_token,
+        refresh_token: gerenteSession.refresh_token,
+      });
     }
+
     setNome(''); setEmail(''); setPassword(''); setRole('atendente'); setShowForm(false);
     load();
   };
