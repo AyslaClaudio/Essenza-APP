@@ -56,6 +56,37 @@ body {
     color: #000;
     background: #fff;
   }
+  /* Essas classes eram usadas nos recibos (lib/print.ts) mas nunca tinham
+     regra de verdade — a marca d'água e o resto do recibo não centralizavam
+     nem alinhavam na impressão pelo navegador. */
+  .print-receipt .center {
+    text-align: center;
+    width: 100%;
+  }
+  .print-receipt .right {
+    text-align: right;
+  }
+  .print-receipt .sep {
+    margin: 2px 0;
+    white-space: pre;
+  }
+  .print-receipt .item {
+    margin-top: 4px;
+  }
+  .print-receipt .sub {
+    padding-left: 8px;
+    font-size: 9px;
+  }
+  .print-receipt .total {
+    font-weight: bold;
+    margin-top: 3px;
+  }
+  .print-receipt .marca {
+    margin: 2px 0 6px;
+  }
+  .print-receipt .marca + .marca {
+    margin: 6px 0 2px;
+  }
   @page {
     size: 80mm auto;
     margin: 0;

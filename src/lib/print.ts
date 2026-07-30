@@ -30,9 +30,11 @@ function marcaEscPos(nomeLoja: string): string {
 
 function marcaHtml(nomeLoja: string): string {
   return `
-    <div class="center">* &nbsp; * &nbsp; *</div>
-    <div class="center"><b>${nomeLoja || 'ESSENZA'}</b></div>
-    <div class="center">PIZZARIA</div>
+    <div class="marca">
+      <div class="center">* &nbsp; * &nbsp; *</div>
+      <div class="center"><b>${nomeLoja || 'ESSENZA'}</b></div>
+      <div class="center">PIZZARIA</div>
+    </div>
   `;
 }
 
@@ -65,6 +67,8 @@ export function buildKitchenReceipt(pedido: Pedido, config: Configuracao): strin
   if (pedido.observacao) {
     lines.push(BOLD_ON + `OBS GERAL: ${pedido.observacao.toUpperCase()}` + BOLD_OFF);
   }
+  lines.push(LINE);
+  lines.push(marcaEscPos(config.nome_loja));
   return INIT + lines.join('\n') + '\n\n\n';
 }
 
@@ -101,7 +105,8 @@ export function buildCashReceipt(pedido: Pedido, config: Configuracao): string {
   lines.push(`Pagamento:   ${pedido.forma_pagamento || '-'}`);
   lines.push(LINE);
   lines.push(CENTER + 'Obrigado! Volte Sempre');
-  lines.push(CENTER + 'ESSENZA Pizzaria');
+  lines.push(LINE);
+  lines.push(marcaEscPos(config.nome_loja));
   return INIT + lines.join('\n') + '\n\n\n';
 }
 
@@ -159,6 +164,7 @@ function buildMesaComandaEscPos(numeroMesa: number, itens: ItemMesa[], config: C
     if (item.observacao) lines.push(BOLD_ON + `  Obs: ${item.observacao.toUpperCase()}` + BOLD_OFF);
   });
   lines.push(LINE);
+  lines.push(marcaEscPos(config.nome_loja));
   return INIT + lines.join('\n') + '\n\n\n';
 }
 
@@ -193,6 +199,7 @@ export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], co
     <div class="sep">--------------------------------</div>
     ${itensHTML}
     <div class="sep">--------------------------------</div>
+    ${marcaHtml(config.nome_loja)}
   `;
   document.body.appendChild(div);
   window.print();
@@ -223,7 +230,8 @@ function buildMesaContaEscPos(numeroMesa: number, itens: ItemMesa[], total: numb
   lines.push(`Pagamento:   ${formaPagamento || '-'}`);
   lines.push(LINE);
   lines.push(CENTER + 'Obrigado! Volte Sempre');
-  lines.push(CENTER + 'ESSENZA Pizzaria');
+  lines.push(LINE);
+  lines.push(marcaEscPos(config.nome_loja));
   return INIT + lines.join('\n') + '\n\n\n';
 }
 
@@ -271,7 +279,8 @@ export async function printMesaConta(
     <div>Pagamento:   ${formaPagamento || '-'}</div>
     <div class="sep">--------------------------------</div>
     <div class="center">Obrigado! Volte Sempre</div>
-    <div class="center">ESSENZA Pizzaria</div>
+    <div class="sep">--------------------------------</div>
+    ${marcaHtml(config.nome_loja)}
   `;
   document.body.appendChild(div);
   window.print();
@@ -300,6 +309,8 @@ function kitchenHTML(pedido: Pedido, config: Configuracao): string {
     ${itens}
     <div class="sep">--------------------------------</div>
     ${pedido.observacao ? `<div><b>OBS: ${pedido.observacao.toUpperCase()}</b></div>` : ''}
+    <div class="sep">--------------------------------</div>
+    ${marcaHtml(config.nome_loja)}
   `;
 }
 
@@ -336,6 +347,7 @@ function cashHTML(pedido: Pedido, config: Configuracao): string {
     <div>Pagamento:   ${pedido.forma_pagamento || '-'}</div>
     <div class="sep">--------------------------------</div>
     <div class="center">Obrigado! Volte Sempre</div>
-    <div class="center">ESSENZA Pizzaria</div>
+    <div class="sep">--------------------------------</div>
+    ${marcaHtml(config.nome_loja)}
   `;
 }
