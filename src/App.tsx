@@ -5,7 +5,8 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Login } from './components/Login';
 import { Adm } from './components/adm/Adm';
 import { Cliente } from './components/Cliente';
-import { Flame } from 'lucide-react';
+import { UpdateBanner } from './components/UpdateBanner';
+import { Flame, Lock } from 'lucide-react';
 
 function AppInner() {
   const { usuario, loading } = useAuth();
@@ -35,9 +36,17 @@ function AppInner() {
     return <Cliente />;
   }
 
-  // Selection screen
+  // Selection screen — foco no cliente (é a tela que ele vê ao escanear o QR
+  // code da mesa ou abrir o link); o acesso da equipe fica discreto no canto.
   return (
-    <div className="min-h-screen bg-[#FAF7F1] flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-[#FAF7F1] flex flex-col items-center justify-center px-4 relative">
+      <button
+        onClick={() => setMode('adm')}
+        className="absolute top-4 right-4 flex items-center gap-1.5 text-neutral-400 hover:text-neutral-700 text-xs font-medium px-3 py-2 rounded-lg hover:bg-neutral-100 transition-colors"
+      >
+        <Lock size={12} /> Equipe
+      </button>
+
       <div className="text-center mb-10">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#E50914] to-essenza-terracotta mb-4 shadow-lg shadow-red-900/20">
           <Flame size={28} className="text-white" />
@@ -51,22 +60,14 @@ function AppInner() {
         </div>
       </div>
 
-      <div className="w-full max-w-sm space-y-3">
+      <div className="w-full max-w-sm">
         <button
           onClick={() => setMode('cliente')}
-          className="group w-full bg-[#E50914] hover:bg-[#f6121d] text-white font-bold text-lg py-5 rounded-2xl transition-all hover:shadow-lg hover:shadow-red-900/20 hover:-translate-y-0.5 active:scale-95 flex flex-col items-center gap-1.5"
+          className="group w-full bg-[#E50914] hover:bg-[#f6121d] text-white font-bold text-lg py-6 rounded-2xl transition-all hover:shadow-lg hover:shadow-red-900/20 hover:-translate-y-0.5 active:scale-95 flex flex-col items-center gap-1.5"
         >
-          <Flame size={22} />
+          <Flame size={26} />
           <span>FAZER PEDIDO</span>
           <span className="text-xs font-normal opacity-80">Cardápio e entrega</span>
-        </button>
-
-        <button
-          onClick={() => setMode('adm')}
-          className="w-full bg-white hover:bg-neutral-50 border border-neutral-200 text-neutral-900 font-bold text-lg py-5 rounded-2xl transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-95 flex flex-col items-center gap-1.5"
-        >
-          <span>Painel Administrativo</span>
-          <span className="text-xs font-normal text-neutral-500">Acesso restrito - funcionários</span>
         </button>
       </div>
     </div>
@@ -79,6 +80,7 @@ export default function App() {
       <AuthProvider>
         <ConfigProvider>
           <AppInner />
+          <UpdateBanner />
         </ConfigProvider>
       </AuthProvider>
     </ErrorBoundary>
