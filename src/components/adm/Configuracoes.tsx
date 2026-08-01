@@ -7,7 +7,7 @@ import type { Configuracao, Impressora, TaxaEntrega, Promocao } from '../../type
 import { todayISO } from '../../lib/format';
 import { dateToISO, addDays } from '../../lib/dateUtils';
 import { Store, Printer, Truck, Tag, Users, Plus, Pencil, Trash2, Save, Clock, Palette, UserCog, Bell, Star, Bluetooth, BluetoothConnected } from 'lucide-react';
-import { conectarImpressora, desconectarImpressora, impressoraConectada, nomeImpressora, suportado as bluetoothSuportado, imprimirViaBluetooth } from '../../lib/bluetoothPrinter';
+import { conectarImpressora, desconectarImpressora, impressoraConectada, nomeImpressora, suportado as bluetoothSuportado, imprimirViaBluetooth, ultimoErroImpressao } from '../../lib/bluetoothPrinter';
 
 type Tab = 'loja' | 'impressoras' | 'entrega' | 'promocoes' | 'usuarios' | 'marketing';
 
@@ -138,11 +138,21 @@ function ConfigImpressoraBluetooth() {
 
   const testar = async () => {
     setTestando(true);
-    const ESC = '\x1B';
-    const texto = `${ESC}@${ESC}a\x01${ESC}E\x01ESSENZA${ESC}E\x00\n${ESC}a\x01Teste de impressao Bluetooth\n${ESC}a\x00--------------------------------\nSe voce esta lendo isso,\na impressora esta conectada\ncorretamente. \n\n\n`;
-    const ok = await imprimirViaBluetooth(texto);
-    if (!ok) setErro('Não foi possível enviar o teste — a impressora pode ter desconectado.');
-    setTestando(false);
+    setErro(null);
+    try {
+      const ESC = '\x1B';
+      const texto = `${ESC}@${ESC}a\x01${ESC}E\x01ESSENZA${ESC}E\x00\n${ESC}a\x01Teste de impressao Bluetooth\n${ESC}a\x00--------------------------------\nSe voce esta lendo isso,\na impressora esta conectada\ncorretamente. \n\n\n`;
+      const ok = await imprimirViaBluetooth(texto);
+      if (!ok) {
+        setErro('Não foi possível enviar o teste: ' + (ultimoErroImpressao() || 'a impressora pode ter desconectado.'));
+        setConectada(impressoraConectada());
+      }
+    } catch (e) {
+      setErro('Não foi possível enviar o teste: ' + ((e as Error).message || 'erro desconhecido.'));
+      setConectada(impressoraConectada());
+    } finally {
+      setTestando(false);
+    }
   };
 
   return (
@@ -156,14 +166,13 @@ function ConfigImpressoraBluetooth() {
         Algumas impressoras baratas usam Bluetooth clássico (SPP), que o navegador não consegue acessar — se a conexão falhar dizendo que não achou canal de impressão, é esse o caso, e só um app Android nativo resolve.
       </p>
 
-      {conectada ? (
+      {conectada && (
         <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
           <BluetoothConnected size={18} className="text-green-600" />
           <span className="text-green-700 text-sm font-medium flex-1">Conectada: {nome || 'Impressora'}</span>
         </div>
-      ) : (
-        erro && <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">{erro}</p>
       )}
+      {erro && <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">{erro}</p>}
 
       {!bluetoothSuportado() && (
         <p className="text-amber-700 text-sm bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">

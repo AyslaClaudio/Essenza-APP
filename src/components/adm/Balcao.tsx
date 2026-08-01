@@ -98,13 +98,35 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   const taxaEntrega = tipo === 'delivery' ? (taxas.find((t) => t.bairro === bairro)?.taxa || config?.taxa_fixa_entrega || 0) : 0;
   const total = subtotal + taxaEntrega;
 
+  const isCombo = (p: Produto) => p.categoria_nome.includes('Combo');
+
   const handleProductClick = (produto: Produto) => {
-    if (produto.categoria_nome.includes('Pizza')) {
+    if (produto.categoria_nome.includes('Pizza') || isCombo(produto)) {
       setShowSabores(produto);
-      setSabor1(produto);
+      // Pizza: já pré-seleciona o sabor clicado (atalho). Combo: o clicado é o
+      // combo em si, não um sabor — o cliente escolhe a(s) esfirra(s) do zero.
+      setSabor1(isCombo(produto) ? null : produto);
       setSabor2(null);
       setSelectedAdicional(null);
       setItemObs('');
+    } else if (produto.categoria_nome.includes('Esfirra')) {
+      // Prefixa a categoria no nome pra não confundir na comanda da cozinha
+      // (esfirra e pizza podem ter sabores com nome parecido).
+      addToCart({
+        id: '',
+        pedido_id: '',
+        produto_id: produto.id,
+        produto_nome: `Esfirra: ${produto.nome}`,
+        quantidade: 1,
+        preco_unitario: produto.preco,
+        custo_unitario: produto.custo,
+        observacao: '',
+        sabor1: '',
+        sabor2: '',
+        adicional: '',
+        adicional_preco: 0,
+        produto: produto,
+      });
     } else {
       addToCart({
         id: '',
@@ -126,6 +148,33 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
 
   const confirmSabor = () => {
     if (!showSabores || !sabor1) return;
+
+    if (isCombo(showSabores)) {
+      // Combo: preço fixo do combo (não deriva do preço das esfirras — o combo
+      // já é a promoção), sabores só identificam pro cozinha o que preparar.
+      const nome = sabor2 ? `${showSabores.nome} - ${sabor1.nome} / ${sabor2.nome}` : `${showSabores.nome} - ${sabor1.nome}`;
+      addToCart({
+        id: '',
+        pedido_id: '',
+        produto_id: showSabores.id,
+        produto_nome: nome,
+        quantidade: 1,
+        preco_unitario: showSabores.preco,
+        custo_unitario: showSabores.custo,
+        observacao: itemObs,
+        sabor1: sabor1.nome,
+        sabor2: sabor2?.nome || '',
+        adicional: '',
+        adicional_preco: 0,
+        produto: showSabores,
+      });
+      setShowSabores(null);
+      setSabor1(null);
+      setSabor2(null);
+      setItemObs('');
+      return;
+    }
+
     const isHalfHalf = sabor2 !== null;
     // Half/half: charge the more expensive one
     const preco = isHalfHalf ? Math.max(sabor1.preco, sabor2!.preco) : sabor1.preco;
@@ -642,61 +691,72 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
   onConfirm: () => void;
   onClose: () => void;
 }) {
-  const mesmoTamanho = produtos.filter((p) => p.categoria_nome === produto.categoria_nome);
-  const precoFinal = sabor2 ? Math.max(sabor1?.preco || 0, sabor2.preco) : sabor1?.preco || 0;
+  const isCombo = produto.categoria_nome.includes('Combo');
+  const comboDuo = isCombo && produto.nome.toLowerCase().includes('duo');
+  const opcoesSabor = isCombo ? produtos.filter((p) => p.categoria_nome.includes('Esfirra') && !p.categoria_nome.includes('Combo')) : produtos.filter((p) => p.categoria_nome === produto.categoria_nome);
+  const precoFinal = isCombo ? produto.preco : (sabor2 ? Math.max(sabor1?.preco || 0, sabor2.preco) : sabor1?.preco || 0);
+  const podeConfirmar = isCombo ? !!sabor1 && (!comboDuo || !!sabor2) : !!sabor1;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white border border-neutral-200 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-neutral-900 font-bold text-lg">{produto.categoria_nome}</h3>
+          <h3 className="text-neutral-900 font-bold text-lg">{isCombo ? produto.nome : produto.categoria_nome}</h3>
           <button onClick={onClose} className="text-neutral-500 hover:text-neutral-900"><X size={20} /></button>
         </div>
 
-        <p className="text-neutral-500 text-sm mb-2">Sabor 1 {sabor2 ? '(meio a meio)' : ''}</p>
+        <p className="text-neutral-500 text-sm mb-2">{isCombo ? `Esfirra${comboDuo ? ' 1' : ''}` : `Sabor 1 ${sabor2 ? '(meio a meio)' : ''}`}</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">
-          {mesmoTamanho.map((p) => (
+          {opcoesSabor.map((p) => (
             <button
               key={p.id}
               onClick={() => setSabor1(p)}
               className={`p-3 rounded-xl text-left ${sabor1?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
             >
               <p className="font-medium text-sm">{p.nome}</p>
-              <p className="text-xs opacity-70">{brl(p.preco)}</p>
+              {!isCombo && <p className="text-xs opacity-70">{brl(p.preco)}</p>}
             </button>
           ))}
         </div>
 
-        <p className="text-neutral-500 text-sm mb-2">Sabor 2 (opcional)</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">
-          {mesmoTamanho.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setSabor2(sabor2?.id === p.id ? null : p)}
-              className={`p-3 rounded-xl text-left ${sabor2?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
-            >
-              <p className="font-medium text-sm">{p.nome}</p>
-              <p className="text-xs opacity-70">{brl(p.preco)}</p>
-            </button>
-          ))}
-        </div>
+        {(!isCombo || comboDuo) && (
+          <>
+            <p className="text-neutral-500 text-sm mb-2">{isCombo ? 'Esfirra 2' : 'Sabor 2 (opcional)'}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">
+              {opcoesSabor.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setSabor2(sabor2?.id === p.id ? null : p)}
+                  className={`p-3 rounded-xl text-left ${sabor2?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
+                >
+                  <p className="font-medium text-sm">{p.nome}</p>
+                  {!isCombo && <p className="text-xs opacity-70">{brl(p.preco)}</p>}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
-        <p className="text-neutral-500 text-sm mb-2">Borda / Adicional</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-          <button onClick={() => setSelectedAdicional(null)} className={`p-3 rounded-xl text-left ${!selectedAdicional ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}>
-            <p className="font-medium text-sm">Nenhum</p>
-          </button>
-          {adicionais.map((a) => (
-            <button
-              key={a.id}
-              onClick={() => setSelectedAdicional(a)}
-              className={`p-3 rounded-xl text-left ${selectedAdicional?.id === a.id ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
-            >
-              <p className="font-medium text-sm">{a.nome}</p>
-              <p className="text-xs opacity-70">+{brl(a.preco)}</p>
-            </button>
-          ))}
-        </div>
+        {!isCombo && adicionais.length > 0 && (
+          <>
+            <p className="text-neutral-500 text-sm mb-2">Adicionais</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+              <button onClick={() => setSelectedAdicional(null)} className={`p-3 rounded-xl text-left ${!selectedAdicional ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}>
+                <p className="font-medium text-sm">Nenhum</p>
+              </button>
+              {adicionais.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => setSelectedAdicional(a)}
+                  className={`p-3 rounded-xl text-left ${selectedAdicional?.id === a.id ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
+                >
+                  <p className="font-medium text-sm">{a.nome}</p>
+                  <p className="text-xs opacity-70">+{brl(a.preco)}</p>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
         <div className="mb-4">
           <label className="text-neutral-500 text-sm">Observação</label>
@@ -708,7 +768,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
           <span className="text-[#22c55e] font-bold text-xl">{brl(precoFinal + (selectedAdicional?.preco || 0))}</span>
         </div>
 
-        <button onClick={onConfirm} disabled={!sabor1} className="w-full bg-green-500 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50 active:scale-95">
+        <button onClick={onConfirm} disabled={!podeConfirmar} className="w-full bg-green-500 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50 active:scale-95">
           ADICIONAR
         </button>
       </div>

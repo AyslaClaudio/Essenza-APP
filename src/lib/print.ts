@@ -38,6 +38,75 @@ function marcaHtml(nomeLoja: string): string {
   `;
 }
 
+export interface FechamentoProduto {
+  nome: string;
+  qtd: number;
+  lucro: number;
+}
+
+/**
+ * Fechamento do dia / relatório de caixa — mesma lógica de impressão dos
+ * pedidos (Bluetooth primeiro, HTML como reserva) pra imprimir na mesma
+ * impressora térmica em vez de só abrir o diálogo do navegador.
+ */
+export async function printFechamentoDia(
+  dataLabel: string,
+  faturamento: number,
+  custoTotal: number,
+  lucroBruto: number,
+  despesasFixas: number,
+  lucroLiquido: number,
+  produtos: FechamentoProduto[],
+  config: Configuracao,
+) {
+  if (impressoraConectada()) {
+    const lines: string[] = [];
+    lines.push(marcaEscPos(config.nome_loja));
+    lines.push(CENTER + BOLD_ON + 'FECHAMENTO DO DIA' + BOLD_OFF);
+    lines.push(CENTER + dataLabel);
+    lines.push(LINE);
+    lines.push(LEFT + `Faturamento:     ${brl(faturamento)}`);
+    lines.push(`Custo Produtos:  ${brl(custoTotal)}`);
+    lines.push(`Lucro Bruto:     ${brl(lucroBruto)}`);
+    lines.push(`Despesas Fixas:  ${brl(despesasFixas)}`);
+    lines.push(BOLD_ON + `LUCRO LIQUIDO:   ${brl(lucroLiquido)}` + BOLD_OFF);
+    lines.push(LINE);
+    lines.push(BOLD_ON + 'POR PRODUTO' + BOLD_OFF);
+    produtos.forEach((p) => lines.push(`${p.qtd}x ${p.nome} - Lucro: ${brl(p.lucro)}`));
+    lines.push(LINE);
+    lines.push(marcaEscPos(config.nome_loja));
+    const ok = await imprimirViaBluetooth(INIT + lines.join('\n') + '\n\n\n');
+    if (ok) return;
+  }
+
+  const existing = document.getElementById('print-area');
+  if (existing) existing.remove();
+  const div = document.createElement('div');
+  div.id = 'print-area';
+  div.className = 'print-receipt';
+  let linhas = '';
+  produtos.forEach((p) => { linhas += `<div>${p.qtd}x ${p.nome} - Lucro: ${brl(p.lucro)}</div>`; });
+  div.innerHTML = `
+    ${marcaHtml(config.nome_loja)}
+    <div class="center"><b>FECHAMENTO DO DIA</b></div>
+    <div class="center">${dataLabel}</div>
+    <div class="sep">--------------------------------</div>
+    <div>Faturamento: ${brl(faturamento)}</div>
+    <div>Custo Produtos: ${brl(custoTotal)}</div>
+    <div>Lucro Bruto: ${brl(lucroBruto)}</div>
+    <div>Despesas Fixas: ${brl(despesasFixas)}</div>
+    <div class="total">LUCRO LIQUIDO: ${brl(lucroLiquido)}</div>
+    <div class="sep">--------------------------------</div>
+    <div><b>POR PRODUTO</b></div>
+    ${linhas}
+    <div class="sep">--------------------------------</div>
+    ${marcaHtml(config.nome_loja)}
+  `;
+  document.body.appendChild(div);
+  window.print();
+  setTimeout(() => div.remove(), 1000);
+}
+
 export function buildKitchenReceipt(pedido: Pedido, config: Configuracao): string {
   const lines: string[] = [];
   lines.push(marcaEscPos(config.nome_loja));

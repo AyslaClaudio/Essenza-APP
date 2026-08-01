@@ -341,9 +341,13 @@ function AddItemModal({
     setBusca('');
   };
 
+  // Esfirra e pizza podem ter sabores com nome parecido — prefixa a categoria
+  // pra não confundir a cozinha na hora do preparo.
+  const nomeComCategoria = (p: Produto) => (p.categoria_nome.includes('Esfirra') ? `Esfirra: ${p.nome}` : p.nome);
+
   const adicionarAoCarrinho = () => {
     if (!prod1) return;
-    const nome = meioMeio && prod2 ? `1/2 ${prod1.nome} + 1/2 ${prod2.nome}` : prod1.nome;
+    const nome = meioMeio && prod2 ? `1/2 ${prod1.nome} + 1/2 ${prod2.nome}` : nomeComCategoria(prod1);
     setCarrinho((c) => [
       ...c,
       {
@@ -374,7 +378,7 @@ function AddItemModal({
           ...carrinho,
           {
             produto_id: prod1!.id,
-            produto_nome: meioMeio && prod2 ? `1/2 ${prod1!.nome} + 1/2 ${prod2.nome}` : prod1!.nome,
+            produto_nome: meioMeio && prod2 ? `1/2 ${prod1!.nome} + 1/2 ${prod2.nome}` : nomeComCategoria(prod1!),
             quantidade,
             preco_unitario: precoUnit,
             custo_unitario: custoUnit,

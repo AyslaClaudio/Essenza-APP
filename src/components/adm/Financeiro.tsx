@@ -7,6 +7,7 @@ import { usePedidosPeriodo } from '../../hooks/usePedidosPeriodo';
 import { calcularKPIs, agruparPorTipo, agruparPorFormaPagamento, analisarProdutos, calcularEstatisticasMargem } from '../../lib/reportUtils';
 import { GraficoBarras } from './dashboard/GraficoBarras';
 import { GraficoRosca } from './dashboard/GraficoRosca';
+import { printFechamentoDia } from '../../lib/print';
 import type { Pedido, CaixaEntry, ItemPedido } from '../../types';
 import { Wallet, TrendingUp, DollarSign, ArrowUpCircle, ArrowDownCircle, FileText, Target, Trophy, Receipt, X, Printer, BarChart3, CreditCard } from 'lucide-react';
 
@@ -202,31 +203,17 @@ function Fechamento() {
   const produtos = Object.entries(productMap).sort((a, b) => b[1].lucro - a[1].lucro);
 
   const printFechamento = () => {
-    const existing = document.getElementById('print-area');
-    if (existing) existing.remove();
-    const div = document.createElement('div');
-    div.id = 'print-area';
-    div.className = 'print-receipt';
-    let linhas = '';
-    produtos.forEach(([nome, d]) => {
-      linhas += `<div>${d.qtd}x ${nome} - Lucro: ${brl(d.lucro)}</div>`;
-    });
-    div.innerHTML = `
-      <div class="center"><b>FECHAMENTO DO DIA</b></div>
-      <div class="center">${new Date(dataFiltro).toLocaleDateString('pt-BR')}</div>
-      <div class="sep">--------------------------------</div>
-      <div>Faturamento: ${brl(faturamento)}</div>
-      <div>Custo Produtos: ${brl(custoTotal)}</div>
-      <div>Lucro Bruto: ${brl(lucroBruto)}</div>
-      <div>Despesas Fixas: ${brl(despesasFixas)}</div>
-      <div class="total">LUCRO LIQUIDO: ${brl(lucroLiquido)}</div>
-      <div class="sep">--------------------------------</div>
-      <div><b>POR PRODUTO</b></div>
-      ${linhas}
-    `;
-    document.body.appendChild(div);
-    window.print();
-    setTimeout(() => div.remove(), 1000);
+    if (!config) return;
+    printFechamentoDia(
+      new Date(dataFiltro).toLocaleDateString('pt-BR'),
+      faturamento,
+      custoTotal,
+      lucroBruto,
+      despesasFixas,
+      lucroLiquido,
+      produtos.map(([nome, d]) => ({ nome, qtd: d.qtd, lucro: d.lucro })),
+      config,
+    );
   };
 
   return (

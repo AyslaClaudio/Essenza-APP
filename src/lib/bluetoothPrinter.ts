@@ -97,20 +97,43 @@ function textoParaBytes(text: string): Uint8Array {
   return bytes;
 }
 
-// BLE limita o tamanho de cada escrita (varia por dispositivo/SO) — manda em
-// pedaços pequenos pra funcionar no maior número de impressoras possível.
-const CHUNK_SIZE = 180;
+// BLE clássico só garante ~20 bytes por escrita sem negociar um MTU maior
+// (e o navegador não deixa a gente pedir isso) — pedaços maiores funcionam em
+// parte das impressoras, mas travam ou truncam silenciosamente em outras.
+// 20 bytes é o valor seguro que funciona no maior número de aparelhos.
+const CHUNK_SIZE = 20;
+
+let ultimoErro: string | null = null;
+
+export function ultimoErroImpressao(): string | null {
+  return ultimoErro;
+}
 
 export async function imprimirViaBluetooth(escposText: string): Promise<boolean> {
-  if (!characteristic) return false;
-  const bytes = textoParaBytes(escposText);
-  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
-    const slice = bytes.slice(i, i + CHUNK_SIZE);
-    if (characteristic.properties.writeWithoutResponse) {
-      await characteristic.writeValueWithoutResponse(slice);
-    } else {
-      await characteristic.writeValue(slice);
-    }
+  if (!characteristic) {
+    ultimoErro = 'Nenhuma impressora conectada.';
+    return false;
   }
-  return true;
+  ultimoErro = null;
+  try {
+    const bytes = textoParaBytes(escposText);
+    for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+      const slice = bytes.slice(i, i + CHUNK_SIZE);
+      if (characteristic.properties.writeWithoutResponse) {
+        await characteristic.writeValueWithoutResponse(slice);
+      } else {
+        await characteristic.writeValue(slice);
+      }
+    }
+    return true;
+  } catch (e) {
+    // Nunca deixa o erro "vazar" pra quem chamou — imprimir é sempre best-effort:
+    // se a impressora Bluetooth falhar no meio da impressão, quem chamou (ex:
+    // lib/print.ts) precisa poder cair no fallback de impressão pelo navegador
+    // em vez de travar sem imprimir nada.
+    const err = e as Error;
+    ultimoErro = err.message || 'Falha ao enviar dados pra impressora.';
+    characteristic = null; // conexão provavelmente caiu — força reconectar da próxima vez
+    return false;
+  }
 }
