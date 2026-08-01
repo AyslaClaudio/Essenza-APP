@@ -62,22 +62,30 @@ export function Adm() {
     return () => clearInterval(interval);
   }, [loadDashboard]);
 
-  // Auto-impressão: pedidos feitos pelo site do cliente (cardápio público) chegam
-  // sem ninguém do Balcão para clicar em "Imprimir" — diferente do Balcão, que já
-  // imprime na hora porque é o próprio atendente lançando. Qualquer aba do Adm
-  // aberta (com a impressora Bluetooth conectada, tipicamente o PC do caixa)
-  // escuta pedidos novos em tempo real e manda pra cozinha sozinha.
+  // Auto-impressão central: qualquer pedido novo (Balcão, delivery ou site do
+  // cliente) dispara a impressão sozinho em QUALQUER aba do Adm aberta com a
+  // impressora Bluetooth conectada — geralmente o PC do caixa, mesmo que o
+  // pedido tenha sido lançado de outro aparelho (ex: celular sem impressora).
+  // Mesa fica de fora: ela já imprime comanda por comanda em MesaDetalhe.tsx
+  // conforme os itens são lançados, e o pedido criado no fechamento da mesa
+  // não deve gerar mais uma comanda de cozinha.
   useEffect(() => {
     if (!config) return;
     const channel = supabase
-      .channel('auto-print-pedidos-cliente')
+      .channel('auto-print-pedidos')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'pedidos', filter: 'tipo=eq.cliente' },
+        { event: 'INSERT', schema: 'public', table: 'pedidos' },
         async (payload) => {
           const novoPedido = payload.new as Pedido;
+          if (novoPedido.tipo === 'mesa') return;
           const { data: itensData } = await supabase.from('itens_pedido').select('*').eq('pedido_id', novoPedido.id);
-          printReceipt({ ...novoPedido, itens: (itensData as ItemPedido[]) || [] }, config, 'cozinha');
+          const pedidoCompleto = { ...novoPedido, itens: (itensData as ItemPedido[]) || [] };
+          // Aguarda uma impressão terminar antes de começar a outra — em
+          // paralelo os dois envios de bytes se intercalariam no mesmo canal
+          // Bluetooth e saem embaralhados na impressora.
+          await printReceipt(pedidoCompleto, config, 'cozinha');
+          await printReceipt(pedidoCompleto, config, 'caixa');
         },
       )
       .subscribe();

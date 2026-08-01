@@ -279,8 +279,11 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
 
       const fullPedido = { ...pedidoData, id: pedidoId, itens: cart, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), avaliacao: 0 } as Pedido;
 
-      if (printCozinha && config) printReceipt(fullPedido, config, 'cozinha');
-      if (printCaixa && config) printReceipt(fullPedido, config, 'caixa');
+      // Não imprime aqui: o INSERT acima já dispara o listener central em
+      // Adm.tsx (Realtime), que imprime na impressora conectada — de
+      // qualquer terminal (PC, celular) que tenha lançado o pedido. Sem essa
+      // separação, lançar pelo próprio PC com a impressora conectada
+      // imprimiria a comanda duas vezes.
 
       setPedidoOffline(false);
       setUltimoPedido(fullPedido);
