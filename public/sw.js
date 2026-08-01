@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'essenza-v3';
+const CACHE_VERSION = 'essenza-v4';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
@@ -47,7 +47,24 @@ function cacheFirst(request, cacheName) {
   );
 }
 
-// Stale-While-Revalidate: navigations and API routes
+// Network-First: navigation (index.html) — precisa ser a página nova de
+// verdade a cada deploy, não uma versão velha em cache que só atualiza no
+// PRÓXIMO reload (foi exatamente isso que fez a impressão automática de
+// pedidos "sumir": o app ficou rodando JS antigo mesmo depois de recarregar
+// a página, porque Stale-While-Revalidate mostra o cache primeiro e só busca
+// a versão nova por trás dos panos, pro reload seguinte).
+function networkFirst(request, cacheName = RUNTIME_CACHE) {
+  return caches.open(cacheName).then((cache) =>
+    fetch(request)
+      .then((response) => {
+        if (response.ok) cache.put(request, response.clone());
+        return response;
+      })
+      .catch(() => cache.match(request))
+  );
+}
+
+// Stale-While-Revalidate: API routes (cardápio/config)
 function staleWhileRevalidate(request, cacheName = RUNTIME_CACHE) {
   return caches.open(cacheName).then((cache) =>
     cache.match(request).then((cached) => {
@@ -96,9 +113,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Navigation requests: Stale-While-Revalidate
+  // Navigation requests: Network-First (cai pro cache só se estiver offline)
   if (request.mode === 'navigate') {
-    event.respondWith(staleWhileRevalidate(request));
+    event.respondWith(networkFirst(request));
     return;
   }
 
