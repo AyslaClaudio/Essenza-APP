@@ -1,6 +1,6 @@
 import type { Pedido, ItemPedido, Configuracao, ItemMesa } from '../types';
 import { brl, fmtHora } from './format';
-import { impressoraConectada, imprimirViaBluetooth } from './bluetoothPrinter';
+import { temImpressoraPareada, imprimirViaBluetooth } from './bluetoothPrinter';
 
 /**
  * ESC/POS commands for 80mm thermal printers.
@@ -59,7 +59,7 @@ export async function printFechamentoDia(
   produtos: FechamentoProduto[],
   config: Configuracao,
 ) {
-  if (impressoraConectada()) {
+  if (temImpressoraPareada()) {
     const lines: string[] = [];
     lines.push(marcaEscPos(config.nome_loja));
     lines.push(CENTER + BOLD_ON + 'FECHAMENTO DO DIA' + BOLD_OFF);
@@ -188,7 +188,7 @@ export function buildCashReceipt(pedido: Pedido, config: Configuracao): string {
  * navegador — mais rápido e sem depender de driver/spooler do sistema.
  */
 export async function printReceipt(pedido: Pedido, config: Configuracao, via: 'cozinha' | 'caixa') {
-  if (impressoraConectada()) {
+  if (temImpressoraPareada()) {
     const texto = via === 'cozinha' ? buildKitchenReceipt(pedido, config) : buildCashReceipt(pedido, config);
     const ok = await imprimirViaBluetooth(texto);
     if (ok) return;
@@ -238,7 +238,7 @@ function buildMesaComandaEscPos(numeroMesa: number, itens: ItemMesa[], config: C
 }
 
 export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], config: Configuracao) {
-  if (impressoraConectada()) {
+  if (temImpressoraPareada()) {
     const ok = await imprimirViaBluetooth(buildMesaComandaEscPos(numeroMesa, itens, config));
     if (ok) return;
   }
@@ -311,7 +311,7 @@ export async function printMesaConta(
   formaPagamento: string,
   config: Configuracao,
 ) {
-  if (impressoraConectada()) {
+  if (temImpressoraPareada()) {
     const ok = await imprimirViaBluetooth(buildMesaContaEscPos(numeroMesa, itens, total, formaPagamento, config));
     if (ok) return;
   }

@@ -28,8 +28,34 @@ export function impressoraConectada(): boolean {
   return !!characteristic && !!device?.gatt?.connected;
 }
 
+// Diferente de impressoraConectada(): fica true mesmo se o GATT caiu por
+// inatividade (comum em impressora BLE parada por um tempo, ex. só na hora
+// do fechamento do dia/semana) — sinaliza que já existe um dispositivo
+// pareado nesta sessão, então dá pra tentar reconectar sozinho em vez de
+// exigir que o usuário clique em "Conectar Impressora" nas Configurações.
+export function temImpressoraPareada(): boolean {
+  return !!device;
+}
+
 export function nomeImpressora(): string | null {
   return device?.name || null;
+}
+
+// Descobre e guarda a característica BLE gravável dentro de um GATT server já
+// conectado. Compartilhado entre conectarImpressora() (primeiro pareamento) e
+// a reconexão automática dentro de imprimirViaBluetooth().
+async function descobrirCaracteristica(server: BluetoothRemoteGATTServer): Promise<BluetoothRemoteGATTCharacteristic | null> {
+  for (const svcUuid of PRINTER_SERVICE_UUIDS) {
+    try {
+      const service = await server.getPrimaryService(svcUuid);
+      const chars = await service.getCharacteristics();
+      const writable = chars.find((c) => c.properties.write || c.properties.writeWithoutResponse);
+      if (writable) return writable;
+    } catch {
+      // esse serviço não existe nessa impressora — tenta o próximo UUID conhecido
+    }
+  }
+  return null;
 }
 
 export async function conectarImpressora(): Promise<{ ok: true; nome: string } | { ok: false; erro: string }> {
@@ -44,17 +70,7 @@ export async function conectarImpressora(): Promise<{ ok: true; nome: string } |
     const server = await device.gatt?.connect();
     if (!server) throw new Error('Não foi possível abrir conexão GATT com o dispositivo.');
 
-    characteristic = null;
-    for (const svcUuid of PRINTER_SERVICE_UUIDS) {
-      try {
-        const service = await server.getPrimaryService(svcUuid);
-        const chars = await service.getCharacteristics();
-        const writable = chars.find((c) => c.properties.write || c.properties.writeWithoutResponse);
-        if (writable) { characteristic = writable; break; }
-      } catch {
-        // esse serviço não existe nessa impressora — tenta o próximo UUID conhecido
-      }
-    }
+    characteristic = await descobrirCaracteristica(server);
 
     if (!characteristic) {
       device.gatt?.disconnect();
@@ -110,6 +126,20 @@ export function ultimoErroImpressao(): string | null {
 }
 
 export async function imprimirViaBluetooth(escposText: string): Promise<boolean> {
+  // Impressora BLE parada por um tempo (ex: só imprime de novo na hora do
+  // fechamento do dia/semana, horas depois da última comanda) costuma cair a
+  // conexão GATT sozinha. Se já pareamos com um dispositivo nesta sessão,
+  // tenta reconectar automaticamente antes de desistir — sem isso o usuário
+  // precisaria voltar em Configurações e clicar "Conectar" toda vez.
+  if (!characteristic && device) {
+    try {
+      const server = device.gatt?.connected ? device.gatt : await device.gatt?.connect();
+      if (server) characteristic = await descobrirCaracteristica(server);
+    } catch {
+      // reconexão falhou — cai no erro "nenhuma impressora conectada" abaixo
+    }
+  }
+
   if (!characteristic) {
     ultimoErro = 'Nenhuma impressora conectada.';
     return false;

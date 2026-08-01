@@ -287,6 +287,7 @@ function StatCard({ label, value, color }: { label: string; value: string; color
 }
 
 function Relatorios() {
+  const { config } = useConfig();
   const [periodo, setPeriodo] = useState({ dataInicio: new Date(), dataFim: new Date() });
   const [tabAtiva, setTabAtiva] = useState<'resumo' | 'produtos' | 'tipo'>('resumo');
 
@@ -344,12 +345,37 @@ function Relatorios() {
   const porDiaSemana = DIAS_SEMANA_NOMES.map((nome, i) => ({ nome, ...(porDiaSemanaMap[i] || { faturamento: 0, pedidos: 0 }) }));
   const maxDiaSemana = Math.max(1, ...porDiaSemana.map((d) => d.faturamento));
 
+  // Imprime o relatório do período selecionado (dia/semana/mês) na mesma
+  // impressora térmica das comandas — reaproveita o layout do Fechamento do
+  // Dia, sem despesas fixas (essas só fazem sentido por dia, não por período).
+  const printRelatorio = () => {
+    if (!config) return;
+    const inicioStr = periodo.dataInicio.toLocaleDateString('pt-BR');
+    const fimStr = periodo.dataFim.toLocaleDateString('pt-BR');
+    const dataLabel = inicioStr === fimStr ? inicioStr : `${inicioStr} a ${fimStr}`;
+    printFechamentoDia(
+      dataLabel,
+      kpis.faturamento,
+      kpis.custoTotal,
+      kpis.lucroTotal,
+      0,
+      kpis.lucroTotal,
+      produtos.map((p) => ({ nome: p.nome, qtd: p.quantidade, lucro: p.lucro })),
+      config,
+    );
+  };
+
   return (
     <div className="space-y-4 animate-fadeIn">
       {/* Sempre montado — se ficasse dentro do "if (loading)" abaixo, o seletor
           perderia o período escolhido (remontava do zero) toda vez que os dados
           recarregassem, voltando sempre para "Este Mês". */}
-      <PeriodSelector onPeriodChange={handlePeriodChange} defaultPeriod="mes" />
+      <div className="flex items-center gap-3 flex-wrap">
+        <PeriodSelector onPeriodChange={handlePeriodChange} defaultPeriod="mes" />
+        <button onClick={printRelatorio} className="flex items-center gap-2 bg-neutral-200 text-neutral-900 px-4 py-2.5 rounded-xl text-sm hover:bg-neutral-700">
+          <Printer size={18} /> Imprimir Relatório
+        </button>
+      </div>
 
       {loading ? (
         <p className="text-neutral-500 text-center py-8">Carregando dados...</p>

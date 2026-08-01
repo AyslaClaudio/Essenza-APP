@@ -17,6 +17,8 @@ import { Estoque } from './Estoque';
 import { IAWhatsApp } from './IAWhatsApp';
 import { Monitoramento } from './Monitoramento';
 import { WhatsAppPedidos } from './WhatsAppPedidos';
+import { printReceipt } from '../../lib/print';
+import type { Pedido, ItemPedido } from '../../types';
 
 type Tab = 'dashboard' | 'produtos' | 'balcao' | 'mesas' | 'pedidos' | 'financeiro' | 'estoque' | 'ia' | 'whatsapp' | 'monitoramento' | 'config';
 
@@ -59,6 +61,28 @@ export function Adm() {
     const interval = setInterval(loadDashboard, 30000);
     return () => clearInterval(interval);
   }, [loadDashboard]);
+
+  // Auto-impressão: pedidos feitos pelo site do cliente (cardápio público) chegam
+  // sem ninguém do Balcão para clicar em "Imprimir" — diferente do Balcão, que já
+  // imprime na hora porque é o próprio atendente lançando. Qualquer aba do Adm
+  // aberta (com a impressora Bluetooth conectada, tipicamente o PC do caixa)
+  // escuta pedidos novos em tempo real e manda pra cozinha sozinha.
+  useEffect(() => {
+    if (!config) return;
+    const channel = supabase
+      .channel('auto-print-pedidos-cliente')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'pedidos', filter: 'tipo=eq.cliente' },
+        async (payload) => {
+          const novoPedido = payload.new as Pedido;
+          const { data: itensData } = await supabase.from('itens_pedido').select('*').eq('pedido_id', novoPedido.id);
+          printReceipt({ ...novoPedido, itens: (itensData as ItemPedido[]) || [] }, config, 'cozinha');
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [config]);
 
   const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
