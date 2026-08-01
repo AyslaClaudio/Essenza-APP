@@ -6,7 +6,6 @@ import { printReceipt } from '../../lib/print';
 import type { Produto, Cliente, ItemPedido, TaxaEntrega, Adicional, Pedido } from '../../types';
 import { Search, Plus, Minus, X, ShoppingCart, Printer, Check, Phone, ArrowLeft, CloudOff } from 'lucide-react';
 import { ProductPlaceholder, usaImagemPadrao } from '../ProductPlaceholder';
-import { SenhaAdminModal } from '../SenhaAdminModal';
 import { queueOfflinePedido } from '../../lib/offlineQueue';
 
 interface CartItem extends ItemPedido {
@@ -16,7 +15,6 @@ interface CartItem extends ItemPedido {
 export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   const { config } = useConfig();
   const [step, setStep] = useState<'produtos' | 'carrinho' | 'cliente' | 'pagamento' | 'sucesso'>('produtos');
-  const [showSenhaAdmin, setShowSenhaAdmin] = useState(false);
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [adicionais, setAdicionais] = useState<Adicional[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -636,7 +634,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
             </label>
           </div>
 
-          <button onClick={() => setShowSenhaAdmin(true)} className="w-full bg-green-500 hover:bg-green-600 text-white py-5 rounded-2xl font-black text-xl active:scale-95">
+          <button onClick={fecharPedido} className="w-full bg-green-500 hover:bg-green-600 text-white py-5 rounded-2xl font-black text-xl active:scale-95">
             FECHAR PEDIDO
           </button>
           <button onClick={() => setStep('carrinho')} className="w-full py-3 text-neutral-500 text-sm">Voltar</button>
@@ -659,17 +657,6 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
           setItemObs={setItemObs}
           onConfirm={confirmSabor}
           onClose={() => setShowSabores(null)}
-        />
-      )}
-
-      {showSenhaAdmin && (
-        <SenhaAdminModal
-          title="Autorizar Lançamento"
-          description="Confirme a senha para finalizar o pedido"
-          confirmLabel="Finalizar Pedido"
-          senhaEsperada={config?.senha_tabela || '9876'}
-          onConfirm={() => { setShowSenhaAdmin(false); fecharPedido(); }}
-          onCancel={() => setShowSenhaAdmin(false)}
         />
       )}
     </div>
