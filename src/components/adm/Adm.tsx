@@ -71,16 +71,12 @@ export function Adm() {
   // não deve gerar mais uma comanda de cozinha.
   useEffect(() => {
     if (!config) return;
-    // eslint-disable-next-line no-console
-    console.log('[auto-print] montando listener, config carregado');
     const channel = supabase
       .channel('auto-print-pedidos')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'pedidos' },
         async (payload) => {
-          // eslint-disable-next-line no-console
-          console.log('[auto-print] evento recebido', payload.new);
           const novoPedido = payload.new as Pedido;
           if (novoPedido.tipo === 'mesa') return;
           const { data: itensData } = await supabase.from('itens_pedido').select('*').eq('pedido_id', novoPedido.id);
@@ -88,20 +84,11 @@ export function Adm() {
           // Aguarda uma impressão terminar antes de começar a outra — em
           // paralelo os dois envios de bytes se intercalariam no mesmo canal
           // Bluetooth e saem embaralhados na impressora.
-          // eslint-disable-next-line no-console
-          console.log('[auto-print] imprimindo cozinha...');
           await printReceipt(pedidoCompleto, config, 'cozinha');
-          // eslint-disable-next-line no-console
-          console.log('[auto-print] imprimindo caixa...');
           await printReceipt(pedidoCompleto, config, 'caixa');
-          // eslint-disable-next-line no-console
-          console.log('[auto-print] concluido');
         },
       )
-      .subscribe((status, err) => {
-        // eslint-disable-next-line no-console
-        console.log('[auto-print] status da inscricao:', status, err || '');
-      });
+      .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [config]);
 
