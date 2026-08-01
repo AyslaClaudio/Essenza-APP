@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useConfig } from '../context/ConfigContext';
-import { brl, todayISO } from '../lib/format';
+import { brl } from '../lib/format';
 import type { Produto, Cliente, TaxaEntrega, Adicional, ItemPedido } from '../types';
 import { ShoppingCart, Search, X, Plus, Minus, Check, ChevronLeft, Star } from 'lucide-react';
 import { ProductPlaceholder, usaImagemPadrao } from './ProductPlaceholder';
@@ -30,6 +30,8 @@ export function Cliente() {
   const [observacao, setObservacao] = useState('');
   const [ultimoNum, setUltimoNum] = useState(0);
   const [bairro, setBairro] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null);
 
 
   const load = useCallback(async () => {
@@ -137,35 +139,44 @@ export function Cliente() {
   const total = subtotal + taxaEntrega;
 
   const finalizar = async () => {
-    if (cart.length === 0 || !cliente.nome) return;
-    const { data: numData } = await supabase.rpc('get_next_pedido_numero').maybeSingle();
-    const numero = (numData as number) || 1;
-    const custoTotal = cart.reduce((s, c) => s + c.quantidade * c.custo_unitario, 0);
-    const lucro = subtotal - custoTotal;
+    if (cart.length === 0 || !cliente.nome || enviando) return;
+    setEnviando(true);
+    setErroEnvio(null);
+    try {
+      // Uma RPC só faz cliente+pedido+itens+caixa numa transação atômica no
+      // servidor (mesmo padrão do fechamento de mesa). Antes eram 3 inserts
+      // separados pedindo a linha de volta (`.select()`) — só que o cliente
+      // anônimo não pode LER pedidos (RLS, correto por privacidade), e pedir
+      // a linha de volta depois de inserir faz o Postgres recusar a
+      // transação INTEIRA. Resultado: nada era salvo e a tela ainda assim
+      // mostrava "Pedido Recebido!", porque o erro não era checado.
+      const itensPayload = cart.map((c) => ({
+        produto_id: c.produto_id, produto_nome: c.produto_nome, quantidade: c.quantidade,
+        preco_unitario: c.preco_unitario, custo_unitario: c.custo_unitario, observacao: c.observacao,
+        sabor1: c.sabor1, sabor2: c.sabor2, adicional: c.adicional, adicional_preco: c.adicional_preco,
+      }));
+      const { data, error } = await supabase.rpc('criar_pedido_cliente', {
+        p_cliente_nome: cliente.nome,
+        p_cliente_telefone: cliente.telefone,
+        p_cliente_endereco: cliente.endereco,
+        p_cliente_bairro: cliente.bairro || bairro,
+        p_taxa_entrega: taxaEntrega,
+        p_forma_pagamento: formaPagamento,
+        p_observacao: observacao,
+        p_itens: itensPayload,
+      }).maybeSingle();
+      if (error) throw error;
+      const numero = (data as { numero: number } | null)?.numero;
+      if (!numero) throw new Error('Pedido não foi salvo — tente novamente.');
 
-    let clienteId: string | null = null;
-    const { data: nc } = await supabase.from('clientes').insert(cliente).select().maybeSingle();
-    clienteId = (nc as Cliente)?.id || null;
-
-    const pedidoData = {
-      numero, cliente_id: clienteId, cliente_nome: cliente.nome, cliente_telefone: cliente.telefone,
-      cliente_endereco: cliente.endereco, cliente_bairro: cliente.bairro || bairro,
-      tipo: 'cliente' as const, status: 'confirmado' as const,
-      subtotal, taxa_entrega: taxaEntrega, desconto: 0, total, custo_total: custoTotal, lucro,
-      forma_pagamento: formaPagamento, observacao, cupom: '',
-    };
-    const { data: pedido } = await supabase.from('pedidos').insert(pedidoData).select().maybeSingle();
-    if (pedido) {
-      await supabase.from('itens_pedido').insert(cart.map((c) => ({
-        pedido_id: (pedido as { id: string }).id, produto_id: c.produto_id, produto_nome: c.produto_nome,
-        quantidade: c.quantidade, preco_unitario: c.preco_unitario, custo_unitario: c.custo_unitario,
-        observacao: c.observacao, sabor1: c.sabor1, sabor2: c.sabor2, adicional: c.adicional, adicional_preco: c.adicional_preco,
-      })));
-      await supabase.from('caixa').insert({ tipo: 'entrada', descricao: `Pedido #${numero} - ${cliente.nome}`, valor: total, forma_pagamento: formaPagamento, pedido_id: (pedido as { id: string }).id, data: todayISO() });
+      setUltimoNum(numero);
+      setStep('sucesso');
+      setCart([]);
+    } catch (e) {
+      setErroEnvio('Não foi possível enviar seu pedido. Verifique sua internet e tente novamente — se o problema continuar, chame no telefone da loja.');
+    } finally {
+      setEnviando(false);
     }
-    setUltimoNum(numero);
-    setStep('sucesso');
-    setCart([]);
   };
 
   if (step === 'sucesso') {
@@ -393,8 +404,11 @@ export function Cliente() {
               <div className="flex justify-between font-bold text-lg border-t border-neutral-200 pt-2"><span className="text-neutral-900">Total</span><span className="text-[#22c55e]">{brl(total)}</span></div>
             </div>
 
-            <button onClick={finalizar} disabled={!cliente.nome || !cliente.telefone || !cliente.endereco || cart.length === 0} className="w-full bg-green-500 hover:bg-green-600 text-white py-5 rounded-2xl font-black text-lg disabled:opacity-50 active:scale-95">
-              CONFIRMAR PEDIDO
+            {erroEnvio && (
+              <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">{erroEnvio}</p>
+            )}
+            <button onClick={finalizar} disabled={!cliente.nome || !cliente.telefone || !cliente.endereco || cart.length === 0 || enviando} className="w-full bg-green-500 hover:bg-green-600 text-white py-5 rounded-2xl font-black text-lg disabled:opacity-50 active:scale-95">
+              {enviando ? 'ENVIANDO...' : 'CONFIRMAR PEDIDO'}
             </button>
           </div>
         </div>
