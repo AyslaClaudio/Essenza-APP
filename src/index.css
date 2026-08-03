@@ -71,7 +71,10 @@ body {
     white-space: pre;
   }
   .print-receipt .item {
-    margin-top: 4px;
+    margin-top: 10px;
+  }
+  .print-receipt .item:first-of-type {
+    margin-top: 0;
   }
   .print-receipt .sub {
     padding-left: 8px;

@@ -120,16 +120,13 @@ export function buildKitchenReceipt(pedido: Pedido, config: Configuracao): strin
 
   pedido.itens?.forEach((item: ItemPedido) => {
     lines.push(BOLD_ON + `${item.quantidade}x ${item.produto_nome}` + BOLD_OFF);
-    if (item.sabor1 || item.sabor2) {
-      const sabores = [item.sabor1, item.sabor2].filter(Boolean).join(' / ');
-      lines.push(BOLD_ON + `  Sabores: ${sabores}` + BOLD_OFF);
-    }
     if (item.adicional) {
       lines.push(BOLD_ON + `  Adic: ${item.adicional}` + BOLD_OFF);
     }
     if (item.observacao) {
       lines.push(BOLD_ON + `  Obs: ${item.observacao.toUpperCase()}` + BOLD_OFF);
     }
+    lines.push('');
   });
 
   lines.push(LINE);
@@ -157,13 +154,10 @@ export function buildCashReceipt(pedido: Pedido, config: Configuracao): string {
 
   pedido.itens?.forEach((item: ItemPedido) => {
     lines.push(`${item.quantidade}x ${item.produto_nome}`);
-    if (item.sabor1 || item.sabor2) {
-      const sabores = [item.sabor1, item.sabor2].filter(Boolean).join(' / ');
-      lines.push(`  ${sabores}`);
-    }
     if (item.adicional) lines.push(`  + ${item.adicional}`);
     if (item.observacao) lines.push(`  Obs: ${item.observacao}`);
     lines.push(`  ${brl(item.quantidade * (item.preco_unitario + item.adicional_preco))}`);
+    lines.push('');
   });
 
   lines.push(LINE);
@@ -226,11 +220,9 @@ function buildMesaComandaEscPos(numeroMesa: number, itens: ItemMesa[], config: C
   lines.push(LINE);
   itens.forEach((item) => {
     lines.push(BOLD_ON + `${item.quantidade}x ${item.produto_nome}` + BOLD_OFF);
-    if (item.sabor1 || item.sabor2) {
-      lines.push(BOLD_ON + `  Sabores: ${[item.sabor1, item.sabor2].filter(Boolean).join(' / ')}` + BOLD_OFF);
-    }
     if (item.adicional) lines.push(BOLD_ON + `  Adic: ${item.adicional}` + BOLD_OFF);
     if (item.observacao) lines.push(BOLD_ON + `  Obs: ${item.observacao.toUpperCase()}` + BOLD_OFF);
+    lines.push('');
   });
   lines.push(LINE);
   lines.push(marcaEscPos(config.nome_loja));
@@ -249,10 +241,6 @@ export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], co
   let itensHTML = '';
   itens.forEach((item) => {
     itensHTML += `<div class="item"><b>${item.quantidade}x ${item.produto_nome}</b></div>`;
-    if (item.sabor1 || item.sabor2) {
-      const s = [item.sabor1, item.sabor2].filter(Boolean).join(' / ');
-      itensHTML += `<div class="sub"><b>Sabores: ${s}</b></div>`;
-    }
     if (item.adicional) itensHTML += `<div class="sub"><b>Adic: ${item.adicional}</b></div>`;
     if (item.observacao) itensHTML += `<div class="sub"><b>Obs: ${item.observacao.toUpperCase()}</b></div>`;
   });
@@ -289,10 +277,10 @@ function buildMesaContaEscPos(numeroMesa: number, itens: ItemMesa[], total: numb
   lines.push(LINE);
   itens.forEach((item) => {
     lines.push(`${item.quantidade}x ${item.produto_nome}`);
-    if (item.sabor1 || item.sabor2) lines.push(`  ${[item.sabor1, item.sabor2].filter(Boolean).join(' / ')}`);
     if (item.adicional) lines.push(`  + ${item.adicional}`);
     if (item.observacao) lines.push(`  Obs: ${item.observacao}`);
     lines.push(`  ${brl(item.quantidade * (item.preco_unitario + item.adicional_preco))}`);
+    lines.push('');
   });
   lines.push(LINE);
   lines.push(BOLD_ON + `TOTAL:       ${brl(total)}` + BOLD_OFF);
@@ -322,10 +310,6 @@ export async function printMesaConta(
   let itensHTML = '';
   itens.forEach((item) => {
     itensHTML += `<div class="item">${item.quantidade}x ${item.produto_nome}</div>`;
-    if (item.sabor1 || item.sabor2) {
-      const s = [item.sabor1, item.sabor2].filter(Boolean).join(' / ');
-      itensHTML += `<div class="sub">${s}</div>`;
-    }
     if (item.adicional) itensHTML += `<div class="sub">+ ${item.adicional}</div>`;
     if (item.observacao) itensHTML += `<div class="sub">Obs: ${item.observacao}</div>`;
     itensHTML += `<div class="right">${brl(item.quantidade * (item.preco_unitario + item.adicional_preco))}</div>`;
@@ -360,10 +344,6 @@ function kitchenHTML(pedido: Pedido, config: Configuracao): string {
   let itens = '';
   pedido.itens?.forEach((item) => {
     itens += `<div class="item"><b>${item.quantidade}x ${item.produto_nome}</b></div>`;
-    if (item.sabor1 || item.sabor2) {
-      const s = [item.sabor1, item.sabor2].filter(Boolean).join(' / ');
-      itens += `<div class="sub"><b>Sabores: ${s}</b></div>`;
-    }
     if (item.adicional) itens += `<div class="sub"><b>Adic: ${item.adicional}</b></div>`;
     if (item.observacao) itens += `<div class="sub"><b>Obs: ${item.observacao.toUpperCase()}</b></div>`;
   });
@@ -387,10 +367,6 @@ function cashHTML(pedido: Pedido, config: Configuracao): string {
   let itens = '';
   pedido.itens?.forEach((item) => {
     itens += `<div class="item">${item.quantidade}x ${item.produto_nome}</div>`;
-    if (item.sabor1 || item.sabor2) {
-      const s = [item.sabor1, item.sabor2].filter(Boolean).join(' / ');
-      itens += `<div class="sub">${s}</div>`;
-    }
     if (item.adicional) itens += `<div class="sub">+ ${item.adicional}</div>`;
     if (item.observacao) itens += `<div class="sub">Obs: ${item.observacao}</div>`;
     itens += `<div class="right">${brl(item.quantidade * (item.preco_unitario + item.adicional_preco))}</div>`;
