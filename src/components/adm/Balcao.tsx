@@ -257,6 +257,8 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
         forma_pagamento: formaPagamento,
         observacao,
         cupom: '',
+        imprimir_cozinha: printCozinha,
+        imprimir_caixa: printCaixa,
       };
 
       const { data: pedido, error: pedErr } = await supabase.from('pedidos').insert(pedidoData).select().maybeSingle();
@@ -318,6 +320,11 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
       forma_pagamento: formaPagamento,
       observacao,
       cupom: '',
+      // Já imprime local aqui embaixo (linhas do printCozinha/printCaixa) —
+      // marca como "não imprimir de novo" pra quando sincronizar, senão o
+      // listener central duplicaria a comanda que já saiu na hora.
+      imprimir_cozinha: false,
+      imprimir_caixa: false,
     };
 
     const entry = queueOfflinePedido({ pedidoData, itens: itensBase, caixaDescricaoPrefixo: 'Pedido' });

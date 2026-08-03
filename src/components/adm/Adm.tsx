@@ -81,11 +81,18 @@ export function Adm() {
           if (novoPedido.tipo === 'mesa') return;
           const { data: itensData } = await supabase.from('itens_pedido').select('*').eq('pedido_id', novoPedido.id);
           const pedidoCompleto = { ...novoPedido, itens: (itensData as ItemPedido[]) || [] };
+          // Respeita a escolha de Cozinha/Caixa feita no Balcão ao criar o
+          // pedido (colunas imprimir_cozinha/imprimir_caixa) — antes esse
+          // listener sempre imprimia as duas juntas, ignorando o que a
+          // usuária tinha marcado. Pedidos sem essas colunas (ex: site do
+          // cliente, linhas antigas) mantêm o padrão de imprimir as duas.
+          const querCozinha = novoPedido.imprimir_cozinha ?? true;
+          const querCaixa = novoPedido.imprimir_caixa ?? true;
           // Aguarda uma impressão terminar antes de começar a outra — em
           // paralelo os dois envios de bytes se intercalariam no mesmo canal
           // Bluetooth e saem embaralhados na impressora.
-          await printReceipt(pedidoCompleto, config, 'cozinha');
-          await printReceipt(pedidoCompleto, config, 'caixa');
+          if (querCozinha) await printReceipt(pedidoCompleto, config, 'cozinha');
+          if (querCaixa) await printReceipt(pedidoCompleto, config, 'caixa');
         },
       )
       .subscribe();

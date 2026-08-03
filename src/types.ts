@@ -85,6 +85,8 @@ export interface Pedido {
   avaliacao: number;
   created_at: string;
   updated_at: string;
+  imprimir_cozinha?: boolean;
+  imprimir_caixa?: boolean;
   itens?: ItemPedido[];
 }
 
