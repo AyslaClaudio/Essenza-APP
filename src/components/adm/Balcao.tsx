@@ -177,7 +177,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
     // Half/half: charge the more expensive one
     const preco = isHalfHalf ? Math.max(sabor1.preco, sabor2!.preco) : sabor1.preco;
     const custo = isHalfHalf ? (sabor1.custo + sabor2!.custo) / 2 : sabor1.custo;
-    const nome = isHalfHalf ? `Pizza ${sabor1.tamanho} 1/2 ${sabor1.nome} / 1/2 ${sabor2!.nome}` : `Pizza ${sabor1.tamanho} ${sabor1.nome}`;
+    const nome = isHalfHalf ? `Pizza ${sabor1.tamanho} ${sabor1.nome} / ${sabor2!.nome}` : `Pizza ${sabor1.tamanho} ${sabor1.nome}`;
     addToCart({
       id: '',
       pedido_id: '',
@@ -233,7 +233,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
 
       // Get or create cliente
       let clienteId = cliente?.id || null;
-      if (tipo === 'delivery' && !cliente && novoCliente.nome) {
+      if (!cliente && novoCliente.nome && novoCliente.telefone) {
         const { data: nc, error: cliErr } = await supabase.from('clientes').insert(novoCliente).select().maybeSingle();
         if (cliErr) throw cliErr;
         clienteId = (nc as Cliente)?.id || null;
@@ -571,18 +571,11 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
             </div>
           )}
 
-          {/* Skip to balcao */}
-          {tipo === 'balcao' && (
-            <button onClick={() => { setCliente(null); setStep('pagamento'); }} className="w-full py-3 bg-neutral-200 text-neutral-900 rounded-xl font-medium">
-              Consumidor (sem cadastro)
-            </button>
-          )}
-
           {/* New customer form */}
           <div className="border-t border-neutral-200 pt-4 space-y-3">
-            <p className="text-neutral-500 text-sm">Novo cliente</p>
+            <p className="text-neutral-500 text-sm">Cliente</p>
             <input value={novoCliente.nome} onChange={(e) => setNovoCliente({ ...novoCliente, nome: e.target.value })} placeholder="Nome" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
-            <input value={novoCliente.telefone} onChange={(e) => setNovoCliente({ ...novoCliente, telefone: e.target.value })} placeholder="Telefone" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
+            <input value={novoCliente.telefone} onChange={(e) => setNovoCliente({ ...novoCliente, telefone: e.target.value })} placeholder="Telefone (obrigatório)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
             {tipo === 'delivery' && (
               <>
                 <input value={novoCliente.endereco} onChange={(e) => setNovoCliente({ ...novoCliente, endereco: e.target.value })} placeholder="Endereço" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
@@ -591,9 +584,16 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
             )}
           </div>
 
-          <button onClick={() => setStep('pagamento')} className="w-full bg-[#E50914] text-white py-4 rounded-xl font-bold text-lg active:scale-95">
+          <button
+            onClick={() => setStep('pagamento')}
+            disabled={!cliente && !novoCliente.telefone.trim()}
+            className="w-full bg-[#E50914] text-white py-4 rounded-xl font-bold text-lg active:scale-95 disabled:opacity-40 disabled:active:scale-100"
+          >
             Continuar
           </button>
+          {!cliente && !novoCliente.telefone.trim() && (
+            <p className="text-center text-neutral-500 text-xs">Informe o telefone para continuar — é o que permite mandar promoção e reconhecer o cliente na próxima compra.</p>
+          )}
         </div>
       )}
 

@@ -347,7 +347,7 @@ function AddItemModal({
 
   const adicionarAoCarrinho = () => {
     if (!prod1) return;
-    const nome = meioMeio && prod2 ? `1/2 ${prod1.nome} + 1/2 ${prod2.nome}` : nomeComCategoria(prod1);
+    const nome = meioMeio && prod2 ? `${prod1.nome} / ${prod2.nome}` : nomeComCategoria(prod1);
     setCarrinho((c) => [
       ...c,
       {
@@ -378,7 +378,7 @@ function AddItemModal({
           ...carrinho,
           {
             produto_id: prod1!.id,
-            produto_nome: meioMeio && prod2 ? `1/2 ${prod1!.nome} + 1/2 ${prod2.nome}` : nomeComCategoria(prod1!),
+            produto_nome: meioMeio && prod2 ? `${prod1!.nome} / ${prod2.nome}` : nomeComCategoria(prod1!),
             quantidade,
             preco_unitario: precoUnit,
             custo_unitario: custoUnit,

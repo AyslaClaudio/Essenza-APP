@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useConfig } from '../../context/ConfigContext';
 import { brl, margemProduto, todayISO } from '../../lib/format';
+import { dateToISO } from '../../lib/dateUtils';
 import { PeriodSelector } from '../PeriodSelector';
 import { usePedidosPeriodo } from '../../hooks/usePedidosPeriodo';
 import { calcularKPIs, agruparPorTipo, agruparPorFormaPagamento, analisarProdutos, calcularEstatisticasMargem } from '../../lib/reportUtils';
@@ -317,9 +318,11 @@ function Relatorios() {
   const top10Vendidos = [...produtos].sort((a, b) => b.quantidade - a.quantidade).slice(0, 10);
 
   // Faturamento por dia dentro do período selecionado (para o gráfico de tendência)
+  // p.created_at é UTC — usar dateToISO(new Date(...)) em vez de .slice(0,10) direto,
+  // senão pedidos feitos à noite (fuso Brasil = UTC-3) somam no dia seguinte errado.
   const porDiaMap: Record<string, number> = {};
   pedidos.forEach((p) => {
-    const dia = p.created_at.slice(0, 10);
+    const dia = dateToISO(new Date(p.created_at));
     porDiaMap[dia] = (porDiaMap[dia] || 0) + Number(p.total);
   });
   const tendencia = Object.keys(porDiaMap)

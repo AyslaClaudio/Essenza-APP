@@ -123,7 +123,7 @@ export function Cliente() {
     const isHalf = sabor2 !== null;
     const preco = isHalf ? Math.max(sabor1.preco, sabor2!.preco) : sabor1.preco;
     const custo = isHalf ? (sabor1.custo + sabor2!.custo) / 2 : sabor1.custo;
-    const nome = isHalf ? `Pizza ${sabor1.tamanho} 1/2 ${sabor1.nome} / 1/2 ${sabor2!.nome}` : `Pizza ${sabor1.tamanho} ${sabor1.nome}`;
+    const nome = isHalf ? `Pizza ${sabor1.tamanho} ${sabor1.nome} / ${sabor2!.nome}` : `Pizza ${sabor1.tamanho} ${sabor1.nome}`;
     addToCart({
       id: '', pedido_id: '', produto_id: sabor1.id, produto_nome: nome,
       quantidade: 1, preco_unitario: preco, custo_unitario: custo,
