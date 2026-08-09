@@ -54,8 +54,11 @@ export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props
   const subtotal = itens.reduce((s, i) => s + i.quantidade * (i.preco_unitario + i.adicional_preco), 0);
 
   // ----- Adiciona um ou mais itens na mesa de uma vez (e imprime UMA comanda com todos) -----
-  const handleAddItens = async (novos: Omit<ItemMesa, 'id' | 'mesa_id' | 'created_at'>[]) => {
-    if (novos.length === 0) return;
+  // Não fecha o modal sozinho: o garçom costuma lançar vários itens da mesma mesa em
+  // sequência (ex: 4 pizzas diferentes), e fechar a cada lançamento obrigava reabrir o
+  // modal pra cada item. Quem decide fechar agora é o próprio garçom, no X do modal.
+  const handleAddItens = async (novos: Omit<ItemMesa, 'id' | 'mesa_id' | 'created_at'>[]): Promise<boolean> => {
+    if (novos.length === 0) return false;
     setBusy(true);
     try {
       const { data: inserted, error } = await supabase
@@ -80,11 +83,12 @@ export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props
         printMesaComanda(mesa.numero, inserted as ItemMesa[], config);
       }
 
-      setShowAdd(false);
       await loadItens();
       onChanged();
+      return true;
     } catch (e: any) {
       alert('Erro ao adicionar itens: ' + (e.message || 'tente novamente'));
+      return false;
     } finally {
       setBusy(false);
     }
@@ -304,7 +308,7 @@ function AddItemModal({
 }: {
   produtos: Produto[];
   busy: boolean;
-  onAdd: (itens: ItemDraft[]) => void;
+  onAdd: (itens: ItemDraft[]) => Promise<boolean>;
   onClose: () => void;
 }) {
   const [prod1Id, setProd1Id] = useState('');
@@ -315,6 +319,7 @@ function AddItemModal({
   const [busca, setBusca] = useState('');
   const [catFiltro, setCatFiltro] = useState('todas');
   const [carrinho, setCarrinho] = useState<ItemDraft[]>([]);
+  const [confirmado, setConfirmado] = useState(false);
 
   const categorias = [...new Set(produtos.map((p) => p.categoria_nome))];
   const filtrados = produtos.filter((p) => {
@@ -370,7 +375,7 @@ function AddItemModal({
     setCarrinho((c) => c.filter((_, i) => i !== idx));
   };
 
-  const confirmar = () => {
+  const confirmar = async () => {
     // Se o usuário deixou algo selecionado no formulário sem clicar em "Adicionar
     // à lista", inclui esse item também para não perder o que já preencheu.
     const itens = podeAdicionar
@@ -391,7 +396,16 @@ function AddItemModal({
         ]
       : carrinho;
     if (itens.length === 0) return;
-    onAdd(itens);
+    const ok = await onAdd(itens);
+    if (ok) {
+      // Lançou com sucesso: limpa a lista e o formulário, mas mantém o modal
+      // aberto — o garçom continua lançando os próximos itens da mesma mesa
+      // sem precisar reabrir. Fecha manualmente pelo X quando terminar.
+      setCarrinho([]);
+      limparFormulario();
+      setConfirmado(true);
+      setTimeout(() => setConfirmado(false), 2000);
+    }
   };
 
   return (
@@ -540,9 +554,15 @@ function AddItemModal({
           )}
         </div>
 
+        {confirmado && (
+          <div className="mx-4 mb-2 bg-green-50 border border-green-200 text-green-700 text-sm font-semibold rounded-xl px-4 py-2.5 text-center">
+            Itens lançados e comanda impressa! Pode adicionar mais, ou fechar quando terminar.
+          </div>
+        )}
+
         <div className="p-4 border-t border-neutral-200 flex gap-3 sticky bottom-0 bg-white">
           <button onClick={onClose} className="flex-1 border border-neutral-200 text-neutral-700 rounded-xl py-2.5 font-semibold hover:bg-neutral-200">
-            Cancelar
+            Fechar
           </button>
           <button
             onClick={confirmar}

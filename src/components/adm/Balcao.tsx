@@ -12,6 +12,12 @@ interface CartItem extends ItemPedido {
   produto: Produto;
 }
 
+// Compara bairros ignorando espaços nas pontas e maiúscula/minúscula — o
+// cadastro de cliente e a tabela de taxas às vezes têm o mesmo bairro escrito
+// com pequenas diferenças, e uma comparação exata fazia o frete sumir (caía
+// pro padrão de R$0 sem avisar ninguém).
+const normalizaBairro = (s: string) => s.trim().toLowerCase();
+
 export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   const { config } = useConfig();
   const [step, setStep] = useState<'produtos' | 'carrinho' | 'cliente' | 'pagamento' | 'sucesso'>('produtos');
@@ -93,7 +99,9 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   };
 
   const subtotal = cart.reduce((s, c) => s + c.quantidade * (c.preco_unitario + c.adicional_preco), 0);
-  const taxaEntrega = tipo === 'delivery' ? (taxas.find((t) => t.bairro === bairro)?.taxa || config?.taxa_fixa_entrega || 0) : 0;
+  const taxaEncontrada = tipo === 'delivery' ? taxas.find((t) => normalizaBairro(t.bairro) === normalizaBairro(bairro)) : undefined;
+  const bairroSemTaxaCadastrada = tipo === 'delivery' && !!bairro.trim() && !taxaEncontrada;
+  const taxaEntrega = tipo === 'delivery' ? (taxaEncontrada?.taxa ?? config?.taxa_fixa_entrega ?? 0) : 0;
   const total = subtotal + taxaEntrega;
 
   const isCombo = (p: Produto) => p.categoria_nome.includes('Combo');
@@ -523,10 +531,15 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
               {tipo === 'delivery' && (
                 <div>
                   <label className="text-neutral-500 text-sm">Bairro</label>
-                  <select value={bairro} onChange={(e) => setBairro(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none">
+                  <select value={taxaEncontrada?.bairro ?? bairro} onChange={(e) => setBairro(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none">
                     <option value="">Selecione...</option>
                     {taxas.map((t) => <option key={t.id} value={t.bairro}>{t.bairro} - {brl(t.taxa)}</option>)}
                   </select>
+                  {bairroSemTaxaCadastrada && (
+                    <p className="text-amber-600 text-xs mt-1.5">
+                      "{bairro}" não tem taxa de entrega cadastrada — cobrando o valor padrão da loja ({brl(config?.taxa_fixa_entrega || 0)}). Selecione o bairro certo na lista acima se for diferente.
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -586,7 +599,10 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
             {tipo === 'delivery' && (
               <>
                 <input value={novoCliente.endereco} onChange={(e) => setNovoCliente({ ...novoCliente, endereco: e.target.value })} placeholder="Endereço" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
-                <input value={novoCliente.bairro} onChange={(e) => { setNovoCliente({ ...novoCliente, bairro: e.target.value }); setBairro(e.target.value); }} placeholder="Bairro" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
+                <select value={novoCliente.bairro} onChange={(e) => { setNovoCliente({ ...novoCliente, bairro: e.target.value }); setBairro(e.target.value); }} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#E50914] focus:outline-none">
+                  <option value="">Bairro...</option>
+                  {taxas.map((t) => <option key={t.id} value={t.bairro}>{t.bairro} - {brl(t.taxa)}</option>)}
+                </select>
               </>
             )}
           </div>
