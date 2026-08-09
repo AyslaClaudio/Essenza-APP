@@ -630,9 +630,27 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
             <h3 className="text-xl font-bold text-neutral-900">Pagamento</h3>
           </div>
 
+          {tipo === 'delivery' && (
+            <div>
+              <label className="text-neutral-500 text-sm">Bairro (confira antes de fechar)</label>
+              <select value={taxaEncontrada?.bairro ?? bairro} onChange={(e) => setBairro(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none">
+                <option value="">Selecione...</option>
+                {taxas.map((t) => <option key={t.id} value={t.bairro}>{t.bairro} - {brl(t.taxa)}</option>)}
+              </select>
+              {bairroSemTaxaCadastrada ? (
+                <p className="text-amber-600 text-xs mt-1.5">
+                  "{bairro}" não tem taxa de entrega cadastrada — cobrando o valor padrão da loja ({brl(config?.taxa_fixa_entrega || 0)}). Selecione o bairro certo se for diferente.
+                </p>
+              ) : !bairro.trim() ? (
+                <p className="text-amber-600 text-xs mt-1.5">Nenhum bairro selecionado — cobrando o valor padrão da loja ({brl(config?.taxa_fixa_entrega || 0)}) de entrega. Selecione o bairro do cliente.</p>
+              ) : null}
+            </div>
+          )}
+
           <div className="bg-white border border-neutral-200 rounded-2xl p-4 text-center">
             <p className="text-neutral-500 text-sm">Total a Pagar</p>
             <p className="text-[#22c55e] font-black text-4xl">{brl(total)}</p>
+            {tipo === 'delivery' && <p className="text-neutral-500 text-xs mt-1">Subtotal {brl(subtotal)} + Entrega {brl(taxaEntrega)}</p>}
           </div>
 
           <div className="grid grid-cols-3 gap-3">

@@ -519,14 +519,6 @@ function AddItemModal({
             </div>
           )}
 
-          <button
-            onClick={adicionarAoCarrinho}
-            disabled={!podeAdicionar}
-            className="w-full flex items-center justify-center gap-2 border border-[#E50914] text-[#E50914] rounded-xl py-2.5 font-bold hover:bg-[#E50914]/10 disabled:opacity-40 disabled:hover:bg-transparent"
-          >
-            <Plus size={16} /> Adicionar à lista do pedido
-          </button>
-
           {/* Itens já adicionados à lista, aguardando lançamento em conjunto */}
           {carrinho.length > 0 && (
             <div className="bg-neutral-100 rounded-xl divide-y divide-neutral-200/60 overflow-hidden">
@@ -560,17 +552,28 @@ function AddItemModal({
           </div>
         )}
 
-        <div className="p-4 border-t border-neutral-200 flex gap-3 sticky bottom-0 bg-white">
-          <button onClick={onClose} className="flex-1 border border-neutral-200 text-neutral-700 rounded-xl py-2.5 font-semibold hover:bg-neutral-200">
-            Fechar
-          </button>
+        {/* Rodapé fixo — sempre visível, sem precisar rolar, pra não repetir o erro de
+            um botão importante ficar escondido embaixo. */}
+        <div className="p-4 border-t border-neutral-200 sticky bottom-0 bg-white space-y-2">
           <button
-            onClick={confirmar}
-            disabled={(!podeAdicionar && carrinho.length === 0) || busy}
-            className="flex-1 flex items-center justify-center gap-2 bg-[#E50914] hover:bg-red-600 text-white rounded-xl py-2.5 font-bold disabled:opacity-40"
+            onClick={adicionarAoCarrinho}
+            disabled={!podeAdicionar}
+            className="w-full flex items-center justify-center gap-2 border border-[#E50914] text-[#E50914] rounded-xl py-2.5 font-bold hover:bg-[#E50914]/10 disabled:opacity-40 disabled:hover:bg-transparent"
           >
-            <Printer size={16} /> {busy ? 'Lançando...' : 'Lançar Pedido + Comanda'}
+            <Plus size={16} /> Adicionar à lista ({carrinho.length > 0 ? `${carrinho.length} ` : ''}sem lançar ainda)
           </button>
+          <div className="flex gap-3">
+            <button onClick={onClose} className="flex-1 border border-neutral-200 text-neutral-700 rounded-xl py-2.5 font-semibold hover:bg-neutral-200">
+              Fechar
+            </button>
+            <button
+              onClick={confirmar}
+              disabled={(!podeAdicionar && carrinho.length === 0) || busy}
+              className="flex-1 flex items-center justify-center gap-2 bg-[#E50914] hover:bg-red-600 text-white rounded-xl py-2.5 font-bold disabled:opacity-40"
+            >
+              <Printer size={16} /> {busy ? 'Lançando...' : 'Lançar Pedido + Comanda'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
