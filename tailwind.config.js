@@ -5,18 +5,19 @@ export default {
     extend: {
       colors: {
         essenza: {
-          red: '#E50914',
-          'red-dark': '#B00710',
-          terracotta: '#C1440E',
-          olive: '#5B6B3F',
+          // Paleta "Toscana rústica" — extraída do Instagram real da loja
+          // (verde-oliva, terracota, creme), substitui o vermelho vivo genérico.
+          red: '#B5652E',
+          'red-dark': '#8F4F22',
+          terracotta: '#B5652E',
+          olive: '#6B6A2F',
           'olive-light': '#8CA366',
-          // Verde e vermelho oficiais da bandeira italiana — usados como acentos de marca
-          // (faixa tricolor, badges, botões secundários), não como paleta de fundo.
-          'italia-green': '#008C45',
-          'italia-green-dark': '#046A34',
-          'italia-red': '#CD212A',
-          cream: '#FAF7F1',
-          gold: '#FFD700',
+          // Mantidos por compatibilidade com paleta anterior — não usados como fundo.
+          'italia-green': '#6B6A2F',
+          'italia-green-dark': '#54531F',
+          'italia-red': '#B5652E',
+          cream: '#EFE6D0',
+          gold: '#C9A227',
           dark: '#0A0A0A',
           'dark-card': '#141414',
           'dark-border': '#262626',

@@ -200,7 +200,7 @@ export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 bg-[#E50914] hover:bg-red-600 text-white text-sm px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95"
+            className="flex items-center gap-2 bg-[#B5652E] hover:bg-red-600 text-white text-sm px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95"
           >
             <Plus size={18} /> Adicionar Item
           </button>
@@ -428,20 +428,20 @@ function AddItemModal({
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar produto..."
-            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900 focus:border-[#E50914] focus:outline-none"
+            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900 focus:border-[#B5652E] focus:outline-none"
           />
 
           {/* Categorias */}
           <div className="flex gap-2 overflow-x-auto pb-0.5">
             <button
               onClick={() => setCatFiltro('todas')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${catFiltro === 'todas' ? 'bg-[#E50914] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500'}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${catFiltro === 'todas' ? 'bg-[#B5652E] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500'}`}
             >Todos</button>
             {categorias.map((c) => (
               <button
                 key={c}
                 onClick={() => setCatFiltro(c)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${catFiltro === c ? 'bg-[#E50914] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500'}`}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${catFiltro === c ? 'bg-[#B5652E] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500'}`}
               >{c}</button>
             ))}
           </div>
@@ -454,7 +454,7 @@ function AddItemModal({
                 onClick={() => setProd1Id(p.id)}
                 className={`flex items-center gap-3 px-2.5 py-2 rounded-lg border text-left text-sm transition-colors ${
                   prod1Id === p.id
-                    ? 'border-[#E50914] bg-[#E50914]/10 text-[#E50914] font-semibold'
+                    ? 'border-[#B5652E] bg-[#B5652E]/10 text-[#B5652E] font-semibold'
                     : 'border-neutral-200 text-neutral-700 hover:bg-neutral-100'
                 }`}
               >
@@ -472,14 +472,14 @@ function AddItemModal({
 
           {/* Meio a meio */}
           <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer">
-            <input type="checkbox" checked={meioMeio} onChange={(e) => setMeioMeio(e.target.checked)} className="accent-[#E50914]" />
+            <input type="checkbox" checked={meioMeio} onChange={(e) => setMeioMeio(e.target.checked)} className="accent-[#B5652E]" />
             Pizza meio a meio (2 sabores — cobra o mais caro)
           </label>
           {meioMeio && (
             <select
               value={prod2Id}
               onChange={(e) => setProd2Id(e.target.value)}
-              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900 focus:border-[#E50914] focus:outline-none"
+              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900 focus:border-[#B5652E] focus:outline-none"
             >
               <option value="">Selecione o 2º sabor...</option>
               {produtos.map((p) => (
@@ -497,7 +497,7 @@ function AddItemModal({
                 min={1}
                 value={quantidade}
                 onChange={(e) => setQuantidade(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900 focus:border-[#E50914] focus:outline-none"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900 focus:border-[#B5652E] focus:outline-none"
               />
             </div>
             <div className="flex-1">
@@ -507,7 +507,7 @@ function AddItemModal({
                 value={observacao}
                 onChange={(e) => setObservacao(e.target.value)}
                 placeholder="Ex: sem cebola"
-                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900 focus:border-[#E50914] focus:outline-none"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900 focus:border-[#B5652E] focus:outline-none"
               />
             </div>
           </div>
@@ -558,7 +558,7 @@ function AddItemModal({
           <button
             onClick={adicionarAoCarrinho}
             disabled={!podeAdicionar}
-            className="w-full flex items-center justify-center gap-2 border border-[#E50914] text-[#E50914] rounded-xl py-2.5 font-bold hover:bg-[#E50914]/10 disabled:opacity-40 disabled:hover:bg-transparent"
+            className="w-full flex items-center justify-center gap-2 border border-[#B5652E] text-[#B5652E] rounded-xl py-2.5 font-bold hover:bg-[#B5652E]/10 disabled:opacity-40 disabled:hover:bg-transparent"
           >
             <Plus size={16} /> Adicionar à lista ({carrinho.length > 0 ? `${carrinho.length} ` : ''}sem lançar ainda)
           </button>
@@ -569,7 +569,7 @@ function AddItemModal({
             <button
               onClick={confirmar}
               disabled={(!podeAdicionar && carrinho.length === 0) || busy}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#E50914] hover:bg-red-600 text-white rounded-xl py-2.5 font-bold disabled:opacity-40"
+              className="flex-1 flex items-center justify-center gap-2 bg-[#B5652E] hover:bg-red-600 text-white rounded-xl py-2.5 font-bold disabled:opacity-40"
             >
               <Printer size={16} /> {busy ? 'Lançando...' : 'Lançar Pedido + Comanda'}
             </button>
@@ -616,7 +616,7 @@ function CloseMesaModal({
                   key={f}
                   onClick={() => setForma(f)}
                   className={`py-2.5 rounded-xl text-sm font-semibold border transition-colors ${
-                    forma === f ? 'border-[#E50914] bg-[#E50914]/10 text-[#E50914] font-semibold' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-100'
+                    forma === f ? 'border-[#B5652E] bg-[#B5652E]/10 text-[#B5652E] font-semibold' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-100'
                   }`}
                 >
                   {f}

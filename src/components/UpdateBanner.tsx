@@ -62,7 +62,7 @@ export function UpdateBanner() {
       <span className="text-sm font-medium">Uma nova versão do app está disponível.</span>
       <button
         onClick={() => window.location.reload()}
-        className="flex items-center gap-1.5 bg-[#E50914] hover:bg-red-600 text-white text-sm font-bold px-3 py-1.5 rounded-xl whitespace-nowrap transition-colors"
+        className="flex items-center gap-1.5 bg-[#B5652E] hover:bg-red-600 text-white text-sm font-bold px-3 py-1.5 rounded-xl whitespace-nowrap transition-colors"
       >
         <RefreshCw size={14} /> Atualizar agora
       </button>

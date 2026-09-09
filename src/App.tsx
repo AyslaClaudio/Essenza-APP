@@ -14,9 +14,9 @@ function AppInner() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF7F1] flex items-center justify-center">
+      <div className="min-h-screen bg-[#EFE6D0] flex items-center justify-center">
         <div className="animate-pulse">
-          <Flame size={48} className="text-[#E50914]" />
+          <Flame size={48} className="text-[#B5652E]" />
         </div>
       </div>
     );
@@ -39,7 +39,7 @@ function AppInner() {
   // Selection screen — foco no cliente (é a tela que ele vê ao escanear o QR
   // code da mesa ou abrir o link); o acesso da equipe fica discreto no canto.
   return (
-    <div className="min-h-screen bg-[#FAF7F1] flex flex-col items-center justify-center px-4 relative">
+    <div className="min-h-screen bg-[#EFE6D0] flex flex-col items-center justify-center px-4 relative">
       <button
         onClick={() => setMode('adm')}
         className="absolute top-4 right-4 flex items-center gap-1.5 text-neutral-400 hover:text-neutral-700 text-xs font-medium px-3 py-2 rounded-lg hover:bg-neutral-100 transition-colors"
@@ -54,7 +54,7 @@ function AppInner() {
       <div className="w-full max-w-sm">
         <button
           onClick={() => setMode('cliente')}
-          className="group w-full bg-[#E50914] hover:bg-[#f6121d] text-white font-bold text-lg py-6 rounded-2xl transition-all hover:shadow-lg hover:shadow-red-900/20 hover:-translate-y-0.5 active:scale-95 flex flex-col items-center gap-1.5"
+          className="group w-full bg-[#B5652E] hover:bg-[#f6121d] text-white font-bold text-lg py-6 rounded-2xl transition-all hover:shadow-lg hover:shadow-red-900/20 hover:-translate-y-0.5 active:scale-95 flex flex-col items-center gap-1.5"
         >
           <Flame size={26} />
           <span>FAZER PEDIDO</span>

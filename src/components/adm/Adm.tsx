@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useConfig } from '../../context/ConfigContext';
 import { brl } from '../../lib/format';
-import { Flame, LayoutDashboard, UtensilsCrossed, ShoppingCart, Wallet, Settings, Package, LogOut, Menu, X, TrendingUp, MessageSquare, MessageCircle, Radio, LayoutGrid } from 'lucide-react';
+import { Flame, LayoutDashboard, UtensilsCrossed, ShoppingCart, Wallet, Settings, Package, LogOut, Menu, X, TrendingUp, MessageSquare, MessageCircle, Radio, LayoutGrid, Users } from 'lucide-react';
 import { Produtos } from './Produtos';
 import { Balcao } from './Balcao';
 import { Mesas } from './Mesas';
@@ -11,6 +11,7 @@ import { OfflineBanner } from '../OfflineBanner';
 // Dashboard carrega o recharts (pesado); lazy-load para não onerar as demais telas.
 const Dashboard = lazy(() => import('./Dashboard').then((m) => ({ default: m.Dashboard })));
 import { Pedidos } from './Pedidos';
+import { Clientes } from './Clientes';
 import { Financeiro } from './Financeiro';
 import { Configuracoes } from './Configuracoes';
 import { Estoque } from './Estoque';
@@ -20,7 +21,7 @@ import { WhatsAppPedidos } from './WhatsAppPedidos';
 import { printReceipt } from '../../lib/print';
 import type { Pedido, ItemPedido } from '../../types';
 
-type Tab = 'dashboard' | 'produtos' | 'balcao' | 'mesas' | 'pedidos' | 'financeiro' | 'estoque' | 'ia' | 'whatsapp' | 'monitoramento' | 'config';
+type Tab = 'dashboard' | 'produtos' | 'balcao' | 'mesas' | 'pedidos' | 'clientes' | 'financeiro' | 'estoque' | 'ia' | 'whatsapp' | 'monitoramento' | 'config';
 
 interface DashboardData {
   lucro: number;
@@ -104,6 +105,7 @@ export function Adm() {
     { id: 'balcao', label: 'Balcão', icon: ShoppingCart },
     { id: 'mesas', label: 'Mesas', icon: LayoutGrid },
     { id: 'pedidos', label: 'Pedidos', icon: UtensilsCrossed },
+    { id: 'clientes', label: 'Clientes', icon: Users },
     { id: 'produtos', label: 'Cardápio', icon: Flame },
     { id: 'financeiro', label: 'Financeiro', icon: Wallet },
     { id: 'estoque', label: 'Estoque', icon: Package },
@@ -120,6 +122,7 @@ export function Adm() {
       case 'balcao': return <Balcao onOrderComplete={loadDashboard} />;
       case 'mesas': return <Mesas />;
       case 'pedidos': return <Pedidos />;
+      case 'clientes': return <Clientes />;
       case 'financeiro': return <Financeiro />;
       case 'estoque': return <Estoque />;
       case 'ia': return <IAWhatsApp />;
@@ -130,7 +133,7 @@ export function Adm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F1] flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-[#EFE6D0] flex flex-col lg:flex-row">
       <OfflineBanner />
       {/* Mobile header with dashboard strip */}
       <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-neutral-200">
@@ -177,7 +180,7 @@ export function Adm() {
               onClick={() => { setTab(item.id); setSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-left ${
                 tab === item.id
-                  ? 'bg-[#E50914] text-white font-semibold'
+                  ? 'bg-[#B5652E] text-white font-semibold'
                   : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
               }`}
             >

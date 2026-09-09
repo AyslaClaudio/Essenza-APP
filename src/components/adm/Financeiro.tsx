@@ -2,15 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useConfig } from '../../context/ConfigContext';
 import { brl, margemProduto, todayISO } from '../../lib/format';
-import { dateToISO } from '../../lib/dateUtils';
+import { dateToISO, dateTimeToISO, startOfDay, endOfDay, addDays } from '../../lib/dateUtils';
 import { PeriodSelector } from '../PeriodSelector';
 import { usePedidosPeriodo } from '../../hooks/usePedidosPeriodo';
-import { calcularKPIs, agruparPorTipo, agruparPorFormaPagamento, analisarProdutos, calcularEstatisticasMargem } from '../../lib/reportUtils';
+import {
+  calcularKPIs, agruparPorTipo, agruparPorFormaPagamento, analisarProdutos, calcularEstatisticasMargem,
+  calcularLucroLiquido, calcularPontoEquilibrio, calcularDescontoTotal, calcularProjecao, calcularPorHora,
+  agruparPorBairro, classificarCurvaABC, analisarPorCategoria, calcularNovosRecorrentes,
+} from '../../lib/reportUtils';
 import { GraficoBarras } from './dashboard/GraficoBarras';
 import { GraficoRosca } from './dashboard/GraficoRosca';
 import { printFechamentoDia } from '../../lib/print';
 import type { Pedido, CaixaEntry, ItemPedido } from '../../types';
-import { Wallet, TrendingUp, DollarSign, ArrowUpCircle, ArrowDownCircle, FileText, Target, Trophy, Receipt, X, Printer, BarChart3, CreditCard } from 'lucide-react';
+import { Wallet, TrendingUp, DollarSign, ArrowUpCircle, ArrowDownCircle, FileText, Target, Trophy, Receipt, X, Printer, BarChart3, CreditCard, MapPin, Clock, Tag } from 'lucide-react';
 
 type Tab = 'caixa' | 'fechamento' | 'relatorios' | 'metas';
 
@@ -38,7 +42,7 @@ export function Financeiro() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === t.id ? 'bg-[#E50914] text-white' : 'bg-neutral-200 text-neutral-500'}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === t.id ? 'bg-[#B5652E] text-white' : 'bg-neutral-200 text-neutral-500'}`}
           >
             <t.icon size={16} /> {t.label}
           </button>
@@ -104,7 +108,7 @@ function Caixa() {
         </div>
       </div>
 
-      <button onClick={() => setShowForm(true)} className="w-full bg-[#E50914] text-white py-3 rounded-xl font-bold active:scale-95">
+      <button onClick={() => setShowForm(true)} className="w-full bg-[#B5652E] text-white py-3 rounded-xl font-bold active:scale-95">
         Lançar Movimentação
       </button>
 
@@ -136,14 +140,14 @@ function Caixa() {
               <button onClick={() => setTipo('entrada')} className={`flex-1 py-3 rounded-xl font-semibold ${tipo === 'entrada' ? 'bg-green-500 text-white' : 'bg-neutral-200 text-neutral-500'}`}>Entrada</button>
               <button onClick={() => setTipo('saida')} className={`flex-1 py-3 rounded-xl font-semibold ${tipo === 'saida' ? 'bg-red-500 text-white' : 'bg-neutral-200 text-neutral-500'}`}>Saída</button>
             </div>
-            <input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Descrição" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#E50914] focus:outline-none" />
-            <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#E50914] focus:outline-none" />
-            <select value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#E50914] focus:outline-none">
+            <input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Descrição" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#B5652E] focus:outline-none" />
+            <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#B5652E] focus:outline-none" />
+            <select value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#B5652E] focus:outline-none">
               <option>Dinheiro</option><option>Cartão</option><option>Pix</option><option>Outro</option>
             </select>
             <div className="flex gap-2">
               <button onClick={() => setShowForm(false)} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-              <button onClick={save} className="flex-1 py-3 bg-[#E50914] text-white rounded-xl font-semibold">Salvar</button>
+              <button onClick={save} className="flex-1 py-3 bg-[#B5652E] text-white rounded-xl font-semibold">Salvar</button>
             </div>
           </div>
         </div>
@@ -220,7 +224,7 @@ function Fechamento() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <input type="date" value={dataFiltro} onChange={(e) => setDataFiltro(e.target.value)} className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 focus:border-[#E50914] focus:outline-none" />
+        <input type="date" value={dataFiltro} onChange={(e) => setDataFiltro(e.target.value)} className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 focus:border-[#B5652E] focus:outline-none" />
         <button onClick={printFechamento} className="flex items-center gap-2 bg-neutral-200 text-neutral-900 px-4 py-2.5 rounded-xl text-sm hover:bg-neutral-700">
           <Printer size={18} /> Imprimir
         </button>
@@ -290,12 +294,68 @@ function StatCard({ label, value, color }: { label: string; value: string; color
 function Relatorios() {
   const { config } = useConfig();
   const [periodo, setPeriodo] = useState({ dataInicio: new Date(), dataFim: new Date() });
-  const [tabAtiva, setTabAtiva] = useState<'resumo' | 'produtos' | 'tipo'>('resumo');
+  const [tabAtiva, setTabAtiva] = useState<'resumo' | 'produtos' | 'tipo' | 'bairro' | 'evolucao'>('resumo');
 
   const { pedidos, loading } = usePedidosPeriodo({
     dataInicio: periodo.dataInicio,
     dataFim: periodo.dataFim,
   });
+
+  // Dados que não dependem do período selecionado — carregados uma vez.
+  const [produtoCategoriaMap, setProdutoCategoriaMap] = useState<Record<string, string>>({});
+  const [primeiraCompraPorTelefone, setPrimeiraCompraPorTelefone] = useState<Record<string, string>>({});
+  const [evolucaoMensal, setEvolucaoMensal] = useState<{ dia: string; label: string; valor: number }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      // Categoria de cada produto (pra margem por categoria) — carrega tudo, ativo ou não,
+      // porque pedidos antigos podem referenciar produto já desativado.
+      const { data: prods } = await supabase.from('produtos').select('id, categoria_nome');
+      const catMap: Record<string, string> = {};
+      (prods || []).forEach((p: any) => { catMap[p.id] = p.categoria_nome; });
+      setProdutoCategoriaMap(catMap);
+
+      // Primeira compra por telefone, em todo o histórico — pra classificar
+      // novo x recorrente dentro de qualquer período selecionado depois.
+      const { data: todosPedidos } = await supabase
+        .from('pedidos')
+        .select('cliente_telefone, created_at')
+        .neq('status', 'cancelado')
+        .not('cliente_telefone', 'eq', '')
+        .order('created_at', { ascending: true });
+      const primeira: Record<string, string> = {};
+      (todosPedidos || []).forEach((p: any) => {
+        const tel = (p.cliente_telefone || '').trim();
+        if (tel && !primeira[tel]) primeira[tel] = p.created_at;
+      });
+      setPrimeiraCompraPorTelefone(primeira);
+
+      // Faturamento dos últimos 6 meses (independente do período do relatório).
+      const seisMesesAtras = startOfDay(addDays(new Date(), -180));
+      const { data: pedidosSeisMeses } = await supabase
+        .from('pedidos')
+        .select('total, created_at')
+        .gte('created_at', dateTimeToISO(seisMesesAtras))
+        .neq('status', 'cancelado');
+      const porMes: Record<string, number> = {};
+      (pedidosSeisMeses || []).forEach((p: any) => {
+        const d = new Date(p.created_at);
+        const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        porMes[chave] = (porMes[chave] || 0) + Number(p.total);
+      });
+      const MESES_NOMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      const meses: { dia: string; label: string; valor: number }[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(1);
+        d.setMonth(d.getMonth() - i);
+        const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const label = `${MESES_NOMES[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`;
+        meses.push({ dia: label, label, valor: porMes[chave] || 0 });
+      }
+      setEvolucaoMensal(meses);
+    })();
+  }, []);
 
   const handlePeriodChange = (newPeriodo: { dataInicio: Date; dataFim: Date }) => {
     setPeriodo(newPeriodo);
@@ -313,6 +373,38 @@ function Relatorios() {
   const kpisPorFormaPagamento = agruparPorFormaPagamento(pedidos);
   const produtos = analisarProdutos(pedidos, itensMap);
   const estatisticas = calcularEstatisticasMargem(kpis);
+  const produtosABC = classificarCurvaABC(produtos);
+  const porCategoria = analisarPorCategoria(pedidos, itensMap, produtoCategoriaMap);
+  const kpisPorBairro = agruparPorBairro(pedidos);
+
+  // Lucro líquido real do período (desconta despesa fixa proporcional aos
+  // dias, não só no fechamento de um dia único) e ponto de equilíbrio.
+  const diasNoPeriodo = Math.max(1, Math.round((startOfDay(periodo.dataFim).getTime() - startOfDay(periodo.dataInicio).getTime()) / 86400000) + 1);
+  const despesaFixaDiaria = config?.despesas_fixas_diaria || 0;
+  const lucroLiquido = calcularLucroLiquido(kpis, despesaFixaDiaria, diasNoPeriodo);
+  const pontoEquilibrioDiario = calcularPontoEquilibrio(despesaFixaDiaria, kpis.margemMedia);
+  const descontoTotal = calcularDescontoTotal(pedidos);
+
+  // Projeção de fechamento — só faz sentido se o período selecionado ainda
+  // está em andamento (inclui hoje e ainda não terminou).
+  const hoje = startOfDay(new Date());
+  const inicioPeriodoDia = startOfDay(periodo.dataInicio);
+  const fimPeriodoDia = startOfDay(periodo.dataFim);
+  const periodoEmAndamento = inicioPeriodoDia.getTime() <= hoje.getTime() && fimPeriodoDia.getTime() >= hoje.getTime() && fimPeriodoDia.getTime() > hoje.getTime();
+  const diasDecorridos = Math.round((hoje.getTime() - inicioPeriodoDia.getTime()) / 86400000) + 1;
+  const projecaoFechamento = periodoEmAndamento ? calcularProjecao(kpis.faturamento, diasDecorridos, diasNoPeriodo) : 0;
+
+  // Novos x recorrentes — precisa das bordas do período em ISO pra comparar com a
+  // data da primeira compra de cada telefone (calculada sobre o histórico todo).
+  const novosRecorrentes = calcularNovosRecorrentes(
+    pedidos,
+    primeiraCompraPorTelefone,
+    dateTimeToISO(startOfDay(periodo.dataInicio)),
+    dateTimeToISO(endOfDay(periodo.dataFim)),
+  );
+
+  // Pedidos por horário do dia — pra saber a janela de pico.
+  const porHora = calcularPorHora(pedidos).map((h) => ({ dia: `${h.hora}h`, label: `${h.hora}h`, valor: h.pedidos }));
 
   const top10Lucrativos = produtos.slice(0, 10);
   const top10Vendidos = [...produtos].sort((a, b) => b.quantidade - a.quantidade).slice(0, 10);
@@ -390,13 +482,15 @@ function Relatorios() {
           { id: 'resumo', label: 'Resumo', icon: BarChart3 },
           { id: 'produtos', label: 'Produtos', icon: Trophy },
           { id: 'tipo', label: 'Por Tipo', icon: TrendingUp },
+          { id: 'bairro', label: 'Por Bairro', icon: MapPin },
+          { id: 'evolucao', label: 'Evolução', icon: Clock },
         ] as const).map((t) => (
           <button
             key={t.id}
             onClick={() => setTabAtiva(t.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${
               tabAtiva === t.id
-                ? 'bg-[#E50914] text-white'
+                ? 'bg-[#B5652E] text-white'
                 : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-700'
             }`}
           >
@@ -425,6 +519,14 @@ function Relatorios() {
                   <span className="text-neutral-700 font-medium">Lucro Bruto</span>
                   <span className="text-[#22c55e] font-bold">{brl(kpis.lucroTotal)}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500">(-) Despesa Fixa ({diasNoPeriodo}d × {brl(despesaFixaDiaria)})</span>
+                  <span className="text-orange-600">{brl(despesaFixaDiaria * diasNoPeriodo)}</span>
+                </div>
+                <div className="flex justify-between border-t border-neutral-200 pt-2">
+                  <span className="text-neutral-700 font-medium">Lucro Líquido</span>
+                  <span className={`font-bold ${lucroLiquido >= 0 ? 'text-[#22c55e]' : 'text-red-600'}`}>{brl(lucroLiquido)}</span>
+                </div>
               </div>
             </div>
             <GraficoRosca custo={kpis.custoTotal} lucro={kpis.lucroTotal} />
@@ -444,6 +546,31 @@ function Relatorios() {
             <StatCard label="Em Andamento" value={String(kpis.pedidosEmAndamento)} color="text-amber-700" />
             <StatCard label="Cancelados" value={String(kpis.pedidosCancelados)} color="text-red-600" />
           </div>
+
+          {/* Ponto de equilíbrio, desconto concedido, projeção e novos x recorrentes */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <StatCard
+              label="Ponto de Equilíbrio / Dia"
+              value={despesaFixaDiaria > 0 ? brl(pontoEquilibrioDiario) : 'Sem despesa fixa'}
+              color="text-neutral-900"
+            />
+            <StatCard label="Desconto Concedido" value={brl(descontoTotal)} color="text-orange-600" />
+            <StatCard label="Clientes Novos" value={String(novosRecorrentes.novos)} color="text-blue-600" />
+            <StatCard label="Clientes Recorrentes" value={String(novosRecorrentes.recorrentes)} color="text-[#22c55e]" />
+          </div>
+
+          {periodoEmAndamento && (
+            <div className="bg-white border border-neutral-200 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2">
+                <Target size={20} className="text-[#B5652E]" />
+                <span className="text-neutral-900 font-semibold">Projeção de fechamento do período</span>
+              </div>
+              <span className="text-neutral-900 font-black text-xl">{brl(projecaoFechamento)}</span>
+            </div>
+          )}
+
+          {/* Pedidos por horário do dia */}
+          <GraficoBarras data={porHora} titulo="Pedidos por horário do dia" formatValor={(v) => `${Math.round(v)} pedido${Math.round(v) === 1 ? '' : 's'}`} />
 
           {/* Top 5 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -467,14 +594,14 @@ function Relatorios() {
 
             <div className="bg-white border border-neutral-200 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
-                <TrendingUp size={20} className="text-[#E50914]" />
+                <TrendingUp size={20} className="text-[#B5652E]" />
                 <h3 className="text-neutral-900 font-semibold">Top 5 Mais Vendidos</h3>
               </div>
               <div className="space-y-2">
                 {top10Vendidos.slice(0, 5).map((p, i) => (
                   <div key={p.nome} className="flex items-center gap-3">
                     <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      i === 0 ? 'bg-[#E50914] text-white' : 'bg-neutral-200 text-neutral-500'
+                      i === 0 ? 'bg-[#B5652E] text-white' : 'bg-neutral-200 text-neutral-500'
                     }`}>{i + 1}</span>
                     <span className="flex-1 text-neutral-900 text-sm">{p.nome}</span>
                     <span className="text-neutral-500 text-sm">{p.quantidade}x</span>
@@ -519,7 +646,7 @@ function Relatorios() {
                   <div key={d.nome} className="flex items-center gap-3">
                     <span className="text-neutral-500 text-xs w-16 flex-shrink-0">{d.nome}</span>
                     <div className="flex-1 h-5 bg-neutral-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-essenza-terracotta to-[#E50914] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      <div className="h-full bg-gradient-to-r from-essenza-terracotta to-[#B5652E] rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
                     <span className="text-neutral-900 text-xs font-semibold w-20 text-right flex-shrink-0">{brl(d.faturamento)}</span>
                   </div>
@@ -532,36 +659,109 @@ function Relatorios() {
 
       {/* PRODUTOS TAB */}
       {tabAtiva === 'produtos' && (
-        <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
-          <div className="px-4 py-3 bg-neutral-100/50 border-b border-neutral-200">
-            <h3 className="text-neutral-900 font-semibold">Análise de Produtos ({produtos.length} produtos)</h3>
+        <div className="space-y-4">
+          {/* Margem por categoria — visão de linha de produto, não item a item */}
+          <div className="bg-white border border-neutral-200 rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Tag size={20} className="text-[#B5652E]" />
+              <h3 className="text-neutral-900 font-semibold">Margem por Categoria</h3>
+            </div>
+            <div className="space-y-2">
+              {porCategoria.map((c) => (
+                <div key={c.categoria} className="flex items-center justify-between text-sm border-b border-neutral-200/60 last:border-0 pb-2 last:pb-0">
+                  <span className="text-neutral-700">{c.categoria}</span>
+                  <div className="flex gap-4 text-right">
+                    <span className="text-neutral-500 w-16">{c.quantidade}x</span>
+                    <span className="text-neutral-900 font-medium w-20">{brl(c.venda)}</span>
+                    <span className="text-[#22c55e] font-semibold w-20">{brl(c.lucro)}</span>
+                    <span className="text-green-600 w-14">{c.margem.toFixed(0)}%</span>
+                  </div>
+                </div>
+              ))}
+              {porCategoria.length === 0 && <p className="text-center text-neutral-500 text-sm py-4">Sem dados no período.</p>}
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-neutral-500 text-xs uppercase border-b border-neutral-200">
-                  <th className="text-left px-4 py-2">Produto</th>
-                  <th className="text-right px-2 py-2">Qtd</th>
-                  <th className="text-right px-2 py-2">Custo</th>
-                  <th className="text-right px-2 py-2">Venda</th>
-                  <th className="text-right px-2 py-2">Lucro R$</th>
-                  <th className="text-right px-4 py-2">Margem %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {produtos.map((p) => (
-                  <tr key={p.nome} className="border-b border-neutral-200 last:border-0 hover:bg-neutral-100/30">
-                    <td className="px-4 py-2 text-neutral-900">{p.nome}</td>
-                    <td className="px-2 py-2 text-right text-neutral-500">{p.quantidade}</td>
-                    <td className="px-2 py-2 text-right text-neutral-500">{brl(p.custo)}</td>
-                    <td className="px-2 py-2 text-right text-neutral-900">{brl(p.venda)}</td>
-                    <td className="px-2 py-2 text-right text-[#22c55e] font-semibold">{brl(p.lucro)}</td>
-                    <td className="px-4 py-2 text-right text-green-600">{p.margem.toFixed(1)}%</td>
+
+          <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
+            <div className="px-4 py-3 bg-neutral-100/50 border-b border-neutral-200 flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-neutral-900 font-semibold">Análise de Produtos ({produtos.length} produtos)</h3>
+              <p className="text-neutral-500 text-xs">Curva ABC: A = até 80% do lucro acumulado, B = até 95%, C = o resto</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-neutral-500 text-xs uppercase border-b border-neutral-200">
+                    <th className="text-left px-4 py-2">Produto</th>
+                    <th className="text-center px-2 py-2">Classe</th>
+                    <th className="text-right px-2 py-2">Qtd</th>
+                    <th className="text-right px-2 py-2">Custo</th>
+                    <th className="text-right px-2 py-2">Venda</th>
+                    <th className="text-right px-2 py-2">Lucro R$</th>
+                    <th className="text-right px-4 py-2">Margem %</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {produtosABC.map((p) => (
+                    <tr key={p.nome} className="border-b border-neutral-200 last:border-0 hover:bg-neutral-100/30">
+                      <td className="px-4 py-2 text-neutral-900">{p.nome}</td>
+                      <td className="px-2 py-2 text-center">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          p.classe === 'A' ? 'bg-green-500/10 text-green-600' : p.classe === 'B' ? 'bg-amber-500/10 text-amber-700' : 'bg-neutral-200 text-neutral-500'
+                        }`}>{p.classe}</span>
+                      </td>
+                      <td className="px-2 py-2 text-right text-neutral-500">{p.quantidade}</td>
+                      <td className="px-2 py-2 text-right text-neutral-500">{brl(p.custo)}</td>
+                      <td className="px-2 py-2 text-right text-neutral-900">{brl(p.venda)}</td>
+                      <td className="px-2 py-2 text-right text-[#22c55e] font-semibold">{brl(p.lucro)}</td>
+                      <td className="px-4 py-2 text-right text-green-600">{p.margem.toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* BAIRRO TAB */}
+      {tabAtiva === 'bairro' && (
+        <div className="space-y-4">
+          {(() => {
+            const totalFaturamentoBairro = Object.values(kpisPorBairro).reduce((s, k) => s + k.faturamento, 0);
+            const entradas = Object.entries(kpisPorBairro).sort((a, b) => b[1].faturamento - a[1].faturamento);
+            if (entradas.length === 0) {
+              return <p className="text-center text-neutral-500 text-sm py-8">Sem pedidos de entrega no período.</p>;
+            }
+            return entradas.map(([bairro, kpi]) => {
+              const pct = totalFaturamentoBairro > 0 ? (kpi.faturamento / totalFaturamentoBairro) * 100 : 0;
+              return (
+                <div key={bairro} className="bg-white border border-neutral-200 rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-neutral-900 font-semibold">{bairro}</h3>
+                    <span className="text-neutral-500 text-xs">{pct.toFixed(0)}% do delivery</span>
+                  </div>
+                  <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden mb-4">
+                    <div className="h-full bg-[#B5652E] rounded-full" style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                    <div><p className="text-neutral-500">Faturamento</p><p className="text-neutral-900 font-bold">{brl(kpi.faturamento)}</p></div>
+                    <div><p className="text-neutral-500">Lucro</p><p className="text-[#22c55e] font-bold">{brl(kpi.lucroTotal)}</p></div>
+                    <div><p className="text-neutral-500">Pedidos</p><p className="text-neutral-900 font-bold">{kpi.pedidosCount}</p></div>
+                  </div>
+                </div>
+              );
+            });
+          })()}
+        </div>
+      )}
+
+      {/* EVOLUÇÃO TAB */}
+      {tabAtiva === 'evolucao' && (
+        <div className="space-y-4">
+          <GraficoBarras data={evolucaoMensal} titulo="Faturamento — últimos 6 meses" />
+          {evolucaoMensal.every((m) => m.valor === 0) && (
+            <p className="text-center text-neutral-500 text-sm">Ainda não há histórico suficiente pra montar essa comparação.</p>
+          )}
         </div>
       )}
 
@@ -581,7 +781,7 @@ function Relatorios() {
                       <span className="text-neutral-500 text-xs">{pct.toFixed(0)}% do faturamento</span>
                     </div>
                     <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden mb-4">
-                      <div className="h-full bg-[#E50914] rounded-full" style={{ width: `${pct}%` }} />
+                      <div className="h-full bg-[#B5652E] rounded-full" style={{ width: `${pct}%` }} />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                       <div><p className="text-neutral-500">Faturamento</p><p className="text-neutral-900 font-bold">{brl(kpi.faturamento)}</p></div>
@@ -662,7 +862,7 @@ function Metas() {
           <span className="text-neutral-900 font-semibold">{brl(faturamentoHoje)} / {brl(metaDiaria)}</span>
         </div>
         <div className="h-6 bg-neutral-200 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-[#E50914] to-[#22c55e] rounded-full transition-all duration-500 flex items-center justify-end pr-2" style={{ width: `${pct}%` }}>
+          <div className="h-full bg-gradient-to-r from-[#B5652E] to-[#22c55e] rounded-full transition-all duration-500 flex items-center justify-end pr-2" style={{ width: `${pct}%` }}>
             {pct > 10 && <span className="text-black text-xs font-bold">{pct.toFixed(0)}%</span>}
           </div>
         </div>
@@ -693,7 +893,7 @@ function Metas() {
         )}
       </div>
 
-      <button onClick={() => setShowForm(true)} className="w-full bg-[#E50914] text-white py-3 rounded-xl font-bold">Nova Meta</button>
+      <button onClick={() => setShowForm(true)} className="w-full bg-[#B5652E] text-white py-3 rounded-xl font-bold">Nova Meta</button>
 
       <div className="space-y-2">
         {metas.map((m) => (
@@ -714,13 +914,13 @@ function Metas() {
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white border border-neutral-200 rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-neutral-900 font-bold text-lg mb-4">Nova Meta</h3>
-            <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#E50914] focus:outline-none" />
-            <select value={periodo} onChange={(e) => setPeriodo(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#E50914] focus:outline-none">
+            <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#B5652E] focus:outline-none" />
+            <select value={periodo} onChange={(e) => setPeriodo(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#B5652E] focus:outline-none">
               <option value="dia">Diária</option><option value="semana">Semanal</option><option value="mes">Mensal</option>
             </select>
             <div className="flex gap-2">
               <button onClick={() => setShowForm(false)} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-              <button onClick={save} className="flex-1 py-3 bg-[#E50914] text-white rounded-xl font-semibold">Salvar</button>
+              <button onClick={save} className="flex-1 py-3 bg-[#B5652E] text-white rounded-xl font-semibold">Salvar</button>
             </div>
           </div>
         </div>

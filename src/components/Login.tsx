@@ -18,7 +18,7 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F1] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#EFE6D0] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <img src="/logo.png" alt="ESSENZA Pizzaria" className="w-28 h-auto mx-auto rounded-2xl shadow-lg shadow-black/20" />
@@ -31,7 +31,7 @@ export function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#E50914] focus:outline-none transition-colors"
+              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#B5652E] focus:outline-none transition-colors"
               placeholder="seu@email.com"
               required
             />
@@ -42,7 +42,7 @@ export function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#E50914] focus:outline-none transition-colors"
+              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#B5652E] focus:outline-none transition-colors"
               placeholder="••••••••"
               required
             />
@@ -55,7 +55,7 @@ export function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#E50914] hover:bg-[#f6121d] text-white font-bold text-lg py-4 rounded-xl transition-colors disabled:opacity-50 active:scale-[0.98]"
+            className="w-full bg-[#B5652E] hover:bg-[#f6121d] text-white font-bold text-lg py-4 rounded-xl transition-colors disabled:opacity-50 active:scale-[0.98]"
           >
             {loading ? 'Entrando...' : 'ENTRAR'}
           </button>

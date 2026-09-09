@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { brl } from '../../lib/format';
 import type { Ingrediente, Produto, FichaTecnica } from '../../types';
-import { Package, Plus, Pencil, Trash2, X, AlertTriangle, Link2, FlaskConical } from 'lucide-react';
+import { Package, Plus, Pencil, Trash2, X, AlertTriangle, Link2, FlaskConical, TrendingDown } from 'lucide-react';
 
-type Tab = 'ingredientes' | 'ficha';
+type Tab = 'ingredientes' | 'ficha' | 'previsao';
 
 export function Estoque() {
   const [tab, setTab] = useState<Tab>('ingredientes');
@@ -13,17 +13,133 @@ export function Estoque() {
     <div className="space-y-4 animate-fadeIn">
       <h2 className="text-2xl font-bold text-neutral-900">Estoque & Custo</h2>
 
-      <div className="flex gap-2">
-        <button onClick={() => setTab('ingredientes')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium ${tab === 'ingredientes' ? 'bg-[#E50914] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        <button onClick={() => setTab('ingredientes')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === 'ingredientes' ? 'bg-[#B5652E] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
           <Package size={16} /> Ingredientes
         </button>
-        <button onClick={() => setTab('ficha')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium ${tab === 'ficha' ? 'bg-[#E50914] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
+        <button onClick={() => setTab('ficha')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === 'ficha' ? 'bg-[#B5652E] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
           <FlaskConical size={16} /> Ficha Técnica
+        </button>
+        <button onClick={() => setTab('previsao')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === 'previsao' ? 'bg-[#B5652E] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
+          <TrendingDown size={16} /> Previsão de Consumo
         </button>
       </div>
 
       {tab === 'ingredientes' && <Ingredientes />}
       {tab === 'ficha' && <FichaTecnicaView />}
+      {tab === 'previsao' && <PrevisaoConsumo />}
+    </div>
+  );
+}
+
+// ===== Previsão de consumo — cruza estoque atual com a velocidade de venda
+// real dos últimos 30 dias, pra saber quantos dias de estoque restam em cada
+// ingrediente no ritmo atual (não só alertar quando já está baixo). =====
+function PrevisaoConsumo() {
+  const [linhas, setLinhas] = useState<{
+    ingrediente: Ingrediente;
+    consumoDiario: number;
+    diasRestantes: number | null;
+  }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const desde = new Date();
+    desde.setDate(desde.getDate() - 30);
+
+    const [ingRes, fichaRes, itensRes] = await Promise.all([
+      supabase.from('ingredientes').select('*').order('nome'),
+      supabase.from('ficha_tecnica').select('*'),
+      supabase
+        .from('itens_pedido')
+        .select('produto_id, quantidade, pedidos!inner(created_at, status)')
+        .gte('pedidos.created_at', desde.toISOString())
+        .neq('pedidos.status', 'cancelado'),
+    ]);
+
+    const ingredientes = (ingRes.data as Ingrediente[]) || [];
+    const fichas = (fichaRes.data as FichaTecnica[]) || [];
+    const itens = (itensRes.data as any[]) || [];
+
+    // Quantidade vendida de cada produto nos últimos 30 dias
+    const vendidoPorProduto: Record<string, number> = {};
+    itens.forEach((it) => {
+      if (!it.produto_id) return;
+      vendidoPorProduto[it.produto_id] = (vendidoPorProduto[it.produto_id] || 0) + Number(it.quantidade || 0);
+    });
+
+    // Consumo total de cada ingrediente = soma, por ficha técnica, de
+    // (quantidade vendida do produto × quantidade do ingrediente por unidade)
+    const consumoPorIngrediente: Record<string, number> = {};
+    fichas.forEach((f) => {
+      const vendido = vendidoPorProduto[f.produto_id] || 0;
+      if (vendido === 0) return;
+      consumoPorIngrediente[f.ingrediente_id] = (consumoPorIngrediente[f.ingrediente_id] || 0) + vendido * Number(f.quantidade || 0);
+    });
+
+    const resultado = ingredientes.map((ing) => {
+      const consumoTotal30d = consumoPorIngrediente[ing.id] || 0;
+      const consumoDiario = consumoTotal30d / 30;
+      const diasRestantes = consumoDiario > 0 ? ing.estoque_atual / consumoDiario : null;
+      return { ingrediente: ing, consumoDiario, diasRestantes };
+    });
+
+    // Sem consumo nos últimos 30 dias fica por último (não é urgente saber "dias restantes" de algo que não sai)
+    resultado.sort((a, b) => {
+      if (a.diasRestantes === null && b.diasRestantes === null) return 0;
+      if (a.diasRestantes === null) return 1;
+      if (b.diasRestantes === null) return -1;
+      return a.diasRestantes - b.diasRestantes;
+    });
+
+    setLinhas(resultado);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) return <p className="text-neutral-500 text-center py-8">Calculando previsão...</p>;
+
+  return (
+    <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
+      <div className="px-4 py-3 bg-neutral-100/50 border-b border-neutral-200">
+        <h3 className="text-neutral-900 font-semibold">Dias de estoque restantes no ritmo de venda dos últimos 30 dias</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-neutral-500 text-xs uppercase border-b border-neutral-200">
+              <th className="text-left px-4 py-2">Ingrediente</th>
+              <th className="text-right px-2 py-2">Estoque Atual</th>
+              <th className="text-right px-2 py-2">Consumo/Dia</th>
+              <th className="text-right px-4 py-2">Dias Restantes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {linhas.map(({ ingrediente, consumoDiario, diasRestantes }) => {
+              const urgente = diasRestantes !== null && diasRestantes <= 7;
+              const atencao = diasRestantes !== null && diasRestantes > 7 && diasRestantes <= 14;
+              return (
+                <tr key={ingrediente.id} className="border-b border-neutral-200 last:border-0 hover:bg-neutral-100/30">
+                  <td className="px-4 py-2 text-neutral-900 flex items-center gap-2">
+                    {urgente && <AlertTriangle size={14} className="text-red-600" />}
+                    {ingrediente.nome}
+                  </td>
+                  <td className="px-2 py-2 text-right text-neutral-500">{ingrediente.estoque_atual} {ingrediente.unidade}</td>
+                  <td className="px-2 py-2 text-right text-neutral-500">{consumoDiario > 0 ? `${consumoDiario.toFixed(2)} ${ingrediente.unidade}` : '—'}</td>
+                  <td className={`px-4 py-2 text-right font-semibold ${urgente ? 'text-red-600' : atencao ? 'text-amber-600' : diasRestantes === null ? 'text-neutral-400' : 'text-green-600'}`}>
+                    {diasRestantes === null ? 'Sem venda recente' : `${Math.floor(diasRestantes)} dias`}
+                  </td>
+                </tr>
+              );
+            })}
+            {linhas.length === 0 && (
+              <tr><td colSpan={4} className="text-center text-neutral-500 py-6">Nenhum ingrediente cadastrado.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -65,7 +181,7 @@ function Ingredientes() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-neutral-500 text-sm">Cadastro de ingredientes e controle de estoque</p>
-        <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 bg-[#E50914] text-white px-4 py-2 rounded-xl text-sm font-semibold">
+        <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 bg-[#B5652E] text-white px-4 py-2 rounded-xl text-sm font-semibold">
           <Plus size={18} /> Novo
         </button>
       </div>
@@ -143,7 +259,7 @@ function IngredienteForm({ ingrediente, onClose, onSave }: { ingrediente: Ingred
         <div className="space-y-3">
           <div>
             <label className="text-neutral-500 text-sm">Nome</label>
-            <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none" />
+            <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#B5652E] focus:outline-none" />
           </div>
           <div>
             <label className="text-neutral-500 text-sm">Unidade</label>
@@ -153,22 +269,22 @@ function IngredienteForm({ ingrediente, onClose, onSave }: { ingrediente: Ingred
           </div>
           <div>
             <label className="text-neutral-500 text-sm">Custo por {unidade} (R$)</label>
-            <input type="number" step="0.01" value={custo} onChange={(e) => setCusto(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none" />
+            <input type="number" step="0.01" value={custo} onChange={(e) => setCusto(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#B5652E] focus:outline-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-neutral-500 text-sm">Estoque Atual</label>
-              <input type="number" step="0.001" value={estoque} onChange={(e) => setEstoque(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none" />
+              <input type="number" step="0.001" value={estoque} onChange={(e) => setEstoque(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#B5652E] focus:outline-none" />
             </div>
             <div>
               <label className="text-neutral-500 text-sm">Estoque Mínimo</label>
-              <input type="number" step="0.001" value={minimo} onChange={(e) => setMinimo(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#E50914] focus:outline-none" />
+              <input type="number" step="0.001" value={minimo} onChange={(e) => setMinimo(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#B5652E] focus:outline-none" />
             </div>
           </div>
         </div>
         <div className="flex gap-2 mt-5">
           <button onClick={onClose} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-          <button onClick={save} disabled={!nome} className="flex-1 py-3 bg-[#E50914] text-white rounded-xl font-semibold disabled:opacity-50">Salvar</button>
+          <button onClick={save} disabled={!nome} className="flex-1 py-3 bg-[#B5652E] text-white rounded-xl font-semibold disabled:opacity-50">Salvar</button>
         </div>
       </div>
     </div>
@@ -229,7 +345,7 @@ function FichaTecnicaView() {
               <button
                 key={p.id}
                 onClick={() => { setSelectedProduto(p); loadFichas(p.id); }}
-                className={`w-full text-left p-3 rounded-xl flex items-center justify-between ${selectedProduto?.id === p.id ? 'bg-[#E50914] text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'}`}
+                className={`w-full text-left p-3 rounded-xl flex items-center justify-between ${selectedProduto?.id === p.id ? 'bg-[#B5652E] text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'}`}
               >
                 <div>
                   <span className="font-medium text-sm">{p.nome}</span>
@@ -259,7 +375,7 @@ function FichaTecnicaView() {
                   return (
                     <div key={f.id} className="flex items-center justify-between bg-neutral-100 rounded-xl p-2.5">
                       <div className="flex items-center gap-2">
-                        <Link2 size={14} className="text-[#E50914]" />
+                        <Link2 size={14} className="text-[#B5652E]" />
                         <span className="text-neutral-900 text-sm">{ing.nome}</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -291,12 +407,12 @@ function AddIngredienteRow({ ingredientes, onAdd }: { ingredientes: Ingrediente[
 
   return (
     <div className="flex gap-2">
-      <select value={selId} onChange={(e) => setSelId(e.target.value)} className="flex-1 bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 text-sm focus:border-[#E50914] focus:outline-none">
+      <select value={selId} onChange={(e) => setSelId(e.target.value)} className="flex-1 bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 text-sm focus:border-[#B5652E] focus:outline-none">
         <option value="">Ingrediente...</option>
         {ingredientes.map((i) => <option key={i.id} value={i.id}>{i.nome} ({brl(i.custo_por_unidade)}/{i.unidade})</option>)}
       </select>
-      <input type="number" step="0.001" value={qtd} onChange={(e) => setQtd(e.target.value)} placeholder="Qtd" className="w-20 bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 text-sm focus:border-[#E50914] focus:outline-none" />
-      <button onClick={() => { if (selId && qtd) { onAdd(selId, parseFloat(qtd)); setSelId(''); setQtd(''); } }} className="px-3 py-2 bg-[#E50914] text-white rounded-xl">
+      <input type="number" step="0.001" value={qtd} onChange={(e) => setQtd(e.target.value)} placeholder="Qtd" className="w-20 bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 text-sm focus:border-[#B5652E] focus:outline-none" />
+      <button onClick={() => { if (selId && qtd) { onAdd(selId, parseFloat(qtd)); setSelId(''); setQtd(''); } }} className="px-3 py-2 bg-[#B5652E] text-white rounded-xl">
         <Plus size={16} />
       </button>
     </div>

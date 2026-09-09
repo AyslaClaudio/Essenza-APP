@@ -13,18 +13,28 @@ export interface BarraDia {
 }
 
 // Tooltip escuro customizado (o padrão do Recharts é claro)
-function TooltipDark({ active, payload }: any) {
+function TooltipDark({ active, payload, formatValor }: any) {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload as BarraDia;
   return (
     <div className="bg-neutral-100 border border-neutral-200 rounded-lg px-3 py-2 text-xs">
       <p className="text-neutral-500">{p.label}</p>
-      <p className="text-green-500 font-bold">{brl(p.valor)}</p>
+      <p className="text-green-500 font-bold">{formatValor(p.valor)}</p>
     </div>
   );
 }
 
-export function GraficoBarras({ data, titulo = 'Faturamento — últimos 7 dias' }: { data: BarraDia[]; titulo?: string }) {
+export function GraficoBarras({
+  data,
+  titulo = 'Faturamento — últimos 7 dias',
+  formatValor = brl,
+}: {
+  data: BarraDia[];
+  titulo?: string;
+  // Permite reaproveitar o mesmo gráfico pra contagens (pedidos por hora, por
+  // mês) em vez de só faturamento — por padrão formata como dinheiro.
+  formatValor?: (v: number) => string;
+}) {
   const semDados = data.length === 0 || data.every((d) => d.valor === 0);
 
   return (
@@ -37,7 +47,7 @@ export function GraficoBarras({ data, titulo = 'Faturamento — últimos 7 dias'
           <BarChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
             <XAxis dataKey="dia" tick={{ fill: '#737373', fontSize: 12 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill: '#a3a3a3', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}`} />
-            <Tooltip content={<TooltipDark />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+            <Tooltip content={<TooltipDark formatValor={formatValor} />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
             <Bar dataKey="valor" radius={[6, 6, 0, 0]}>
               {data.map((_, i) => (
                 // Faturamento é sempre positivo → verde. Hoje (última barra) em verde

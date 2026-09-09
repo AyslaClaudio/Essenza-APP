@@ -216,7 +216,7 @@ export function Dashboard({ meta }: { meta: number }) {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
           Dashboard
-          {loading && <RefreshCw size={16} className="animate-spin text-[#E50914]" />}
+          {loading && <RefreshCw size={16} className="animate-spin text-[#B5652E]" />}
         </h2>
         <div className="flex bg-neutral-100 p-1 rounded-xl border border-neutral-200">
           {(['hoje', 'semana', 'mes'] as Filtro[]).map((f) => (
@@ -224,7 +224,7 @@ export function Dashboard({ meta }: { meta: number }) {
               key={f}
               onClick={() => setFiltro(f)}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold capitalize transition-all ${
-                filtro === f ? 'bg-[#E50914] text-white' : 'text-neutral-500 hover:text-neutral-900'
+                filtro === f ? 'bg-[#B5652E] text-white' : 'text-neutral-500 hover:text-neutral-900'
               }`}
             >
               {f === 'mes' ? 'Mês' : f}

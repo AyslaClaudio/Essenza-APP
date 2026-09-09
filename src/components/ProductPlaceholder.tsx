@@ -15,7 +15,7 @@ function categoriaTipo(categoriaNome: string): 'pizza' | 'esfirra' | 'bebida' | 
 }
 
 const TIPO_STYLE = {
-  pizza: { grad: 'from-essenza-terracotta to-[#E50914]', Icon: Pizza },
+  pizza: { grad: 'from-essenza-terracotta to-[#B5652E]', Icon: Pizza },
   esfirra: { grad: 'from-amber-500 to-essenza-terracotta', Icon: Croissant },
   bebida: { grad: 'from-sky-500 to-blue-600', Icon: CupSoda },
   generico: { grad: 'from-essenza-terracotta to-essenza-red-dark', Icon: Flame },

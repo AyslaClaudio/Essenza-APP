@@ -85,7 +85,7 @@ export function PeriodSelector({ onPeriodChange, defaultPeriod = 'mes' }: Period
             onClick={() => handlePeriodClick(period)}
             className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
               activePeriod === period
-                ? 'bg-[#E50914] text-white'
+                ? 'bg-[#B5652E] text-white'
                 : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-700'
             }`}
           >
@@ -96,7 +96,7 @@ export function PeriodSelector({ onPeriodChange, defaultPeriod = 'mes' }: Period
           onClick={handleCustomToggle}
           className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1 ${
             activePeriod === 'custom'
-              ? 'bg-[#E50914] text-white'
+              ? 'bg-[#B5652E] text-white'
               : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-700'
           }`}
         >
@@ -119,7 +119,7 @@ export function PeriodSelector({ onPeriodChange, defaultPeriod = 'mes' }: Period
                 type="date"
                 value={dataInicio}
                 onChange={(e) => setDataInicio(e.target.value)}
-                className="w-full bg-neutral-100 border border-neutral-200 rounded-lg px-3 py-2 text-neutral-900 focus:border-[#E50914] focus:outline-none text-sm"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-lg px-3 py-2 text-neutral-900 focus:border-[#B5652E] focus:outline-none text-sm"
               />
             </div>
             <div>
@@ -128,13 +128,13 @@ export function PeriodSelector({ onPeriodChange, defaultPeriod = 'mes' }: Period
                 type="date"
                 value={dataFim}
                 onChange={(e) => setDataFim(e.target.value)}
-                className="w-full bg-neutral-100 border border-neutral-200 rounded-lg px-3 py-2 text-neutral-900 focus:border-[#E50914] focus:outline-none text-sm"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-lg px-3 py-2 text-neutral-900 focus:border-[#B5652E] focus:outline-none text-sm"
               />
             </div>
           </div>
           <button
             onClick={handleCustomChange}
-            className="w-full bg-[#E50914] text-white py-2 rounded-lg text-sm font-medium hover:bg-[#f6121d] active:scale-95"
+            className="w-full bg-[#B5652E] text-white py-2 rounded-lg text-sm font-medium hover:bg-[#f6121d] active:scale-95"
           >
             Aplicar Período
           </button>
