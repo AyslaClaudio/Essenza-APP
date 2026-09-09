@@ -13,7 +13,7 @@ export function Monitoramento() {
     <div className="min-h-[80vh] flex flex-col bg-white rounded-2xl border border-neutral-200 overflow-hidden">
       <div className="p-4 border-b border-neutral-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#B5652E] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-[#16A34A] flex items-center justify-center">
             <Radio size={22} className="text-white" />
           </div>
           <div>
@@ -24,13 +24,13 @@ export function Monitoramento() {
         <div className="flex bg-neutral-100 p-1.5 rounded-xl border border-neutral-200 w-full sm:w-auto">
           <button
             onClick={() => setTab('conversas')}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${tab === 'conversas' ? 'bg-[#B5652E] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${tab === 'conversas' ? 'bg-[#16A34A] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
           >
             <MessagesSquare size={14} /> Conversas
           </button>
           <button
             onClick={() => setTab('conhecimento')}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${tab === 'conhecimento' ? 'bg-[#B5652E] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${tab === 'conhecimento' ? 'bg-[#16A34A] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
           >
             <BookOpen size={14} /> Base de Conhecimento
           </button>
@@ -160,7 +160,7 @@ function ConversasPanel() {
                 <button
                   key={conversa.id}
                   onClick={() => setActiveId(conversa.id)}
-                  className={`w-full p-4 flex flex-col gap-1.5 text-left transition-colors ${active ? 'bg-neutral-200/80 border-l-4 border-l-[#B5652E]' : 'hover:bg-neutral-100/55'}`}
+                  className={`w-full p-4 flex flex-col gap-1.5 text-left transition-colors ${active ? 'bg-neutral-200/80 border-l-4 border-l-[#16A34A]' : 'hover:bg-neutral-100/55'}`}
                 >
                   <div className="flex justify-between items-center w-full gap-2">
                     <span className="font-bold text-neutral-900 text-sm truncate">{conversa.cliente_nome || conversa.telefone}</span>
@@ -176,7 +176,7 @@ function ConversasPanel() {
       </div>
 
       {/* Active conversation */}
-      <div className="flex-1 flex flex-col bg-[#EFE6D0] overflow-hidden relative">
+      <div className="flex-1 flex flex-col bg-[#F7F7F5] overflow-hidden relative">
         {activeConversa ? (
           <>
             <div className="px-4 py-3 bg-neutral-50 border-b border-neutral-200 flex flex-col sm:flex-row justify-between gap-3 sm:items-center">
@@ -255,12 +255,12 @@ function ConversasPanel() {
                   onKeyDown={(e) => e.key === 'Enter' && enviarComoHumano()}
                   placeholder="Responder como atendente humano..."
                   disabled={sending}
-                  className="flex-1 bg-neutral-100 text-neutral-900 placeholder-neutral-500 border border-neutral-200 rounded-xl px-4 py-3 text-sm focus:border-[#B5652E] focus:outline-none disabled:opacity-50"
+                  className="flex-1 bg-neutral-100 text-neutral-900 placeholder-neutral-500 border border-neutral-200 rounded-xl px-4 py-3 text-sm focus:border-[#16A34A] focus:outline-none disabled:opacity-50"
                 />
                 <button
                   onClick={enviarComoHumano}
                   disabled={sending || !inputText.trim()}
-                  className="w-12 h-12 bg-[#B5652E] hover:bg-red-600 text-white rounded-xl flex items-center justify-center transition-colors disabled:opacity-40"
+                  className="w-12 h-12 bg-[#16A34A] hover:bg-red-600 text-white rounded-xl flex items-center justify-center transition-colors disabled:opacity-40"
                 >
                   <Send size={18} />
                 </button>
@@ -323,19 +323,19 @@ function ConhecimentoPanel() {
           value={topico}
           onChange={(e) => setTopico(e.target.value)}
           placeholder="Tópico (ex: Política de Troca)"
-          className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#B5652E] focus:outline-none"
+          className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#16A34A] focus:outline-none"
         />
         <textarea
           value={conteudo}
           onChange={(e) => setConteudo(e.target.value)}
           placeholder="Conteúdo / regra / resposta que a IA deve seguir..."
           rows={3}
-          className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#B5652E] focus:outline-none resize-none"
+          className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#16A34A] focus:outline-none resize-none"
         />
         <button
           onClick={addItem}
           disabled={saving || !topico.trim() || !conteudo.trim()}
-          className="flex items-center gap-2 bg-[#B5652E] hover:bg-red-600 text-white text-sm px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95 disabled:opacity-40"
+          className="flex items-center gap-2 bg-[#16A34A] hover:bg-red-600 text-white text-sm px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95 disabled:opacity-40"
         >
           <Plus size={16} /> Adicionar à Base de Conhecimento
         </button>

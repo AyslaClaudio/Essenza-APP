@@ -85,11 +85,11 @@ export function Produtos() {
       <div className="flex gap-2">
         <button
           onClick={() => setTab('produtos')}
-          className={`px-4 py-2 rounded-xl text-sm font-medium ${tab === 'produtos' ? 'bg-[#B5652E] text-white' : 'bg-neutral-200 text-neutral-500'}`}
+          className={`px-4 py-2 rounded-xl text-sm font-medium ${tab === 'produtos' ? 'bg-[#16A34A] text-white' : 'bg-neutral-200 text-neutral-500'}`}
         >Produtos</button>
         <button
           onClick={() => setTab('adicionais')}
-          className={`px-4 py-2 rounded-xl text-sm font-medium ${tab === 'adicionais' ? 'bg-[#B5652E] text-white' : 'bg-neutral-200 text-neutral-500'}`}
+          className={`px-4 py-2 rounded-xl text-sm font-medium ${tab === 'adicionais' ? 'bg-[#16A34A] text-white' : 'bg-neutral-200 text-neutral-500'}`}
         >Adicionais & Bordas</button>
       </div>
 
@@ -103,13 +103,13 @@ export function Produtos() {
                 value={filtro}
                 onChange={(e) => setFiltro(e.target.value)}
                 placeholder="Buscar produto..."
-                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-2.5 text-neutral-900 text-sm focus:border-[#B5652E] focus:outline-none"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-2.5 text-neutral-900 text-sm focus:border-[#16A34A] focus:outline-none"
               />
             </div>
             <select
               value={catFiltro}
               onChange={(e) => setCatFiltro(e.target.value)}
-              className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 text-sm focus:border-[#B5652E] focus:outline-none"
+              className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 text-sm focus:border-[#16A34A] focus:outline-none"
             >
               <option value="todas">Todas categorias</option>
               {categorias.map((c) => (
@@ -119,7 +119,7 @@ export function Produtos() {
             {canEdit && !locked && (
               <button
                 onClick={() => { setEditing(null); setShowForm(true); }}
-                className="flex items-center gap-2 bg-[#B5652E] hover:bg-[#f6121d] text-white px-4 py-2.5 rounded-xl text-sm font-semibold"
+                className="flex items-center gap-2 bg-[#16A34A] hover:bg-[#f6121d] text-white px-4 py-2.5 rounded-xl text-sm font-semibold"
               >
                 <Plus size={18} /> Novo
               </button>
@@ -223,12 +223,12 @@ export function Produtos() {
               value={senhaInput}
               onChange={(e) => setSenhaInput(e.target.value)}
               placeholder="Senha do gerente"
-              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#B5652E] focus:outline-none"
+              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#16A34A] focus:outline-none"
               autoFocus
             />
             <div className="flex gap-2">
               <button onClick={() => setUnlockModal(false)} className="flex-1 py-2.5 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-              <button onClick={handleUnlock} className="flex-1 py-2.5 bg-[#B5652E] text-white rounded-xl font-semibold">Desbloquear</button>
+              <button onClick={handleUnlock} className="flex-1 py-2.5 bg-[#16A34A] text-white rounded-xl font-semibold">Desbloquear</button>
             </div>
           </div>
         </div>
@@ -314,22 +314,22 @@ function ProdutoForm({ produto, categorias, onClose, onSave }: {
         <div className="space-y-3">
           <div>
             <label className="text-neutral-500 text-sm">Nome</label>
-            <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#B5652E] focus:outline-none" />
+            <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#16A34A] focus:outline-none" />
           </div>
           <div>
             <label className="text-neutral-500 text-sm">Categoria</label>
-            <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#B5652E] focus:outline-none">
+            <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#16A34A] focus:outline-none">
               {categorias.map((c) => <option key={c.id} value={c.nome}>{c.nome}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-neutral-500 text-sm">Custo (R$)</label>
-              <input type="number" step="0.01" value={custo} onChange={(e) => setCusto(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#B5652E] focus:outline-none" />
+              <input type="number" step="0.01" value={custo} onChange={(e) => setCusto(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#16A34A] focus:outline-none" />
             </div>
             <div>
               <label className="text-neutral-500 text-sm">Preço Venda (R$)</label>
-              <input type="number" step="0.01" value={preco} onChange={(e) => setPreco(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#B5652E] focus:outline-none" />
+              <input type="number" step="0.01" value={preco} onChange={(e) => setPreco(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#16A34A] focus:outline-none" />
             </div>
           </div>
           <div>
@@ -337,7 +337,7 @@ function ProdutoForm({ produto, categorias, onClose, onSave }: {
 
             {/* Upload area */}
             <div className="mt-1 flex items-center gap-3">
-              <label className={`flex-1 flex items-center justify-center gap-2 bg-neutral-100 border-2 border-dashed border-neutral-200 rounded-xl px-4 py-3 text-neutral-500 text-sm cursor-pointer hover:border-[#B5652E] hover:text-neutral-900 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+              <label className={`flex-1 flex items-center justify-center gap-2 bg-neutral-100 border-2 border-dashed border-neutral-200 rounded-xl px-4 py-3 text-neutral-500 text-sm cursor-pointer hover:border-[#16A34A] hover:text-neutral-900 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
                 {uploading ? (
                   <><Loader2 size={18} className="animate-spin" /> Enviando...</>
                 ) : (
@@ -359,7 +359,7 @@ function ProdutoForm({ produto, categorias, onClose, onSave }: {
             </div>
 
             {/* URL input (manual) */}
-            <input value={foto} onChange={(e) => setFoto(e.target.value)} placeholder="ou cole uma URL de imagem..." className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-2 focus:border-[#B5652E] focus:outline-none text-sm" />
+            <input value={foto} onChange={(e) => setFoto(e.target.value)} placeholder="ou cole uma URL de imagem..." className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-2 focus:border-[#16A34A] focus:outline-none text-sm" />
 
             {/* Preview */}
             {foto ? (
@@ -379,7 +379,7 @@ function ProdutoForm({ produto, categorias, onClose, onSave }: {
           </div>
           <div>
             <label className="text-neutral-500 text-sm">Tamanho</label>
-            <input value={tamanho} onChange={(e) => setTamanho(e.target.value)} placeholder="P, G, Esfirra..." className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#B5652E] focus:outline-none" />
+            <input value={tamanho} onChange={(e) => setTamanho(e.target.value)} placeholder="P, G, Esfirra..." className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#16A34A] focus:outline-none" />
           </div>
 
           {/* Profit preview */}
@@ -400,17 +400,17 @@ function ProdutoForm({ produto, categorias, onClose, onSave }: {
 
           <div className="flex gap-4">
             <label className="flex items-center gap-2 text-neutral-700 text-sm">
-              <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} className="w-4 h-4 accent-[#B5652E]" /> Ativo
+              <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} className="w-4 h-4 accent-[#16A34A]" /> Ativo
             </label>
             <label className="flex items-center gap-2 text-neutral-700 text-sm">
-              <input type="checkbox" checked={destaque} onChange={(e) => setDestaque(e.target.checked)} className="w-4 h-4 accent-[#B5652E]" /> Destaque
+              <input type="checkbox" checked={destaque} onChange={(e) => setDestaque(e.target.checked)} className="w-4 h-4 accent-[#16A34A]" /> Destaque
             </label>
           </div>
         </div>
 
         <div className="flex gap-2 mt-5">
           <button onClick={onClose} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl font-medium">Cancelar</button>
-          <button onClick={save} disabled={saving || !nome} className="flex-1 py-3 bg-[#B5652E] text-white rounded-xl font-semibold disabled:opacity-50">
+          <button onClick={save} disabled={saving || !nome} className="flex-1 py-3 bg-[#16A34A] text-white rounded-xl font-semibold disabled:opacity-50">
             {saving ? 'Salvando...' : 'Salvar'}
           </button>
         </div>
@@ -438,7 +438,7 @@ function AdicionaisList() {
       <div className="flex items-center justify-between">
         <h3 className="text-neutral-900 font-semibold">Adicionais & Bordas</h3>
         {canEdit && (
-          <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 bg-[#B5652E] text-white px-4 py-2 rounded-xl text-sm font-semibold">
+          <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 bg-[#16A34A] text-white px-4 py-2 rounded-xl text-sm font-semibold">
             <Plus size={18} /> Novo
           </button>
         )}
@@ -489,12 +489,12 @@ function AdicionalForm({ adicional, onClose, onSave }: { adicional: Adicional | 
       <div className="bg-white border border-neutral-200 rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-neutral-900 font-bold text-lg mb-4">{adicional ? 'Editar' : 'Novo'} Adicional</h3>
         <div className="space-y-3">
-          <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome (ex: Borda Catupiry)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 focus:border-[#B5652E] focus:outline-none" />
-          <input type="number" step="0.01" value={preco} onChange={(e) => setPreco(e.target.value)} placeholder="Preço (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 focus:border-[#B5652E] focus:outline-none" />
+          <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome (ex: Borda Catupiry)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 focus:border-[#16A34A] focus:outline-none" />
+          <input type="number" step="0.01" value={preco} onChange={(e) => setPreco(e.target.value)} placeholder="Preço (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 focus:border-[#16A34A] focus:outline-none" />
         </div>
         <div className="flex gap-2 mt-5">
           <button onClick={onClose} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-          <button onClick={save} disabled={!nome} className="flex-1 py-3 bg-[#B5652E] text-white rounded-xl font-semibold disabled:opacity-50">Salvar</button>
+          <button onClick={save} disabled={!nome} className="flex-1 py-3 bg-[#16A34A] text-white rounded-xl font-semibold disabled:opacity-50">Salvar</button>
         </div>
       </div>
     </div>

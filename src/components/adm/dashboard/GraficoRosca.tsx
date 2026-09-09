@@ -9,7 +9,7 @@ import { brl } from '../../../lib/format';
 export function GraficoRosca({ custo, lucro }: { custo: number; lucro: number }) {
   const data = [
     { nome: 'Lucro', valor: Math.max(0, lucro), cor: '#22c55e' },
-    { nome: 'Custo', valor: Math.max(0, custo), cor: '#B5652E' },
+    { nome: 'Custo', valor: Math.max(0, custo), cor: '#16A34A' },
   ];
   const totalBruto = custo + lucro;
   const margem = totalBruto > 0 ? (lucro / totalBruto) * 100 : 0;
@@ -47,7 +47,7 @@ export function GraficoRosca({ custo, lucro }: { custo: number; lucro: number })
               <span className="text-neutral-900 font-semibold">{brl(lucro)}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-sm bg-[#B5652E]" />
+              <span className="w-3 h-3 rounded-sm bg-[#16A34A]" />
               <span className="text-neutral-500">Custo:</span>
               <span className="text-neutral-900 font-semibold">{brl(custo)}</span>
             </div>

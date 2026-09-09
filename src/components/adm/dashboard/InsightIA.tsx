@@ -6,7 +6,10 @@ import type { SaborTop } from './GraficoTopSabores';
 /**
  * Painel de Insights — várias sugestões acionáveis geradas a partir dos dados reais
  * (heurísticas sobre os números, sem custo de API). Cada regra vira um cartão com
- * ícone, tom (alerta/oportunidade/positivo) e um texto direto sobre o que fazer.
+ * ícone, tom (alerta/oportunidade/positivo), título curto e descrição.
+ *
+ * Mesma lógica de sempre (gerarInsights não mudou nenhuma condição/cálculo) — só
+ * o texto de cada regra foi dividido em título + descrição pro visual novo.
  */
 interface Props {
   margem: number;          // % de lucro sobre a venda bruta
@@ -22,13 +25,14 @@ interface Props {
 interface Insight {
   tom: 'alerta' | 'oportunidade' | 'positivo';
   icon: typeof Sparkles;
+  titulo: string;
   texto: string;
 }
 
-const TOM_STYLE: Record<Insight['tom'], { bg: string; border: string; icon: string }> = {
-  alerta: { bg: 'bg-red-50', border: 'border-red-200', icon: 'text-red-600' },
-  oportunidade: { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'text-amber-600' },
-  positivo: { bg: 'bg-green-50', border: 'border-green-200', icon: 'text-green-600' },
+const TOM_STYLE: Record<Insight['tom'], { bg: string; icon: string; dot: string }> = {
+  alerta: { bg: 'bg-red-50', icon: 'text-[#EF4444]', dot: 'bg-[#EF4444]' },
+  oportunidade: { bg: 'bg-amber-50', icon: 'text-[#F59E0B]', dot: 'bg-[#F59E0B]' },
+  positivo: { bg: 'bg-[#DCFCE7]', icon: 'text-[#16A34A]', dot: 'bg-[#16A34A]' },
 };
 
 // Monta a lista de insights aplicáveis aos dados atuais, sem limite — cada regra
@@ -41,7 +45,8 @@ function gerarInsights(props: Props): Insight[] {
     insights.push({
       tom: 'alerta',
       icon: Percent,
-      texto: `Sua margem está em ${margem.toFixed(0)}% — abaixo do saudável (ideal acima de 40%). Reveja o custo dos ingredientes ou reajuste o preço dos itens mais vendidos.`,
+      titulo: 'Margem abaixo do saudável',
+      texto: `Sua margem está em ${margem.toFixed(0)}% (ideal acima de 40%). Reveja o custo dos ingredientes ou reajuste o preço dos itens mais vendidos.`,
     });
   }
 
@@ -53,7 +58,8 @@ function gerarInsights(props: Props): Insight[] {
       insights.push({
         tom: 'oportunidade',
         icon: TrendingDown,
-        texto: `${pior.dia} vem sendo o dia mais fraco (${brl(pior.valor)}, ${Math.round((1 - pior.valor / media) * 100)}% abaixo da média). Uma promoção só nesse dia pode ajudar a girar mais.`,
+        titulo: `${pior.dia} está abaixo do potencial`,
+        texto: `O faturamento de ${pior.dia} está ${Math.round((1 - pior.valor / media) * 100)}% abaixo da média da semana (${brl(pior.valor)}). Uma promoção só nesse dia pode ajudar a girar mais.`,
       });
     }
   }
@@ -64,12 +70,14 @@ function gerarInsights(props: Props): Insight[] {
       insights.push({
         tom: 'alerta',
         icon: TrendingDown,
-        texto: `Faturamento ${Math.abs(variacao).toFixed(0)}% menor que o período anterior (${brl(faturamentoAnterior)} → ${brl(faturamento)}). Vale checar se algo mudou: horário de funcionamento, tempo de entrega, ou concorrência.`,
+        titulo: 'Faturamento em queda',
+        texto: `${Math.abs(variacao).toFixed(0)}% menor que o período anterior (${brl(faturamentoAnterior)} → ${brl(faturamento)}). Vale checar se algo mudou: horário de funcionamento, tempo de entrega, ou concorrência.`,
       });
     } else if (variacao >= 20) {
       insights.push({
         tom: 'positivo',
         icon: TrendingUp,
+        titulo: 'Ticket médio em alta',
         texto: `Faturamento ${variacao.toFixed(0)}% maior que o período anterior. O que funcionou dessa vez vale repetir — promoção, divulgação ou item novo?`,
       });
     }
@@ -77,18 +85,28 @@ function gerarInsights(props: Props): Insight[] {
 
   if (meta > 0 && faturamento > 0 && faturamento < meta) {
     const falta = meta - faturamento;
+    const pctMeta = (faturamento / meta) * 100;
     if (falta <= meta * 0.2) {
       insights.push({
         tom: 'oportunidade',
         icon: Target,
-        texto: `Você está a apenas ${brl(falta)} de bater a meta. Um empurrãozinho no delivery fecha com chave de ouro! 🚀`,
+        titulo: 'Meta quase batida',
+        texto: `Você está em ${pctMeta.toFixed(0)}% da meta de hoje — faltam só ${brl(falta)}. Um empurrãozinho no delivery fecha com chave de ouro.`,
+      });
+    } else {
+      insights.push({
+        tom: 'oportunidade',
+        icon: Target,
+        titulo: 'Meta do período',
+        texto: `Você está em ${pctMeta.toFixed(0)}% da meta (${brl(faturamento)} de ${brl(meta)}).`,
       });
     }
   } else if (meta > 0 && faturamento >= meta) {
     insights.push({
       tom: 'positivo',
       icon: Target,
-      texto: `Meta batida! Faturamento de ${brl(faturamento)} já passou os ${brl(meta)} planejados.`,
+      titulo: 'Meta batida',
+      texto: `Faturamento de ${brl(faturamento)} já passou os ${brl(meta)} planejados.`,
     });
   }
 
@@ -96,6 +114,7 @@ function gerarInsights(props: Props): Insight[] {
     insights.push({
       tom: 'oportunidade',
       icon: Award,
+      titulo: 'Produto em destaque',
       texto: `${topSabor.nome} é o campeão de vendas (${topSabor.quantidade} un). Garanta o estoque desse item para não perder venda, e considere destacá-lo no cardápio.`,
     });
   }
@@ -104,6 +123,7 @@ function gerarInsights(props: Props): Insight[] {
     insights.push({
       tom: 'oportunidade',
       icon: Wallet,
+      titulo: 'Oportunidade de upsell',
       texto: `Ticket médio de ${brl(ticketMedio)}. Sugerir bebida ou sobremesa no fechamento do pedido é a forma mais simples de aumentar esse valor.`,
     });
   }
@@ -112,6 +132,7 @@ function gerarInsights(props: Props): Insight[] {
     insights.push({
       tom: 'oportunidade',
       icon: Percent,
+      titulo: 'Forma de pagamento concentrada',
       texto: `${formaPagamentoDominante.pct.toFixed(0)}% dos pagamentos são em ${formaPagamentoDominante.forma}. Vale avaliar taxas/prazos das outras formas para diversificar o recebimento.`,
     });
   }
@@ -120,6 +141,7 @@ function gerarInsights(props: Props): Insight[] {
     insights.push({
       tom: 'oportunidade',
       icon: Sparkles,
+      titulo: 'Sem dados suficientes ainda',
       texto: 'Ainda não há vendas suficientes no período para gerar uma sugestão. Assim que entrarem pedidos, trago insights aqui.',
     });
   }
@@ -130,20 +152,23 @@ function gerarInsights(props: Props): Insight[] {
 export function InsightIA(props: Props) {
   const insights = gerarInsights(props);
   return (
-    <div className="bg-white border border-neutral-200 rounded-2xl p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-600 to-green-500 flex items-center justify-center flex-shrink-0">
-          <Sparkles size={16} className="text-white" />
+    <div className="bg-white border border-[#E8E8E5] rounded-2xl p-5">
+      <div className="flex items-center gap-2.5 mb-4">
+        <div className="w-8 h-8 rounded-lg bg-[#DCFCE7] flex items-center justify-center flex-shrink-0">
+          <Sparkles size={16} className="text-[#16A34A]" />
         </div>
-        <h3 className="text-neutral-900 font-bold">Insights &amp; o que fazer para vender mais</h3>
+        <h3 className="text-[#171717] font-semibold">Insights da Essenza</h3>
       </div>
-      <div className="space-y-2.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {insights.map((insight, i) => {
           const style = TOM_STYLE[insight.tom];
           return (
-            <div key={i} className={`flex gap-3 rounded-xl p-3.5 border ${style.bg} ${style.border}`}>
+            <div key={i} className={`flex gap-3 rounded-xl p-4 ${style.bg}`}>
               <insight.icon size={18} className={`${style.icon} flex-shrink-0 mt-0.5`} />
-              <p className="text-neutral-800 text-sm leading-relaxed">{insight.texto}</p>
+              <div className="min-w-0">
+                <p className="text-[#171717] text-sm font-semibold mb-0.5">{insight.titulo}</p>
+                <p className="text-[#737373] text-xs leading-relaxed">{insight.texto}</p>
+              </div>
             </div>
           );
         })}

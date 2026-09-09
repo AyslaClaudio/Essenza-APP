@@ -123,7 +123,7 @@ export function Clientes() {
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por nome ou telefone..."
-            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-neutral-900 focus:border-[#B5652E] focus:outline-none"
+            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-neutral-900 focus:border-[#16A34A] focus:outline-none"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto">
@@ -136,7 +136,7 @@ export function Clientes() {
             <button
               key={f.id}
               onClick={() => setFiltro(f.id)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${filtro === f.id ? 'bg-[#B5652E] text-white' : 'bg-neutral-200 text-neutral-500'}`}
+              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${filtro === f.id ? 'bg-[#16A34A] text-white' : 'bg-neutral-200 text-neutral-500'}`}
             >
               {f.label}
             </button>
@@ -181,7 +181,7 @@ export function Clientes() {
                       <span>{c.pedidos % META_FIDELIDADE}/{META_FIDELIDADE}</span>
                     </div>
                     <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-[#C9A227]" style={{ width: `${((c.pedidos % META_FIDELIDADE) / META_FIDELIDADE) * 100}%` }} />
+                      <div className="h-full bg-[#F59E0B]" style={{ width: `${((c.pedidos % META_FIDELIDADE) / META_FIDELIDADE) * 100}%` }} />
                     </div>
                   </div>
                 )}

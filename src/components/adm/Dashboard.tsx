@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useConfig } from '../../context/ConfigContext';
 import { brl } from '../../lib/format';
 import {
   startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
   addDays, dateTimeToISO,
 } from '../../lib/dateUtils';
 import {
-  TrendingUp, TrendingDown, DollarSign, Receipt, ShoppingBag, RefreshCw,
+  TrendingUp, TrendingDown, DollarSign, Receipt, ShoppingBag, RefreshCw, ChefHat, LayoutGrid,
 } from 'lucide-react';
 import { GraficoBarras, type BarraDia } from './dashboard/GraficoBarras';
-import { GraficoRosca } from './dashboard/GraficoRosca';
 import { GraficoTopSabores, type SaborTop } from './dashboard/GraficoTopSabores';
 import { MetaProgresso } from './dashboard/MetaProgresso';
 import { InsightIA } from './dashboard/InsightIA';
@@ -23,15 +23,22 @@ interface Agregado {
   num: number;
 }
 
+interface Operacao {
+  pedidosBalcao: number;
+  pedidosDelivery: number;
+  mesasOcupadas: number;
+  mesasTotal: number;
+}
+
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-// Variação percentual entre período atual e anterior
+// Variação percentual entre período atual e anterior — cálculo idêntico ao de sempre.
 function pctChange(cur: number, prev: number): number {
   if (prev <= 0) return cur > 0 ? 100 : 0;
   return ((cur - prev) / prev) * 100;
 }
 
-// Intervalos [atual, anterior] conforme o filtro
+// Intervalos [atual, anterior] conforme o filtro — cálculo idêntico ao de sempre.
 function intervalos(filtro: Filtro): { ini: Date; fim: Date; iniPrev: Date; fimPrev: Date; labelPrev: string } {
   const hoje = new Date();
   if (filtro === 'hoje') {
@@ -57,8 +64,8 @@ function intervalos(filtro: Filtro): { ini: Date; fim: Date; iniPrev: Date; fimP
   };
 }
 
-// Agrega uma lista de pedidos (total/lucro/custo_total) em somatórios.
-// "num" conta só pedidos entregues — confirmado ainda não é uma venda finalizada.
+// Agrega uma lista de pedidos (total/lucro/custo_total) em somatórios — cálculo
+// idêntico ao de sempre ("num" conta só pedidos entregues).
 function agregar(rows: any[]): Agregado {
   return {
     faturamento: rows.reduce((s, p) => s + Number(p.total || 0), 0),
@@ -68,7 +75,28 @@ function agregar(rows: any[]): Agregado {
   };
 }
 
+// Sparkline discreto (SVG puro, sem lib) — usa os mesmos 7 dias do gráfico principal.
+function Sparkline({ valores }: { valores: number[] }) {
+  if (valores.length < 2 || valores.every((v) => v === 0)) return null;
+  const max = Math.max(...valores);
+  const min = Math.min(...valores);
+  const range = max - min || 1;
+  const pontos = valores
+    .map((v, i) => {
+      const x = (i / (valores.length - 1)) * 100;
+      const y = 24 - ((v - min) / range) * 22 - 1;
+      return `${x},${y}`;
+    })
+    .join(' ');
+  return (
+    <svg viewBox="0 0 100 24" preserveAspectRatio="none" className="w-16 h-6">
+      <polyline points={pontos} fill="none" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function Dashboard({ meta }: { meta: number }) {
+  const { config } = useConfig();
   const [filtro, setFiltro] = useState<Filtro>('hoje');
   const [loading, setLoading] = useState(true);
   const [atual, setAtual] = useState<Agregado>({ faturamento: 0, lucro: 0, custo: 0, num: 0 });
@@ -78,6 +106,7 @@ export function Dashboard({ meta }: { meta: number }) {
   const [topSabores, setTopSabores] = useState<SaborTop[]>([]);
   const [faturamentoHoje, setFaturamentoHoje] = useState(0);
   const [formaPagamentoDominante, setFormaPagamentoDominante] = useState<{ forma: string; pct: number } | null>(null);
+  const [operacao, setOperacao] = useState<Operacao>({ pedidosBalcao: 0, pedidosDelivery: 0, mesasOcupadas: 0, mesasTotal: 0 });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -183,6 +212,22 @@ export function Dashboard({ meta }: { meta: number }) {
       setTopSabores([]);
     }
 
+    // 6. Operação agora — só dados reais: pedidos em andamento (status
+    // "confirmado", separados por tipo) e mesas ocupadas. Sem status de
+    // "cozinha" vs "aguardando entrega" porque o sistema não distingue isso.
+    const [{ data: pedidosAndamento }, { data: mesasData }] = await Promise.all([
+      supabase.from('pedidos').select('tipo').eq('status', 'confirmado'),
+      supabase.from('mesas').select('status'),
+    ]);
+    const andamento = pedidosAndamento || [];
+    const mesas = mesasData || [];
+    setOperacao({
+      pedidosBalcao: andamento.filter((p: any) => p.tipo === 'balcao' || p.tipo === 'mesa').length,
+      pedidosDelivery: andamento.filter((p: any) => p.tipo === 'delivery' || p.tipo === 'cliente').length,
+      mesasOcupadas: mesas.filter((m: any) => m.status !== 'livre').length,
+      mesasTotal: mesas.length,
+    });
+
     setLoading(false);
   }, [filtro]);
 
@@ -195,63 +240,62 @@ export function Dashboard({ meta }: { meta: number }) {
   const ticketMedio = atual.num > 0 ? atual.faturamento / atual.num : 0;
   const ticketMedioPrev = anterior.num > 0 ? anterior.faturamento / anterior.num : 0;
   const margem = atual.faturamento > 0 ? (atual.lucro / atual.faturamento) * 100 : 0;
-
-  // O card de Lucro é destacado em VERDE quando há lucro (positivo) e em VERMELHO
-  // quando há prejuízo (negativo).
-  const lucroPos = atual.lucro >= 0;
-  const destTone = lucroPos
-    ? { grad: 'bg-gradient-to-br from-green-500/20 to-green-500/5 border-green-500/30', text: 'text-green-500' }
-    : { grad: 'bg-gradient-to-br from-red-500/20 to-red-500/5 border-red-500/30', text: 'text-red-600' };
+  const seteDiasValores = seteDias.map((d) => d.valor);
 
   const cards = [
-    { label: 'Faturamento', valor: brl(atual.faturamento), pct: pctChange(atual.faturamento, anterior.faturamento), icon: DollarSign, destaque: false },
-    { label: 'Lucro', valor: brl(atual.lucro), pct: pctChange(atual.lucro, anterior.lucro), icon: TrendingUp, destaque: true },
-    { label: 'Ticket Médio', valor: brl(ticketMedio), pct: pctChange(ticketMedio, ticketMedioPrev), icon: Receipt, destaque: false },
-    { label: 'Nº Pedidos', valor: String(atual.num), pct: pctChange(atual.num, anterior.num), icon: ShoppingBag, destaque: false },
+    { label: 'Faturamento', valor: brl(atual.faturamento), pct: pctChange(atual.faturamento, anterior.faturamento), icon: DollarSign, sparkline: true },
+    { label: 'Lucro Líquido', valor: brl(atual.lucro), pct: pctChange(atual.lucro, anterior.lucro), icon: TrendingUp, sparkline: false },
+    { label: 'Ticket Médio', valor: brl(ticketMedio), pct: pctChange(ticketMedio, ticketMedioPrev), icon: Receipt, sparkline: false },
+    { label: 'Pedidos', valor: String(atual.num), pct: pctChange(atual.num, anterior.num), icon: ShoppingBag, sparkline: false },
   ];
 
+  const FILTRO_LABELS: Record<Filtro, string> = { hoje: 'Hoje', semana: 'Esta semana', mes: 'Este mês' };
+
   return (
-    <div className="space-y-5 animate-fadeIn">
-      {/* Cabeçalho + filtros */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
-          Dashboard
-          {loading && <RefreshCw size={16} className="animate-spin text-[#B5652E]" />}
-        </h2>
-        <div className="flex bg-neutral-100 p-1 rounded-xl border border-neutral-200">
+    <div className="space-y-5 animate-fadeIn max-w-[1400px] mx-auto">
+      {/* Cabeçalho */}
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold text-[#171717] flex items-center gap-2">
+            Dashboard
+            {loading && <RefreshCw size={15} className="animate-spin text-[#16A34A]" />}
+          </h2>
+          <p className="text-[#737373] text-sm mt-1">
+            Olá, {config?.nome_loja || 'Essenza'} 👋 Aqui está o desempenho da sua operação.
+          </p>
+        </div>
+        <div className="flex bg-white p-1 rounded-full border border-[#E8E8E5]">
           {(['hoje', 'semana', 'mes'] as Filtro[]).map((f) => (
             <button
               key={f}
               onClick={() => setFiltro(f)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-semibold capitalize transition-all ${
-                filtro === f ? 'bg-[#B5652E] text-white' : 'text-neutral-500 hover:text-neutral-900'
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                filtro === f ? 'bg-[#16A34A] text-white' : 'text-[#737373] hover:text-[#171717]'
               }`}
             >
-              {f === 'mes' ? 'Mês' : f}
+              {FILTRO_LABELS[f]}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Cards de topo com % vs período anterior */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Cards de KPI */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((c) => {
           const subiu = c.pct >= 0;
           return (
-            <div
-              key={c.label}
-              className={`rounded-2xl p-5 border ${
-                c.destaque ? destTone.grad : 'bg-white border-neutral-200'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-neutral-500 text-xs uppercase tracking-wide">{c.label}</span>
-                <c.icon size={18} className={c.destaque ? destTone.text : 'text-neutral-500'} />
+            <div key={c.label} className="bg-white border border-[#E8E8E5] rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[#737373] text-xs uppercase tracking-wide">{c.label}</span>
+                <c.icon size={16} className="text-[#a3a3a3]" />
               </div>
-              <p className={`font-black text-2xl ${c.destaque ? destTone.text : 'text-neutral-900'}`}>{c.valor}</p>
-              <div className={`flex items-center gap-1 text-xs mt-1 ${subiu ? 'text-green-500' : 'text-red-600'}`}>
+              <div className="flex items-end justify-between gap-2">
+                <p className="font-semibold text-2xl text-[#171717] tabular-nums">{c.valor}</p>
+                {c.sparkline && <Sparkline valores={seteDiasValores} />}
+              </div>
+              <div className={`flex items-center gap-1 text-xs mt-2 font-medium ${subiu ? 'text-[#16A34A]' : 'text-[#EF4444]'}`}>
                 {subiu ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                {Math.abs(c.pct).toFixed(0)}% <span className="text-neutral-400">{labelPrev}</span>
+                {Math.abs(c.pct).toFixed(1)}% <span className="text-[#a3a3a3] font-normal">{labelPrev}</span>
               </div>
             </div>
           );
@@ -273,12 +317,80 @@ export function Dashboard({ meta }: { meta: number }) {
       {/* Meta do dia */}
       <MetaProgresso faturamento={faturamentoHoje} meta={meta} />
 
-      {/* Gráficos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <GraficoBarras data={seteDias} />
-        <GraficoRosca custo={atual.custo} lucro={atual.lucro} />
+      {/* Gráfico principal (≈70%) + Produtos mais vendidos (≈30%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+        <div className="lg:col-span-7">
+          <GraficoBarras data={seteDias} />
+        </div>
+        <div className="lg:col-span-3">
+          <GraficoTopSabores data={topSabores} />
+        </div>
       </div>
-      <GraficoTopSabores data={topSabores} />
+
+      {/* Margem de lucro — substitui o donut por uma leitura mais direta */}
+      <div className="bg-white border border-[#E8E8E5] rounded-2xl p-6">
+        <h3 className="text-[#171717] font-semibold mb-5">Margem de Lucro</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-6 items-center">
+          <div>
+            <p className="text-4xl font-semibold text-[#16A34A] tabular-nums">{margem.toFixed(0)}%</p>
+            <p className="text-[#737373] text-xs mt-1">do faturamento vira lucro</p>
+          </div>
+          <div className="space-y-3">
+            {[
+              { label: 'Receita', valor: atual.faturamento, cor: '#171717', max: atual.faturamento },
+              { label: 'Custos', valor: atual.custo, cor: '#EF4444', max: atual.faturamento },
+              { label: 'Lucro', valor: atual.lucro, cor: '#16A34A', max: atual.faturamento },
+            ].map((linha) => (
+              <div key={linha.label}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-[#737373]">{linha.label}</span>
+                  <span className="font-medium text-[#171717]">{brl(linha.valor)}</span>
+                </div>
+                <div className="h-2 bg-[#F7F7F5] rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${linha.max > 0 ? Math.min(100, (linha.valor / linha.max) * 100) : 0}%`, backgroundColor: linha.cor }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Operação agora — só dados que existem de verdade no sistema */}
+      <div className="bg-white border border-[#E8E8E5] rounded-2xl p-6">
+        <h3 className="text-[#171717] font-semibold mb-4">Operação Agora</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#DCFCE7] flex items-center justify-center flex-shrink-0">
+              <ChefHat size={18} className="text-[#16A34A]" />
+            </div>
+            <div>
+              <p className="text-[#171717] font-semibold text-lg leading-none">{operacao.pedidosBalcao}</p>
+              <p className="text-[#737373] text-xs mt-1">Pedidos de balcão/mesa em andamento</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+              <ShoppingBag size={18} className="text-[#F59E0B]" />
+            </div>
+            <div>
+              <p className="text-[#171717] font-semibold text-lg leading-none">{operacao.pedidosDelivery}</p>
+              <p className="text-[#737373] text-xs mt-1">Pedidos de entrega em andamento</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <LayoutGrid size={18} className="text-blue-600" />
+            </div>
+            <div>
+              <p className="text-[#171717] font-semibold text-lg leading-none">{operacao.mesasOcupadas} / {operacao.mesasTotal}</p>
+              <p className="text-[#737373] text-xs mt-1">Mesas ocupadas</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

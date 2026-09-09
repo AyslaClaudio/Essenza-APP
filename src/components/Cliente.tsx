@@ -181,14 +181,14 @@ export function Cliente() {
 
   if (step === 'sucesso') {
     return (
-      <div className="min-h-screen bg-[#EFE6D0] flex flex-col items-center justify-center px-4">
+      <div className="min-h-screen bg-[#F7F7F5] flex flex-col items-center justify-center px-4">
         <div className="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center mb-6">
           <Check size={48} className="text-green-600" />
         </div>
         <h1 className="font-display text-3xl font-bold text-neutral-900 text-center">Pedido Recebido!</h1>
-        <p className="text-neutral-500 mt-2 text-center">Seu pedido <span className="text-[#B5652E] font-bold">#{ultimoNum}</span> foi confirmado.</p>
+        <p className="text-neutral-500 mt-2 text-center">Seu pedido <span className="text-[#16A34A] font-bold">#{ultimoNum}</span> foi confirmado.</p>
         <p className="text-neutral-500 text-sm mt-1 text-center">Acompanhe o status: Confirmado {'>'} Entregue</p>
-        <button onClick={() => { setStep('menu'); setCliente({ nome: '', telefone: '', endereco: '', bairro: '', cep: '', referencia: '' }); }} className="mt-8 bg-[#B5652E] text-white px-8 py-3 rounded-xl font-bold">
+        <button onClick={() => { setStep('menu'); setCliente({ nome: '', telefone: '', endereco: '', bairro: '', cep: '', referencia: '' }); }} className="mt-8 bg-[#16A34A] text-white px-8 py-3 rounded-xl font-bold">
           Fazer Novo Pedido
         </button>
       </div>
@@ -196,9 +196,9 @@ export function Cliente() {
   }
 
   return (
-    <div className="min-h-screen bg-[#EFE6D0]">
+    <div className="min-h-screen bg-[#F7F7F5]">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-[#EFE6D0]/95 backdrop-blur border-b border-neutral-200">
+      <header className="sticky top-0 z-30 bg-[#F7F7F5]/95 backdrop-blur border-b border-neutral-200">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="ESSENZA" className="w-9 h-9 rounded-lg object-cover shadow-sm" />
@@ -209,7 +209,7 @@ export function Cliente() {
           </div>
           <button
             onClick={() => setShowCart(true)}
-            className="relative flex items-center gap-2 bg-[#B5652E] text-white px-3.5 py-2 rounded-xl font-semibold text-sm active:scale-95 hover:bg-red-600 hover:shadow-md transition-all"
+            className="relative flex items-center gap-2 bg-[#16A34A] text-white px-3.5 py-2 rounded-xl font-semibold text-sm active:scale-95 hover:bg-red-600 hover:shadow-md transition-all"
           >
             <ShoppingCart size={18} />
             {cart.length > 0 && (
@@ -251,7 +251,7 @@ export function Cliente() {
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
             placeholder="Buscar no cardápio..."
-            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-3 text-neutral-900 focus:border-[#B5652E] focus:outline-none"
+            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-3 text-neutral-900 focus:border-[#16A34A] focus:outline-none"
           />
         </div>
       </div>
@@ -259,9 +259,9 @@ export function Cliente() {
       {/* Categories */}
       <div className="max-w-4xl mx-auto px-4 mt-3">
         <div className="flex gap-2 overflow-x-auto pb-1">
-          <button onClick={() => setCatFiltro('todas')} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === 'todas' ? 'bg-[#B5652E] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-600'}`}>Todos</button>
+          <button onClick={() => setCatFiltro('todas')} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === 'todas' ? 'bg-[#16A34A] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-600'}`}>Todos</button>
           {categorias.map((c) => (
-            <button key={c} onClick={() => setCatFiltro(c)} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === c ? 'bg-[#B5652E] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-600'}`}>{c}</button>
+            <button key={c} onClick={() => setCatFiltro(c)} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === c ? 'bg-[#16A34A] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-600'}`}>{c}</button>
           ))}
         </div>
       </div>
@@ -279,7 +279,7 @@ export function Cliente() {
                   <button
                     key={p.id}
                     onClick={() => handleProductClick(p)}
-                    className="group relative bg-white border border-neutral-200 rounded-2xl overflow-hidden text-left hover:border-[#B5652E]/60 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/40 active:scale-95 transition-all"
+                    className="group relative bg-white border border-neutral-200 rounded-2xl overflow-hidden text-left hover:border-[#16A34A]/60 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/40 active:scale-95 transition-all"
                   >
                     <div className="relative aspect-square w-full overflow-hidden">
                       {p.foto && !usaImagemPadrao(p.categoria_nome) ? (
@@ -297,13 +297,13 @@ export function Cliente() {
                           <Star size={10} fill="currentColor" /> Destaque
                         </span>
                       )}
-                      <span className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-[#B5652E] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                      <span className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-[#16A34A] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
                         <Plus size={18} />
                       </span>
                     </div>
                     <div className="p-3">
                       <p className="text-neutral-900 font-semibold text-sm leading-tight line-clamp-2">{p.nome}</p>
-                      <p className="text-[#B5652E] font-black text-lg mt-1.5">{brl(p.preco)}</p>
+                      <p className="text-[#16A34A] font-black text-lg mt-1.5">{brl(p.preco)}</p>
                     </div>
                   </button>
                 ))}
@@ -317,8 +317,8 @@ export function Cliente() {
       {showCart && (
         <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setShowCart(false)}>
           <div className="absolute inset-0 bg-black/60" />
-          <div className="relative w-full max-w-md bg-[#EFE6D0] border-l border-neutral-200 h-full overflow-y-auto animate-slideUp" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-[#EFE6D0] border-b border-neutral-200 p-4 flex items-center justify-between">
+          <div className="relative w-full max-w-md bg-[#F7F7F5] border-l border-neutral-200 h-full overflow-y-auto animate-slideUp" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-[#F7F7F5] border-b border-neutral-200 p-4 flex items-center justify-between">
               <h3 className="text-neutral-900 font-bold text-lg">Carrinho</h3>
               <button onClick={() => setShowCart(false)} className="text-neutral-500 hover:text-neutral-900"><X size={22} /></button>
             </div>
@@ -352,7 +352,7 @@ export function Cliente() {
                     <div className="flex justify-between text-neutral-500 text-sm"><span>Entrega</span><span className="text-neutral-900">{brl(taxaEntrega)}</span></div>
                     <div className="flex justify-between font-bold text-lg border-t border-neutral-200 pt-2"><span className="text-neutral-900">Total</span><span className="text-[#22c55e]">{brl(total)}</span></div>
                   </div>
-                  <button onClick={() => { setShowCart(false); setStep('checkout'); }} className="w-full bg-[#B5652E] text-white py-4 rounded-xl font-bold text-lg active:scale-95">
+                  <button onClick={() => { setShowCart(false); setStep('checkout'); }} className="w-full bg-[#16A34A] text-white py-4 rounded-xl font-bold text-lg active:scale-95">
                     Finalizar Pedido
                   </button>
                 </>
@@ -364,8 +364,8 @@ export function Cliente() {
 
       {/* Checkout */}
       {step === 'checkout' && (
-        <div className="fixed inset-0 z-50 bg-[#EFE6D0] overflow-y-auto">
-          <div className="sticky top-0 bg-[#EFE6D0] border-b border-neutral-200 p-4 flex items-center gap-3">
+        <div className="fixed inset-0 z-50 bg-[#F7F7F5] overflow-y-auto">
+          <div className="sticky top-0 bg-[#F7F7F5] border-b border-neutral-200 p-4 flex items-center gap-3">
             <button onClick={() => setStep('menu')} className="text-neutral-500 hover:text-neutral-900"><ChevronLeft size={24} /></button>
             <h3 className="text-neutral-900 font-bold text-lg">Finalizar Pedido</h3>
           </div>
@@ -373,14 +373,14 @@ export function Cliente() {
             {/* Customer data */}
             <div className="space-y-3">
               <h4 className="text-neutral-900 font-semibold">Seus dados</h4>
-              <input value={cliente.nome} onChange={(e) => setCliente({ ...cliente, nome: e.target.value })} placeholder="Nome completo" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B5652E] focus:outline-none" />
-              <input value={cliente.telefone} onChange={(e) => setCliente({ ...cliente, telefone: e.target.value })} placeholder="Telefone / WhatsApp" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B5652E] focus:outline-none" />
-              <input value={cliente.endereco} onChange={(e) => setCliente({ ...cliente, endereco: e.target.value })} placeholder="Endereço (rua, número)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B5652E] focus:outline-none" />
-              <select value={cliente.bairro || bairro} onChange={(e) => { setCliente({ ...cliente, bairro: e.target.value }); setBairro(e.target.value); }} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B5652E] focus:outline-none">
+              <input value={cliente.nome} onChange={(e) => setCliente({ ...cliente, nome: e.target.value })} placeholder="Nome completo" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#16A34A] focus:outline-none" />
+              <input value={cliente.telefone} onChange={(e) => setCliente({ ...cliente, telefone: e.target.value })} placeholder="Telefone / WhatsApp" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#16A34A] focus:outline-none" />
+              <input value={cliente.endereco} onChange={(e) => setCliente({ ...cliente, endereco: e.target.value })} placeholder="Endereço (rua, número)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#16A34A] focus:outline-none" />
+              <select value={cliente.bairro || bairro} onChange={(e) => { setCliente({ ...cliente, bairro: e.target.value }); setBairro(e.target.value); }} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#16A34A] focus:outline-none">
                 <option value="">Selecione o bairro...</option>
                 {taxas.map((t) => <option key={t.id} value={t.bairro}>{t.bairro} - Entrega {brl(t.taxa)}</option>)}
               </select>
-              <input value={cliente.referencia} onChange={(e) => setCliente({ ...cliente, referencia: e.target.value })} placeholder="Ponto de referência (opcional)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B5652E] focus:outline-none" />
+              <input value={cliente.referencia} onChange={(e) => setCliente({ ...cliente, referencia: e.target.value })} placeholder="Ponto de referência (opcional)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#16A34A] focus:outline-none" />
             </div>
 
             {/* Payment */}
@@ -388,13 +388,13 @@ export function Cliente() {
               <h4 className="text-neutral-900 font-semibold">Pagamento</h4>
               <div className="grid grid-cols-3 gap-2">
                 {['Pix', 'Cartão', 'Dinheiro'].map((f) => (
-                  <button key={f} onClick={() => setFormaPagamento(f)} className={`py-3 rounded-xl font-medium ${formaPagamento === f ? 'bg-[#B5652E] text-white' : 'bg-neutral-200 text-neutral-500'}`}>{f}</button>
+                  <button key={f} onClick={() => setFormaPagamento(f)} className={`py-3 rounded-xl font-medium ${formaPagamento === f ? 'bg-[#16A34A] text-white' : 'bg-neutral-200 text-neutral-500'}`}>{f}</button>
                 ))}
               </div>
             </div>
 
             <div>
-              <input value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Observação (ex: sem cebola, troco para R$50)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B5652E] focus:outline-none" />
+              <input value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Observação (ex: sem cebola, troco para R$50)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#16A34A] focus:outline-none" />
             </div>
 
             {/* Summary */}
@@ -468,7 +468,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
         <p className="text-neutral-500 text-sm mb-2">{isCombo ? `Esfirra${comboDuo ? ' 1' : ''}` : 'Sabor 1'}</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">
           {opcoesSabor.map((p) => (
-            <button key={p.id} onClick={() => setSabor1(p)} className={`p-3 rounded-xl text-left transition-colors ${sabor1?.id === p.id ? 'bg-[#B5652E] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
+            <button key={p.id} onClick={() => setSabor1(p)} className={`p-3 rounded-xl text-left transition-colors ${sabor1?.id === p.id ? 'bg-[#16A34A] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
               <p className="font-medium text-sm">{p.nome}</p>
               {!isCombo && <p className="text-xs opacity-70">{brl(p.preco)}</p>}
             </button>
@@ -480,7 +480,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
             <p className="text-neutral-500 text-sm mb-2">{isCombo ? 'Esfirra 2' : 'Sabor 2 — meio a meio (cobra o mais caro)'}</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">
               {opcoesSabor.map((p) => (
-                <button key={p.id} onClick={() => setSabor2(sabor2?.id === p.id ? null : p)} className={`p-3 rounded-xl text-left transition-colors ${sabor2?.id === p.id ? 'bg-[#B5652E] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
+                <button key={p.id} onClick={() => setSabor2(sabor2?.id === p.id ? null : p)} className={`p-3 rounded-xl text-left transition-colors ${sabor2?.id === p.id ? 'bg-[#16A34A] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
                   <p className="font-medium text-sm">{p.nome}</p>
                   {!isCombo && <p className="text-xs opacity-70">{brl(p.preco)}</p>}
                 </button>
@@ -493,11 +493,11 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
           <>
             <p className="text-neutral-500 text-sm mb-2">Adicionais</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-              <button onClick={() => setSelectedAdicional(null)} className={`p-3 rounded-xl text-left transition-colors ${!selectedAdicional ? 'bg-[#B5652E] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
+              <button onClick={() => setSelectedAdicional(null)} className={`p-3 rounded-xl text-left transition-colors ${!selectedAdicional ? 'bg-[#16A34A] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
                 <p className="font-medium text-sm">Nenhum</p>
               </button>
               {adicionais.map((a) => (
-                <button key={a.id} onClick={() => setSelectedAdicional(a)} className={`p-3 rounded-xl text-left transition-colors ${selectedAdicional?.id === a.id ? 'bg-[#B5652E] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
+                <button key={a.id} onClick={() => setSelectedAdicional(a)} className={`p-3 rounded-xl text-left transition-colors ${selectedAdicional?.id === a.id ? 'bg-[#16A34A] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
                   <p className="font-medium text-sm">{a.nome}</p>
                   <p className="text-xs opacity-70">+{brl(a.preco)}</p>
                 </button>
@@ -507,7 +507,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
         )}
 
         <div className="mb-4">
-          <input value={itemObs} onChange={(e) => setItemObs(e.target.value)} placeholder="Observação (ex: sem cebola)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B5652E] focus:outline-none" />
+          <input value={itemObs} onChange={(e) => setItemObs(e.target.value)} placeholder="Observação (ex: sem cebola)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#16A34A] focus:outline-none" />
         </div>
 
         <div className="flex items-center justify-between bg-neutral-100 rounded-xl p-3 mb-4">

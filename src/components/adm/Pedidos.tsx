@@ -85,7 +85,7 @@ export function Pedidos() {
             <button
               key={f}
               onClick={() => setFiltro(f)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium capitalize ${filtro === f ? 'bg-[#B5652E] text-white' : 'bg-neutral-200 text-neutral-500'}`}
+              className={`px-4 py-2 rounded-xl text-sm font-medium capitalize ${filtro === f ? 'bg-[#16A34A] text-white' : 'bg-neutral-200 text-neutral-500'}`}
             >{f === 'hoje' ? 'Hoje' : f === 'ativos' ? 'Ativos' : 'Todos'}</button>
           ))}
         </div>
@@ -95,7 +95,7 @@ export function Pedidos() {
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por número ou cliente..."
-            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-2.5 text-neutral-900 text-sm focus:border-[#B5652E] focus:outline-none"
+            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-2.5 text-neutral-900 text-sm focus:border-[#16A34A] focus:outline-none"
           />
         </div>
       </div>
@@ -285,7 +285,7 @@ function PedidoCard({ pedido, onView, onStatus, canDelete, onDelete }: {
           <Eye size={16} /> Ver
         </button>
         {nextStatus && (
-          <button onClick={() => onStatus(nextStatus)} className="flex-1 py-2 bg-[#B5652E] text-white rounded-xl text-sm font-medium hover:bg-[#f6121d]">
+          <button onClick={() => onStatus(nextStatus)} className="flex-1 py-2 bg-[#16A34A] text-white rounded-xl text-sm font-medium hover:bg-[#f6121d]">
             {STATUS_LABELS[nextStatus]}
           </button>
         )}
@@ -372,7 +372,7 @@ function PedidoDetail({ pedido, onClose, onPrint, onStatus, canDelete, onDelete 
         </div>
 
         {nextStatus && (
-          <button onClick={() => onStatus(nextStatus)} className="w-full py-3 bg-[#B5652E] text-white rounded-xl font-bold mb-2">
+          <button onClick={() => onStatus(nextStatus)} className="w-full py-3 bg-[#16A34A] text-white rounded-xl font-bold mb-2">
             Avançar para: {STATUS_LABELS[nextStatus]}
           </button>
         )}

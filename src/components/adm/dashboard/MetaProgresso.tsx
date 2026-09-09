@@ -23,7 +23,7 @@ export function MetaProgresso({ faturamento, meta }: { faturamento: number; meta
     <div className={`bg-white border rounded-2xl p-6 transition-colors ${bateu ? 'border-green-500/60' : 'border-neutral-200'}`}>
       <div className="flex items-center justify-between mb-3">
         <span className="text-neutral-700 font-semibold flex items-center gap-2">
-          {bateu ? <Trophy size={18} className="text-green-500" /> : <Target size={18} className="text-[#B5652E]" />}
+          {bateu ? <Trophy size={18} className="text-green-500" /> : <Target size={18} className="text-[#16A34A]" />}
           Meta do Dia
         </span>
         <span className="text-neutral-900 font-semibold text-sm">

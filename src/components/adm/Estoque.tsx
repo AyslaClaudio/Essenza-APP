@@ -14,13 +14,13 @@ export function Estoque() {
       <h2 className="text-2xl font-bold text-neutral-900">Estoque & Custo</h2>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
-        <button onClick={() => setTab('ingredientes')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === 'ingredientes' ? 'bg-[#B5652E] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
+        <button onClick={() => setTab('ingredientes')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === 'ingredientes' ? 'bg-[#16A34A] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
           <Package size={16} /> Ingredientes
         </button>
-        <button onClick={() => setTab('ficha')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === 'ficha' ? 'bg-[#B5652E] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
+        <button onClick={() => setTab('ficha')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === 'ficha' ? 'bg-[#16A34A] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
           <FlaskConical size={16} /> Ficha Técnica
         </button>
-        <button onClick={() => setTab('previsao')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === 'previsao' ? 'bg-[#B5652E] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
+        <button onClick={() => setTab('previsao')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === 'previsao' ? 'bg-[#16A34A] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
           <TrendingDown size={16} /> Previsão de Consumo
         </button>
       </div>
@@ -181,7 +181,7 @@ function Ingredientes() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-neutral-500 text-sm">Cadastro de ingredientes e controle de estoque</p>
-        <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 bg-[#B5652E] text-white px-4 py-2 rounded-xl text-sm font-semibold">
+        <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 bg-[#16A34A] text-white px-4 py-2 rounded-xl text-sm font-semibold">
           <Plus size={18} /> Novo
         </button>
       </div>
@@ -259,7 +259,7 @@ function IngredienteForm({ ingrediente, onClose, onSave }: { ingrediente: Ingred
         <div className="space-y-3">
           <div>
             <label className="text-neutral-500 text-sm">Nome</label>
-            <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#B5652E] focus:outline-none" />
+            <input value={nome} onChange={(e) => setNome(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#16A34A] focus:outline-none" />
           </div>
           <div>
             <label className="text-neutral-500 text-sm">Unidade</label>
@@ -269,22 +269,22 @@ function IngredienteForm({ ingrediente, onClose, onSave }: { ingrediente: Ingred
           </div>
           <div>
             <label className="text-neutral-500 text-sm">Custo por {unidade} (R$)</label>
-            <input type="number" step="0.01" value={custo} onChange={(e) => setCusto(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#B5652E] focus:outline-none" />
+            <input type="number" step="0.01" value={custo} onChange={(e) => setCusto(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#16A34A] focus:outline-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-neutral-500 text-sm">Estoque Atual</label>
-              <input type="number" step="0.001" value={estoque} onChange={(e) => setEstoque(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#B5652E] focus:outline-none" />
+              <input type="number" step="0.001" value={estoque} onChange={(e) => setEstoque(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#16A34A] focus:outline-none" />
             </div>
             <div>
               <label className="text-neutral-500 text-sm">Estoque Mínimo</label>
-              <input type="number" step="0.001" value={minimo} onChange={(e) => setMinimo(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#B5652E] focus:outline-none" />
+              <input type="number" step="0.001" value={minimo} onChange={(e) => setMinimo(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#16A34A] focus:outline-none" />
             </div>
           </div>
         </div>
         <div className="flex gap-2 mt-5">
           <button onClick={onClose} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-          <button onClick={save} disabled={!nome} className="flex-1 py-3 bg-[#B5652E] text-white rounded-xl font-semibold disabled:opacity-50">Salvar</button>
+          <button onClick={save} disabled={!nome} className="flex-1 py-3 bg-[#16A34A] text-white rounded-xl font-semibold disabled:opacity-50">Salvar</button>
         </div>
       </div>
     </div>
@@ -345,7 +345,7 @@ function FichaTecnicaView() {
               <button
                 key={p.id}
                 onClick={() => { setSelectedProduto(p); loadFichas(p.id); }}
-                className={`w-full text-left p-3 rounded-xl flex items-center justify-between ${selectedProduto?.id === p.id ? 'bg-[#B5652E] text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'}`}
+                className={`w-full text-left p-3 rounded-xl flex items-center justify-between ${selectedProduto?.id === p.id ? 'bg-[#16A34A] text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'}`}
               >
                 <div>
                   <span className="font-medium text-sm">{p.nome}</span>
@@ -375,7 +375,7 @@ function FichaTecnicaView() {
                   return (
                     <div key={f.id} className="flex items-center justify-between bg-neutral-100 rounded-xl p-2.5">
                       <div className="flex items-center gap-2">
-                        <Link2 size={14} className="text-[#B5652E]" />
+                        <Link2 size={14} className="text-[#16A34A]" />
                         <span className="text-neutral-900 text-sm">{ing.nome}</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -407,12 +407,12 @@ function AddIngredienteRow({ ingredientes, onAdd }: { ingredientes: Ingrediente[
 
   return (
     <div className="flex gap-2">
-      <select value={selId} onChange={(e) => setSelId(e.target.value)} className="flex-1 bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 text-sm focus:border-[#B5652E] focus:outline-none">
+      <select value={selId} onChange={(e) => setSelId(e.target.value)} className="flex-1 bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 text-sm focus:border-[#16A34A] focus:outline-none">
         <option value="">Ingrediente...</option>
         {ingredientes.map((i) => <option key={i.id} value={i.id}>{i.nome} ({brl(i.custo_por_unidade)}/{i.unidade})</option>)}
       </select>
-      <input type="number" step="0.001" value={qtd} onChange={(e) => setQtd(e.target.value)} placeholder="Qtd" className="w-20 bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 text-sm focus:border-[#B5652E] focus:outline-none" />
-      <button onClick={() => { if (selId && qtd) { onAdd(selId, parseFloat(qtd)); setSelId(''); setQtd(''); } }} className="px-3 py-2 bg-[#B5652E] text-white rounded-xl">
+      <input type="number" step="0.001" value={qtd} onChange={(e) => setQtd(e.target.value)} placeholder="Qtd" className="w-20 bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900 text-sm focus:border-[#16A34A] focus:outline-none" />
+      <button onClick={() => { if (selId && qtd) { onAdd(selId, parseFloat(qtd)); setSelId(''); setQtd(''); } }} className="px-3 py-2 bg-[#16A34A] text-white rounded-xl">
         <Plus size={16} />
       </button>
     </div>

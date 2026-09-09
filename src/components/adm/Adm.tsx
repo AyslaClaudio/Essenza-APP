@@ -100,19 +100,42 @@ export function Adm() {
     return () => { supabase.removeChannel(channel); };
   }, [config]);
 
-  const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'balcao', label: 'Balcão', icon: ShoppingCart },
-    { id: 'mesas', label: 'Mesas', icon: LayoutGrid },
-    { id: 'pedidos', label: 'Pedidos', icon: UtensilsCrossed },
-    { id: 'clientes', label: 'Clientes', icon: Users },
-    { id: 'produtos', label: 'Cardápio', icon: Flame },
-    { id: 'financeiro', label: 'Financeiro', icon: Wallet },
-    { id: 'estoque', label: 'Estoque', icon: Package },
-    { id: 'ia', label: 'Agente de IA', icon: MessageSquare },
-    { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
-    { id: 'monitoramento', label: 'Monitoramento', icon: Radio },
-    { id: 'config', label: 'Config', icon: Settings },
+  // Agrupado por categoria (Visão Geral / Vendas / Gestão / Automação / Sistema)
+  // — mesmos itens de sempre, só organizados em blocos em vez de lista solta.
+  const navGroups: { titulo: string; itens: { id: Tab; label: string; icon: typeof LayoutDashboard }[] }[] = [
+    {
+      titulo: 'Visão Geral',
+      itens: [{ id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }],
+    },
+    {
+      titulo: 'Vendas',
+      itens: [
+        { id: 'balcao', label: 'Balcão', icon: ShoppingCart },
+        { id: 'mesas', label: 'Mesas', icon: LayoutGrid },
+        { id: 'pedidos', label: 'Pedidos', icon: UtensilsCrossed },
+        { id: 'clientes', label: 'Clientes', icon: Users },
+        { id: 'produtos', label: 'Cardápio', icon: Flame },
+      ],
+    },
+    {
+      titulo: 'Gestão',
+      itens: [
+        { id: 'financeiro', label: 'Financeiro', icon: Wallet },
+        { id: 'estoque', label: 'Estoque', icon: Package },
+      ],
+    },
+    {
+      titulo: 'Automação',
+      itens: [
+        { id: 'ia', label: 'Agente IA', icon: MessageSquare },
+        { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
+        { id: 'monitoramento', label: 'Monitoramento', icon: Radio },
+      ],
+    },
+    {
+      titulo: 'Sistema',
+      itens: [{ id: 'config', label: 'Configurações', icon: Settings }],
+    },
   ];
 
   const renderTab = () => {
@@ -133,7 +156,7 @@ export function Adm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#EFE6D0] flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-[#F7F7F5] flex flex-col lg:flex-row">
       <OfflineBanner />
       {/* Mobile header with dashboard strip */}
       <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-neutral-200">
@@ -163,30 +186,36 @@ export function Adm() {
             <img src="/logo.png" alt="ESSENZA" className="w-9 h-9 rounded-lg object-cover" />
             <div>
               <h1 className="font-display font-bold text-neutral-900 text-lg leading-none">ESSENZA</h1>
-              <p className="text-neutral-500 text-[10px] tracking-[0.15em] uppercase mt-0.5">Pizza Napoletana</p>
+              <p className="text-neutral-500 text-[10px] tracking-[0.1em] uppercase mt-1">Pizza • Gestão</p>
             </div>
-          </div>
-          <div className="flex items-center gap-1 mt-3">
-            <span className="w-4 h-[3px] rounded-full bg-essenza-italia-green" />
-            <span className="w-4 h-[3px] rounded-full bg-neutral-300" />
-            <span className="w-4 h-[3px] rounded-full bg-essenza-italia-red" />
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => { setTab(item.id); setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-left ${
-                tab === item.id
-                  ? 'bg-[#B5652E] text-white font-semibold'
-                  : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
-              }`}
-            >
-              <item.icon size={20} />
-              <span>{item.label}</span>
-            </button>
+        <nav className="flex-1 px-3 py-2 space-y-5 overflow-y-auto">
+          {navGroups.map((grupo) => (
+            <div key={grupo.titulo}>
+              <p className="px-4 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-neutral-400">{grupo.titulo}</p>
+              <div className="space-y-0.5">
+                {grupo.itens.map((item) => {
+                  const ativo = tab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => { setTab(item.id); setSidebarOpen(false); }}
+                      className={`relative w-full flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-lg transition-colors text-left text-sm ${
+                        ativo
+                          ? 'bg-[#DCFCE7] text-[#16A34A] font-semibold'
+                          : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 font-medium'
+                      }`}
+                    >
+                      {ativo && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[#16A34A]" />}
+                      <item.icon size={18} className={ativo ? 'text-[#16A34A]' : 'text-neutral-400'} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </nav>
 
