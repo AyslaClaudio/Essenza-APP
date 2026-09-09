@@ -66,13 +66,20 @@ export function usePedidosPeriodo({
 
       const pedsData = (data as Pedido[]) || [];
 
+      // Busca os itens de TODOS os pedidos numa única query (antes eram N
+      // queries em série, uma por pedido — em período com 100+ pedidos isso
+      // sozinho levava vários segundos só pra abrir o relatório).
       const itensMap: Record<string, ItemPedido[]> = {};
-      for (const p of pedsData) {
+      const ids = pedsData.map((p) => p.id);
+      if (ids.length > 0) {
         const { data: itensData } = await supabase
           .from('itens_pedido')
           .select('*')
-          .eq('pedido_id', p.id);
-        itensMap[p.id] = (itensData as ItemPedido[]) || [];
+          .in('pedido_id', ids);
+        (itensData as ItemPedido[] | null || []).forEach((item) => {
+          if (!itensMap[item.pedido_id]) itensMap[item.pedido_id] = [];
+          itensMap[item.pedido_id].push(item);
+        });
       }
 
       const pedidosComItens: PedidoComItens[] = pedsData.map((p) => ({

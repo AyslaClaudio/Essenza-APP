@@ -4,20 +4,23 @@ import { useAuth } from '../../context/AuthContext';
 import { useConfig } from '../../context/ConfigContext';
 import { brl } from '../../lib/format';
 import { Flame, LayoutDashboard, UtensilsCrossed, ShoppingCart, Wallet, Settings, Package, LogOut, Menu, X, TrendingUp, MessageSquare, MessageCircle, Radio, LayoutGrid, Users } from 'lucide-react';
-import { Produtos } from './Produtos';
-import { Balcao } from './Balcao';
-import { Mesas } from './Mesas';
 import { OfflineBanner } from '../OfflineBanner';
-// Dashboard carrega o recharts (pesado); lazy-load para não onerar as demais telas.
+// Cada aba carrega sob demanda, só quando é aberta pela primeira vez — antes
+// tudo (Financeiro, Estoque, WhatsApp, IA, etc.) ia num bundle único carregado
+// de cara no login, mesmo que a pessoa só use o Balcão o dia inteiro. Isso
+// deixava a primeira tela lenta pra abrir e pesava no celular/tablet do caixa.
 const Dashboard = lazy(() => import('./Dashboard').then((m) => ({ default: m.Dashboard })));
-import { Pedidos } from './Pedidos';
-import { Clientes } from './Clientes';
-import { Financeiro } from './Financeiro';
-import { Configuracoes } from './Configuracoes';
-import { Estoque } from './Estoque';
-import { IAWhatsApp } from './IAWhatsApp';
-import { Monitoramento } from './Monitoramento';
-import { WhatsAppPedidos } from './WhatsAppPedidos';
+const Produtos = lazy(() => import('./Produtos').then((m) => ({ default: m.Produtos })));
+const Balcao = lazy(() => import('./Balcao').then((m) => ({ default: m.Balcao })));
+const Mesas = lazy(() => import('./Mesas').then((m) => ({ default: m.Mesas })));
+const Pedidos = lazy(() => import('./Pedidos').then((m) => ({ default: m.Pedidos })));
+const Clientes = lazy(() => import('./Clientes').then((m) => ({ default: m.Clientes })));
+const Financeiro = lazy(() => import('./Financeiro').then((m) => ({ default: m.Financeiro })));
+const Configuracoes = lazy(() => import('./Configuracoes').then((m) => ({ default: m.Configuracoes })));
+const Estoque = lazy(() => import('./Estoque').then((m) => ({ default: m.Estoque })));
+const IAWhatsApp = lazy(() => import('./IAWhatsApp').then((m) => ({ default: m.IAWhatsApp })));
+const Monitoramento = lazy(() => import('./Monitoramento').then((m) => ({ default: m.Monitoramento })));
+const WhatsAppPedidos = lazy(() => import('./WhatsAppPedidos').then((m) => ({ default: m.WhatsAppPedidos })));
 import { printReceipt } from '../../lib/print';
 import type { Pedido, ItemPedido } from '../../types';
 

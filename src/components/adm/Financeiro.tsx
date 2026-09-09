@@ -175,11 +175,16 @@ function Fechamento() {
     const pedsData = (peds as Pedido[]) || [];
     setPedidos(pedsData);
 
-    // Load items for all pedidos
+    // Itens de todos os pedidos do dia numa única query (era uma query por
+    // pedido antes — lento com o dia cheio).
     const itensMap: Record<string, ItemPedido[]> = {};
-    for (const p of pedsData) {
-      const { data } = await supabase.from('itens_pedido').select('*').eq('pedido_id', p.id);
-      itensMap[p.id] = (data as ItemPedido[]) || [];
+    const ids = pedsData.map((p) => p.id);
+    if (ids.length > 0) {
+      const { data } = await supabase.from('itens_pedido').select('*').in('pedido_id', ids);
+      (data as ItemPedido[] | null || []).forEach((item) => {
+        if (!itensMap[item.pedido_id]) itensMap[item.pedido_id] = [];
+        itensMap[item.pedido_id].push(item);
+      });
     }
     setItens(itensMap);
   }, [dataFiltro]);

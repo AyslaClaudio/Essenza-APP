@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
 import {
   startOfDay,
@@ -49,6 +49,18 @@ export function PeriodSelector({ onPeriodChange, defaultPeriod = 'mes' }: Period
   const [dataInicio, setDataInicio] = useState(dateToISO(startOfMonth(now)));
   const [dataFim, setDataFim] = useState(dateToISO(endOfMonth(now)));
   const [showCustom, setShowCustom] = useState(defaultPeriod === 'custom');
+
+  // Avisa o componente pai do período inicial assim que monta — antes disso
+  // o seletor MOSTRAVA "Este Mês" já selecionado (com o range certo no texto),
+  // mas nunca chamava onPeriodChange no carregamento, então quem usa este
+  // componente ficava com o período inicial próprio (geralmente "hoje"),
+  // silenciosamente incorreto até o usuário clicar em algum botão.
+  useEffect(() => {
+    if (activePeriod === 'custom') return;
+    const [inicio, fim] = periodos[activePeriod].getData();
+    onPeriodChange({ dataInicio: inicio, dataFim: fim });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handlePeriodClick = (period: Exclude<PeriodType, 'custom'>) => {
     setActivePeriod(period);
