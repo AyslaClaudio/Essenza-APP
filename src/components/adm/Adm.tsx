@@ -138,6 +138,26 @@ export function Adm() {
     },
   ];
 
+  // Navegação mobile: barra inferior com os 4 mais usados + "Mais" abrindo um
+  // painel com o resto do app — em vez do menu lateral em gaveta de antes.
+  const BOTTOM_NAV: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+    { id: 'balcao', label: 'Balcão', icon: ShoppingCart },
+    { id: 'mesas', label: 'Mesas', icon: LayoutGrid },
+    { id: 'pedidos', label: 'Pedidos', icon: UtensilsCrossed },
+    { id: 'clientes', label: 'Clientes', icon: Users },
+  ];
+  const MAIS_ITENS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'produtos', label: 'Cardápio', icon: Flame },
+    { id: 'financeiro', label: 'Financeiro', icon: Wallet },
+    { id: 'estoque', label: 'Estoque', icon: Package },
+    { id: 'ia', label: 'Agente IA', icon: MessageSquare },
+    { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
+    { id: 'monitoramento', label: 'Monitoramento', icon: Radio },
+    { id: 'config', label: 'Config', icon: Settings },
+  ];
+  const bottomNavAtivo = BOTTOM_NAV.some((i) => i.id === tab);
+
   const renderTab = () => {
     switch (tab) {
       case 'dashboard': return <Dashboard meta={config?.meta_diaria || 2000} />;
@@ -158,29 +178,61 @@ export function Adm() {
   return (
     <div className="min-h-screen bg-[#F7F7F5] flex flex-col lg:flex-row">
       <OfflineBanner />
-      {/* Mobile header with dashboard strip */}
+      {/* Mobile header with dashboard strip — sem menu hambúrguer: a navegação
+          mobile agora é a barra inferior fixa (ver fim do componente). */}
       <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-neutral-200">
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center px-4 py-3">
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="ESSENZA" className="w-8 h-8 rounded-lg object-cover" />
             <span className="font-display font-bold text-neutral-900 text-lg">ESSENZA</span>
           </div>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 text-neutral-900">
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
         </div>
         {/* Profit strip always visible */}
         <ProfitStrip dash={dash} />
       </div>
 
-      {/* Sidebar */}
+      {/* Painel "Mais" (mobile) — sobe de baixo com o resto do app */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <div className="absolute left-0 right-0 bottom-0 bg-white rounded-t-2xl p-5 pb-8 max-h-[75vh] overflow-y-auto">
+            <div className="w-10 h-1 bg-neutral-300 rounded-full mx-auto mb-5" />
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-neutral-400">Menu</p>
+              <button onClick={() => setSidebarOpen(false)} className="p-1 text-neutral-400 hover:text-neutral-900" aria-label="Fechar">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {MAIS_ITENS.map((item) => {
+                const ativo = tab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { setTab(item.id); setSidebarOpen(false); }}
+                    className={`flex flex-col items-center gap-1.5 py-3 rounded-xl text-xs font-medium ${
+                      ativo ? 'bg-[#DCFCE7] text-[#16A34A]' : 'text-neutral-600 hover:bg-neutral-100'
+                    }`}
+                  >
+                    <item.icon size={20} className={ativo ? 'text-[#16A34A]' : 'text-neutral-400'} />
+                    {item.label}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => { setSidebarOpen(false); signOut(); }}
+                className="flex flex-col items-center gap-1.5 py-3 rounded-xl text-xs font-medium text-neutral-600 hover:bg-neutral-100"
+              >
+                <LogOut size={20} className="text-neutral-400" />
+                Sair
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-      <aside className={`
-        ${sidebarOpen ? 'fixed left-0 top-0 bottom-0 z-40' : 'hidden'} lg:relative lg:flex lg:flex-col
-        w-64 bg-white border-r border-neutral-200 min-h-screen
-      `}>
+
+      {/* Sidebar (desktop) */}
+      <aside className="hidden lg:relative lg:flex lg:flex-col w-64 bg-white border-r border-neutral-200 min-h-screen">
         <div className="p-6 hidden lg:block">
           <div className="flex items-center gap-2.5">
             <img src="/logo.png" alt="ESSENZA" className="w-9 h-9 rounded-lg object-cover" />
@@ -240,12 +292,37 @@ export function Adm() {
         <div className="hidden lg:block sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-neutral-200">
           <ProfitStrip dash={dash} />
         </div>
-        <div className="p-4 lg:p-6 max-w-7xl mx-auto">
+        <div className="p-4 pb-20 lg:pb-6 lg:p-6 max-w-7xl mx-auto">
           <Suspense fallback={<div className="p-12 text-center text-neutral-500">Carregando...</div>}>
             {renderTab()}
           </Suspense>
         </div>
       </main>
+
+      {/* Barra de navegação inferior (mobile) — Balcão/Mesas/Pedidos/Clientes
+          sempre à mão, o resto do app fica atrás de "Mais". */}
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-neutral-200 flex pb-[env(safe-area-inset-bottom)]">
+        {BOTTOM_NAV.map((item) => {
+          const ativo = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setTab(item.id)}
+              className="flex-1 flex flex-col items-center gap-1 py-2.5"
+            >
+              <item.icon size={20} className={ativo ? 'text-[#16A34A]' : 'text-neutral-400'} />
+              <span className={`text-[10px] ${ativo ? 'text-[#16A34A] font-semibold' : 'text-neutral-500 font-medium'}`}>{item.label}</span>
+            </button>
+          );
+        })}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="flex-1 flex flex-col items-center gap-1 py-2.5"
+        >
+          <Menu size={20} className={bottomNavAtivo ? 'text-neutral-400' : 'text-[#16A34A]'} />
+          <span className={`text-[10px] font-medium ${bottomNavAtivo ? 'text-neutral-500' : 'text-[#16A34A] font-semibold'}`}>Mais</span>
+        </button>
+      </nav>
     </div>
   );
 }
