@@ -31,12 +31,12 @@ export function SenhaAdminModal({
     }
   };
 
-  const iconBg = danger ? 'bg-red-500/20' : 'bg-[#F26522]/20';
-  const iconColor = danger ? 'text-red-600' : 'text-[#F26522]';
+  const iconBg = danger ? 'bg-red-500/20' : 'bg-[#DC2626]/20';
+  const iconColor = danger ? 'text-red-600' : 'text-[#DC2626]';
   const Icon = danger ? AlertTriangle : ShieldCheck;
   const btnBg = danger
     ? 'bg-red-600 hover:bg-red-700 text-white'
-    : 'bg-[#F26522] hover:bg-[#f6121d] text-white';
+    : 'bg-[#DC2626] hover:bg-[#f6121d] text-white';
 
   return (
     <div className="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-4" onClick={onCancel}>
@@ -64,7 +64,7 @@ export function SenhaAdminModal({
             onChange={(e) => { setSenha(e.target.value); setError(null); }}
             onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
             placeholder="Digite a senha para autorizar"
-            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none"
+            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none"
             autoFocus
           />
           {error && <p className="text-red-600 text-sm mt-2">{error}</p>}

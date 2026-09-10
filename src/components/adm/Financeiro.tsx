@@ -14,9 +14,9 @@ import { GraficoBarras } from './dashboard/GraficoBarras';
 import { GraficoRosca } from './dashboard/GraficoRosca';
 import { printFechamentoDia } from '../../lib/print';
 import type { Pedido, CaixaEntry, ItemPedido } from '../../types';
-import { Wallet, TrendingUp, DollarSign, ArrowUpCircle, ArrowDownCircle, FileText, Target, Trophy, Receipt, X, Printer, BarChart3, CreditCard, MapPin, Clock, Tag } from 'lucide-react';
+import { Wallet, TrendingUp, DollarSign, ArrowUpCircle, ArrowDownCircle, FileText, Target, Trophy, Receipt, X, Printer, BarChart3, CreditCard, MapPin, Clock, Tag, Users, Trash2 } from 'lucide-react';
 
-type Tab = 'caixa' | 'fechamento' | 'relatorios' | 'metas';
+type Tab = 'caixa' | 'custos' | 'fechamento' | 'relatorios' | 'metas';
 
 const TIPO_LABELS: Record<string, string> = {
   balcao: 'Balcão',
@@ -35,6 +35,7 @@ export function Financeiro() {
       <div className="flex gap-2 overflow-x-auto pb-1">
         {([
           { id: 'caixa', label: 'Caixa', icon: Wallet },
+          { id: 'custos', label: 'Custos Operacionais', icon: Users },
           { id: 'fechamento', label: 'Fechamento do Dia', icon: Receipt },
           { id: 'relatorios', label: 'Relatórios', icon: FileText },
           { id: 'metas', label: 'Metas', icon: Target },
@@ -42,7 +43,7 @@ export function Financeiro() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === t.id ? 'bg-[#F26522] text-white' : 'bg-neutral-200 text-neutral-500'}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === t.id ? 'bg-[#DC2626] text-white' : 'bg-neutral-200 text-neutral-500'}`}
           >
             <t.icon size={16} /> {t.label}
           </button>
@@ -50,6 +51,7 @@ export function Financeiro() {
       </div>
 
       {tab === 'caixa' && <Caixa />}
+      {tab === 'custos' && <CustosOperacionais />}
       {tab === 'fechamento' && <Fechamento />}
       {tab === 'relatorios' && <Relatorios />}
       {tab === 'metas' && <Metas />}
@@ -108,7 +110,7 @@ function Caixa() {
         </div>
       </div>
 
-      <button onClick={() => setShowForm(true)} className="w-full bg-[#F26522] text-white py-3 rounded-xl font-bold active:scale-95">
+      <button onClick={() => setShowForm(true)} className="w-full bg-[#DC2626] text-white py-3 rounded-xl font-bold active:scale-95">
         Lançar Movimentação
       </button>
 
@@ -140,18 +142,121 @@ function Caixa() {
               <button onClick={() => setTipo('entrada')} className={`flex-1 py-3 rounded-xl font-semibold ${tipo === 'entrada' ? 'bg-green-500 text-white' : 'bg-neutral-200 text-neutral-500'}`}>Entrada</button>
               <button onClick={() => setTipo('saida')} className={`flex-1 py-3 rounded-xl font-semibold ${tipo === 'saida' ? 'bg-red-500 text-white' : 'bg-neutral-200 text-neutral-500'}`}>Saída</button>
             </div>
-            <input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Descrição" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#F26522] focus:outline-none" />
-            <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#F26522] focus:outline-none" />
-            <select value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#F26522] focus:outline-none">
+            <input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Descrição" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#DC2626] focus:outline-none" />
+            <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#DC2626] focus:outline-none" />
+            <select value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#DC2626] focus:outline-none">
               <option>Dinheiro</option><option>Cartão</option><option>Pix</option><option>Outro</option>
             </select>
             <div className="flex gap-2">
               <button onClick={() => setShowForm(false)} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-              <button onClick={save} className="flex-1 py-3 bg-[#F26522] text-white rounded-xl font-semibold">Salvar</button>
+              <button onClick={save} className="flex-1 py-3 bg-[#DC2626] text-white rounded-xl font-semibold">Salvar</button>
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Custos operacionais — salário, aluguel, contas etc. Grava como saída na
+// tabela `caixa` (tipo='saida'), a mesma que a aba Caixa já usa; aqui é uma
+// visão focada só nesses lançamentos, e eles entram como Despesa no gráfico
+// do Dashboard e no Lucro Líquido dos Relatórios.
+function CustosOperacionais() {
+  const [entries, setEntries] = useState<CaixaEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [descricao, setDescricao] = useState('');
+  const [valor, setValor] = useState('');
+  const [data, setData] = useState(todayISO());
+  const [salvando, setSalvando] = useState(false);
+  const [mes, setMes] = useState(todayISO().slice(0, 7)); // YYYY-MM
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const ini = `${mes}-01`;
+    const fim = `${mes}-31`;
+    const { data: d } = await supabase
+      .from('caixa')
+      .select('*')
+      .eq('tipo', 'saida')
+      .gte('data', ini)
+      .lte('data', fim)
+      .order('data', { ascending: false });
+    setEntries((d as CaixaEntry[]) || []);
+    setLoading(false);
+  }, [mes]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const total = entries.reduce((s, e) => s + Number(e.valor), 0);
+
+  const salvar = async () => {
+    const v = parseFloat(valor.replace(',', '.'));
+    if (!descricao.trim() || !v || v <= 0 || salvando) return;
+    setSalvando(true);
+    await supabase.from('caixa').insert({ tipo: 'saida', descricao: descricao.trim(), valor: v, forma_pagamento: '', data });
+    setDescricao(''); setValor(''); setData(todayISO());
+    setSalvando(false);
+    load();
+  };
+
+  const excluir = async (id: string) => {
+    if (!confirm('Excluir este custo?')) return;
+    await supabase.from('caixa').delete().eq('id', id);
+    load();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl px-5 py-3">
+          <p className="text-red-600/70 text-xs uppercase">Total no mês</p>
+          <p className="text-red-600 font-bold text-2xl">{brl(total)}</p>
+        </div>
+        <input type="month" value={mes} onChange={(e) => setMes(e.target.value)}
+          className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-sm text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
+      </div>
+
+      {/* Form de lançamento */}
+      <div className="bg-white border border-neutral-200 rounded-2xl p-4 space-y-3">
+        <p className="text-neutral-900 font-semibold text-sm">Lançar custo</p>
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px_150px_auto] gap-2">
+          <input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex: Salário João, Aluguel, Energia"
+            className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
+          <input value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor R$" inputMode="decimal"
+            className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
+          <input type="date" value={data} onChange={(e) => setData(e.target.value)}
+            className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
+          <button onClick={salvar} disabled={salvando || !descricao.trim() || !valor}
+            className="bg-[#DC2626] text-white px-5 py-3 rounded-xl font-semibold disabled:opacity-40">Lançar</button>
+        </div>
+      </div>
+
+      {/* Lista */}
+      {loading ? (
+        <p className="text-neutral-500 text-center py-8">Carregando...</p>
+      ) : entries.length === 0 ? (
+        <p className="text-neutral-500 text-center py-10">Nenhum custo lançado neste mês.</p>
+      ) : (
+        <div className="space-y-2">
+          {entries.map((e) => (
+            <div key={e.id} className="bg-white border border-neutral-200 rounded-xl p-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-neutral-900 text-sm font-medium truncate">{e.descricao}</p>
+                <p className="text-neutral-500 text-xs">{new Date(`${e.data}T12:00:00`).toLocaleDateString('pt-BR')}</p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="text-red-600 font-bold">- {brl(e.valor)}</span>
+                <button onClick={() => excluir(e.id)} className="text-neutral-400 hover:text-red-600"><Trash2 size={16} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="text-neutral-500 text-xs">
+        Esses lançamentos entram como <b>Despesa</b> no gráfico do Dashboard e no Lucro Líquido dos Relatórios. Não lance aqui compra de ingredientes — esse custo já vem do custo dos produtos vendidos.
+      </p>
     </div>
   );
 }
@@ -229,7 +334,7 @@ function Fechamento() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <input type="date" value={dataFiltro} onChange={(e) => setDataFiltro(e.target.value)} className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 focus:border-[#F26522] focus:outline-none" />
+        <input type="date" value={dataFiltro} onChange={(e) => setDataFiltro(e.target.value)} className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
         <button onClick={printFechamento} className="flex items-center gap-2 bg-neutral-200 text-neutral-900 px-4 py-2.5 rounded-xl text-sm hover:bg-neutral-700">
           <Printer size={18} /> Imprimir
         </button>
@@ -495,7 +600,7 @@ function Relatorios() {
             onClick={() => setTabAtiva(t.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${
               tabAtiva === t.id
-                ? 'bg-[#F26522] text-white'
+                ? 'bg-[#DC2626] text-white'
                 : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-700'
             }`}
           >
@@ -567,7 +672,7 @@ function Relatorios() {
           {periodoEmAndamento && (
             <div className="bg-white border border-neutral-200 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2">
-                <Target size={20} className="text-[#F26522]" />
+                <Target size={20} className="text-[#DC2626]" />
                 <span className="text-neutral-900 font-semibold">Projeção de fechamento do período</span>
               </div>
               <span className="text-neutral-900 font-black text-xl">{brl(projecaoFechamento)}</span>
@@ -599,14 +704,14 @@ function Relatorios() {
 
             <div className="bg-white border border-neutral-200 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
-                <TrendingUp size={20} className="text-[#F26522]" />
+                <TrendingUp size={20} className="text-[#DC2626]" />
                 <h3 className="text-neutral-900 font-semibold">Top 5 Mais Vendidos</h3>
               </div>
               <div className="space-y-2">
                 {top10Vendidos.slice(0, 5).map((p, i) => (
                   <div key={p.nome} className="flex items-center gap-3">
                     <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      i === 0 ? 'bg-[#F26522] text-white' : 'bg-neutral-200 text-neutral-500'
+                      i === 0 ? 'bg-[#DC2626] text-white' : 'bg-neutral-200 text-neutral-500'
                     }`}>{i + 1}</span>
                     <span className="flex-1 text-neutral-900 text-sm">{p.nome}</span>
                     <span className="text-neutral-500 text-sm">{p.quantidade}x</span>
@@ -651,7 +756,7 @@ function Relatorios() {
                   <div key={d.nome} className="flex items-center gap-3">
                     <span className="text-neutral-500 text-xs w-16 flex-shrink-0">{d.nome}</span>
                     <div className="flex-1 h-5 bg-neutral-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-essenza-terracotta to-[#F26522] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      <div className="h-full bg-gradient-to-r from-essenza-terracotta to-[#DC2626] rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
                     <span className="text-neutral-900 text-xs font-semibold w-20 text-right flex-shrink-0">{brl(d.faturamento)}</span>
                   </div>
@@ -668,7 +773,7 @@ function Relatorios() {
           {/* Margem por categoria — visão de linha de produto, não item a item */}
           <div className="bg-white border border-neutral-200 rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
-              <Tag size={20} className="text-[#F26522]" />
+              <Tag size={20} className="text-[#DC2626]" />
               <h3 className="text-neutral-900 font-semibold">Margem por Categoria</h3>
             </div>
             <div className="space-y-2">
@@ -746,7 +851,7 @@ function Relatorios() {
                     <span className="text-neutral-500 text-xs">{pct.toFixed(0)}% do delivery</span>
                   </div>
                   <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden mb-4">
-                    <div className="h-full bg-[#F26522] rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="h-full bg-[#DC2626] rounded-full" style={{ width: `${pct}%` }} />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                     <div><p className="text-neutral-500">Faturamento</p><p className="text-neutral-900 font-bold">{brl(kpi.faturamento)}</p></div>
@@ -786,7 +891,7 @@ function Relatorios() {
                       <span className="text-neutral-500 text-xs">{pct.toFixed(0)}% do faturamento</span>
                     </div>
                     <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden mb-4">
-                      <div className="h-full bg-[#F26522] rounded-full" style={{ width: `${pct}%` }} />
+                      <div className="h-full bg-[#DC2626] rounded-full" style={{ width: `${pct}%` }} />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                       <div><p className="text-neutral-500">Faturamento</p><p className="text-neutral-900 font-bold">{brl(kpi.faturamento)}</p></div>
@@ -898,7 +1003,7 @@ function Metas() {
         )}
       </div>
 
-      <button onClick={() => setShowForm(true)} className="w-full bg-[#F26522] text-white py-3 rounded-xl font-bold">Nova Meta</button>
+      <button onClick={() => setShowForm(true)} className="w-full bg-[#DC2626] text-white py-3 rounded-xl font-bold">Nova Meta</button>
 
       <div className="space-y-2">
         {metas.map((m) => (
@@ -919,13 +1024,13 @@ function Metas() {
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white border border-neutral-200 rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-neutral-900 font-bold text-lg mb-4">Nova Meta</h3>
-            <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#F26522] focus:outline-none" />
-            <select value={periodo} onChange={(e) => setPeriodo(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#F26522] focus:outline-none">
+            <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#DC2626] focus:outline-none" />
+            <select value={periodo} onChange={(e) => setPeriodo(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#DC2626] focus:outline-none">
               <option value="dia">Diária</option><option value="semana">Semanal</option><option value="mes">Mensal</option>
             </select>
             <div className="flex gap-2">
               <button onClick={() => setShowForm(false)} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-              <button onClick={save} className="flex-1 py-3 bg-[#F26522] text-white rounded-xl font-semibold">Salvar</button>
+              <button onClick={save} className="flex-1 py-3 bg-[#DC2626] text-white rounded-xl font-semibold">Salvar</button>
             </div>
           </div>
         </div>

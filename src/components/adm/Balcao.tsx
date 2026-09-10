@@ -28,6 +28,10 @@ const normalizaNome = (s: string) =>
 // telefone tipo "(88) 9...". Também colapsa espaços.
 const sanitizaBusca = (s: string) => s.replace(/[(),"*]/g, ' ').replace(/\s+/g, ' ').trim();
 
+// Rascunho do pedido em andamento — persistido no aparelho pra não se perder
+// se a aba atualizar ou o atendente sair pra outra área do app e voltar.
+const RASCUNHO_KEY = 'essenza_balcao_rascunho';
+
 export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   const { config } = useConfig();
   const [step, setStep] = useState<'produtos' | 'carrinho' | 'cliente' | 'pagamento' | 'sucesso'>('produtos');
@@ -74,6 +78,38 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Restaura o rascunho do pedido salvo no aparelho (uma vez, ao montar).
+  const rascunhoRestaurado = useRef(false);
+  useEffect(() => {
+    if (rascunhoRestaurado.current) return;
+    rascunhoRestaurado.current = true;
+    try {
+      const raw = localStorage.getItem(RASCUNHO_KEY);
+      if (!raw) return;
+      const r = JSON.parse(raw);
+      if (Array.isArray(r.cart) && r.cart.length > 0) {
+        setCart(r.cart);
+        if (r.tipo) setTipo(r.tipo);
+        if (r.bairro) setBairro(r.bairro);
+        if (r.observacao) setObservacao(r.observacao);
+        if (r.formaPagamento) setFormaPagamento(r.formaPagamento);
+        if (r.mesaSelecionada) setMesaSelecionada(r.mesaSelecionada);
+        if (r.novoCliente) setNovoCliente(r.novoCliente);
+      }
+    } catch { /* localStorage indisponível — segue sem rascunho */ }
+  }, []);
+
+  // Salva o rascunho a cada mudança relevante (enquanto tiver item no carrinho).
+  useEffect(() => {
+    try {
+      if (cart.length === 0) {
+        localStorage.removeItem(RASCUNHO_KEY);
+      } else {
+        localStorage.setItem(RASCUNHO_KEY, JSON.stringify({ cart, tipo, bairro, observacao, formaPagamento, mesaSelecionada, novoCliente }));
+      }
+    } catch { /* ignora */ }
+  }, [cart, tipo, bairro, observacao, formaPagamento, mesaSelecionada, novoCliente]);
 
   // Busca cliente por nome (prioridade) ou telefone — com atraso de 300ms pra
   // não disparar a cada tecla, texto limpo pra não quebrar o filtro do
@@ -464,11 +500,14 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
 
     setPedidoOffline(true);
     setUltimoPedido(fullPedido);
+    setCart([]);
+    try { localStorage.removeItem(RASCUNHO_KEY); } catch { /* ignora */ }
     setStep('sucesso');
     onOrderComplete();
   };
 
   const reset = () => {
+    try { localStorage.removeItem(RASCUNHO_KEY); } catch { /* ignora */ }
     setCart([]);
     setCliente(null);
     setNovoCliente({ nome: '', telefone: '', endereco: '', bairro: '', cep: '', referencia: '' });
@@ -499,7 +538,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
           <p className="text-neutral-500 mt-2 text-center max-w-sm">
             Itens lançados e comanda enviada pra cozinha. A conta fecha pelo módulo <b className="text-neutral-700">Mesas</b>, como sempre.
           </p>
-          <button onClick={reset} className="mt-6 flex items-center gap-2 bg-[#F26522] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#f6121d]">
+          <button onClick={reset} className="mt-6 flex items-center gap-2 bg-[#DC2626] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#f6121d]">
             <Plus size={20} /> Novo Pedido
           </button>
         </div>
@@ -533,7 +572,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
               </button>
             </>
           )}
-          <button onClick={reset} className="flex items-center gap-2 bg-[#F26522] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#f6121d]">
+          <button onClick={reset} className="flex items-center gap-2 bg-[#DC2626] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#f6121d]">
             <Plus size={20} /> Novo Pedido
           </button>
         </div>
@@ -563,7 +602,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
                 value={filtro}
                 onChange={(e) => setFiltro(e.target.value)}
                 placeholder="Buscar produto..."
-                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-3 text-neutral-900 text-lg focus:border-[#F26522] focus:outline-none"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-3 text-neutral-900 text-lg focus:border-[#DC2626] focus:outline-none"
               />
             </div>
           </div>
@@ -572,13 +611,13 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
           <div className="flex gap-2 overflow-x-auto pb-1">
             <button
               onClick={() => setCatFiltro('todas')}
-              className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === 'todas' ? 'bg-[#F26522] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900'}`}
+              className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === 'todas' ? 'bg-[#DC2626] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900'}`}
             >Todos</button>
             {categorias.map((c) => (
               <button
                 key={c}
                 onClick={() => setCatFiltro(c)}
-                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === c ? 'bg-[#F26522] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900'}`}
+                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === c ? 'bg-[#DC2626] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900'}`}
               >{c}</button>
             ))}
           </div>
@@ -589,14 +628,14 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
               <button
                 key={p.id}
                 onClick={() => handleProductClick(p)}
-                className="group bg-white border border-neutral-200 rounded-2xl p-4 text-left hover:border-[#F26522]/70 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/40 active:scale-95 transition-all min-h-[110px] flex flex-col justify-between"
+                className="group bg-white border border-neutral-200 rounded-2xl p-4 text-left hover:border-[#DC2626]/70 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/40 active:scale-95 transition-all min-h-[110px] flex flex-col justify-between"
               >
                 <div>
                   <p className="text-neutral-900 font-bold text-base leading-tight">{p.nome}</p>
                   <p className="text-neutral-500 text-xs mt-0.5">{p.categoria_nome}</p>
                 </div>
                 <div className="flex items-end justify-between mt-2">
-                  <span className="text-[#F26522] font-black text-xl">{brl(p.preco)}</span>
+                  <span className="text-[#DC2626] font-black text-xl">{brl(p.preco)}</span>
                   {p.foto && !usaImagemPadrao(p.categoria_nome) ? (
                     <img
                       src={p.foto}
@@ -647,21 +686,21 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
                 ))}
               </div>
 
-              <button onClick={() => setStep('produtos')} className="w-full flex items-center justify-center gap-2 border border-[#F26522] text-[#F26522] rounded-xl py-2.5 font-semibold hover:bg-[#FDECE3]">
+              <button onClick={() => setStep('produtos')} className="w-full flex items-center justify-center gap-2 border border-[#DC2626] text-[#DC2626] rounded-xl py-2.5 font-semibold hover:bg-[#FEE2E2]">
                 <Plus size={18} /> Adicionar mais itens
               </button>
 
               {/* Type selector */}
               <div className="grid grid-cols-3 gap-2">
-                <button onClick={() => setTipo('balcao')} className={`py-3 rounded-xl font-semibold ${tipo === 'balcao' ? 'bg-[#F26522] text-white' : 'bg-neutral-200 text-neutral-500'}`}>Balcão</button>
-                <button onClick={() => setTipo('delivery')} className={`py-3 rounded-xl font-semibold ${tipo === 'delivery' ? 'bg-[#F26522] text-white' : 'bg-neutral-200 text-neutral-500'}`}>Entrega</button>
-                <button onClick={() => setTipo('mesa')} className={`py-3 rounded-xl font-semibold ${tipo === 'mesa' ? 'bg-[#F26522] text-white' : 'bg-neutral-200 text-neutral-500'}`}>Mesa</button>
+                <button onClick={() => setTipo('balcao')} className={`py-3 rounded-xl font-semibold ${tipo === 'balcao' ? 'bg-[#DC2626] text-white' : 'bg-neutral-200 text-neutral-500'}`}>Balcão</button>
+                <button onClick={() => setTipo('delivery')} className={`py-3 rounded-xl font-semibold ${tipo === 'delivery' ? 'bg-[#DC2626] text-white' : 'bg-neutral-200 text-neutral-500'}`}>Entrega</button>
+                <button onClick={() => setTipo('mesa')} className={`py-3 rounded-xl font-semibold ${tipo === 'mesa' ? 'bg-[#DC2626] text-white' : 'bg-neutral-200 text-neutral-500'}`}>Mesa</button>
               </div>
 
               {tipo === 'delivery' && (
                 <div>
                   <label className="text-neutral-500 text-sm">Bairro</label>
-                  <select value={taxaEncontrada?.bairro ?? bairro} onChange={(e) => setBairro(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#F26522] focus:outline-none">
+                  <select value={taxaEncontrada?.bairro ?? bairro} onChange={(e) => setBairro(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#DC2626] focus:outline-none">
                     <option value="">Selecione...</option>
                     {taxas.map((t) => <option key={t.id} value={t.bairro}>{t.bairro} - {brl(t.taxa)}</option>)}
                   </select>
@@ -685,7 +724,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
                           key={m.id}
                           onClick={() => setMesaSelecionada(m.id)}
                           className={`py-3 rounded-xl font-bold text-center border transition-colors ${
-                            sel ? 'bg-[#F26522] text-white border-[#F26522]'
+                            sel ? 'bg-[#DC2626] text-white border-[#DC2626]'
                             : ocupada ? 'bg-amber-50 text-amber-700 border-amber-200'
                             : 'bg-white text-neutral-700 border-neutral-200'
                           }`}
@@ -711,12 +750,12 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
                 <button
                   onClick={lancarNaMesa}
                   disabled={!mesaSelecionada}
-                  className="w-full bg-[#F26522] text-white py-4 rounded-xl font-bold text-lg active:scale-95 disabled:opacity-40 disabled:active:scale-100"
+                  className="w-full bg-[#DC2626] text-white py-4 rounded-xl font-bold text-lg active:scale-95 disabled:opacity-40 disabled:active:scale-100"
                 >
                   {mesaSelecionada ? `Lançar na Mesa ${mesas.find((m) => m.id === mesaSelecionada)?.numero ?? ''}` : 'Selecione uma mesa'}
                 </button>
               ) : (
-                <button onClick={() => setStep('cliente')} className="w-full bg-[#F26522] text-white py-4 rounded-xl font-bold text-lg active:scale-95">
+                <button onClick={() => setStep('cliente')} className="w-full bg-[#DC2626] text-white py-4 rounded-xl font-bold text-lg active:scale-95">
                   Continuar
                 </button>
               )}
@@ -742,7 +781,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
 
           {/* Cliente já selecionado */}
           {cliente ? (
-            <div className="bg-white border border-[#F26522] rounded-xl p-3 flex items-center justify-between">
+            <div className="bg-white border border-[#DC2626] rounded-xl p-3 flex items-center justify-between">
               <div>
                 <p className="text-neutral-900 font-medium">{cliente.nome}</p>
                 {(cliente.telefone || cliente.bairro) && (
@@ -761,7 +800,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
                   <label className="text-neutral-500 text-sm">Nome do cliente</label>
                   <button
                     onClick={() => { setNovoCliente({ ...novoCliente, nome: 'Consumidor' }); setClienteBusca(''); setClientes([]); }}
-                    className="text-xs font-medium text-[#F26522] hover:underline"
+                    className="text-xs font-medium text-[#DC2626] hover:underline"
                   >
                     Consumidor
                   </button>
@@ -773,7 +812,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
                     value={novoCliente.nome || clienteBusca}
                     onChange={(e) => { setNovoCliente({ ...novoCliente, nome: e.target.value }); buscaCliente(e.target.value); }}
                     placeholder="Digite o nome (ou telefone)"
-                    className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none"
+                    className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none"
                   />
                 </div>
 
@@ -784,7 +823,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
                       <button
                         key={c.id}
                         onClick={() => { setCliente(c); setBairro(c.bairro); setNovoCliente({ ...novoCliente, nome: '' }); setClienteBusca(''); setClientes([]); }}
-                        className="w-full text-left bg-white border border-neutral-200 rounded-xl p-2.5 hover:border-[#F26522]"
+                        className="w-full text-left bg-white border border-neutral-200 rounded-xl p-2.5 hover:border-[#DC2626]"
                       >
                         <p className="text-neutral-900 font-medium text-sm">{c.nome}</p>
                         <p className="text-neutral-500 text-xs flex items-center gap-1"><Phone size={11} /> {c.telefone || 'sem telefone'}{c.bairro ? ` · ${c.bairro}` : ''}</p>
@@ -803,13 +842,13 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
                 onChange={(e) => setNovoCliente({ ...novoCliente, telefone: e.target.value })}
                 placeholder="Telefone (opcional)"
                 inputMode="tel"
-                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none"
               />
 
               {tipo === 'delivery' && (
                 <>
-                  <input value={novoCliente.endereco} onChange={(e) => setNovoCliente({ ...novoCliente, endereco: e.target.value })} placeholder="Endereço" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none" />
-                  <select value={novoCliente.bairro} onChange={(e) => { setNovoCliente({ ...novoCliente, bairro: e.target.value }); setBairro(e.target.value); }} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none">
+                  <input value={novoCliente.endereco} onChange={(e) => setNovoCliente({ ...novoCliente, endereco: e.target.value })} placeholder="Endereço" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
+                  <select value={novoCliente.bairro} onChange={(e) => { setNovoCliente({ ...novoCliente, bairro: e.target.value }); setBairro(e.target.value); }} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none">
                     <option value="">Bairro...</option>
                     {taxas.map((t) => <option key={t.id} value={t.bairro}>{t.bairro} - {brl(t.taxa)}</option>)}
                   </select>
@@ -821,7 +860,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
           <button
             onClick={() => setStep('pagamento')}
             disabled={!podeContinuar}
-            className="w-full bg-[#F26522] text-white py-4 rounded-xl font-bold text-lg active:scale-95 disabled:opacity-40 disabled:active:scale-100"
+            className="w-full bg-[#DC2626] text-white py-4 rounded-xl font-bold text-lg active:scale-95 disabled:opacity-40 disabled:active:scale-100"
           >
             Continuar
           </button>
@@ -847,7 +886,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
           {tipo === 'delivery' && (
             <div>
               <label className="text-neutral-500 text-sm">Bairro (confira antes de fechar)</label>
-              <select value={taxaEncontrada?.bairro ?? bairro} onChange={(e) => setBairro(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#F26522] focus:outline-none">
+              <select value={taxaEncontrada?.bairro ?? bairro} onChange={(e) => setBairro(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#DC2626] focus:outline-none">
                 <option value="">Selecione...</option>
                 {taxas.map((t) => <option key={t.id} value={t.bairro}>{t.bairro} - {brl(t.taxa)}</option>)}
               </select>
@@ -872,23 +911,23 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
               <button
                 key={f}
                 onClick={() => setFormaPagamento(f)}
-                className={`py-4 rounded-xl font-bold text-lg ${formaPagamento === f ? 'bg-[#F26522] text-white' : 'bg-neutral-200 text-neutral-500'}`}
+                className={`py-4 rounded-xl font-bold text-lg ${formaPagamento === f ? 'bg-[#DC2626] text-white' : 'bg-neutral-200 text-neutral-500'}`}
               >{f}</button>
             ))}
           </div>
 
           <div>
             <label className="text-neutral-500 text-sm">Observação geral</label>
-            <input value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Ex: sem cebola, troco para R$50..." className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#F26522] focus:outline-none" />
+            <input value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Ex: sem cebola, troco para R$50..." className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#DC2626] focus:outline-none" />
           </div>
 
           {/* Print options */}
           <div className="flex gap-4">
             <label className="flex items-center gap-2 text-neutral-700 text-sm">
-              <input type="checkbox" checked={printCozinha} onChange={(e) => setPrintCozinha(e.target.checked)} className="w-4 h-4 accent-[#F26522]" /> Imprimir Cozinha
+              <input type="checkbox" checked={printCozinha} onChange={(e) => setPrintCozinha(e.target.checked)} className="w-4 h-4 accent-[#DC2626]" /> Imprimir Cozinha
             </label>
             <label className="flex items-center gap-2 text-neutral-700 text-sm">
-              <input type="checkbox" checked={printCaixa} onChange={(e) => setPrintCaixa(e.target.checked)} className="w-4 h-4 accent-[#F26522]" /> Imprimir Caixa
+              <input type="checkbox" checked={printCaixa} onChange={(e) => setPrintCaixa(e.target.checked)} className="w-4 h-4 accent-[#DC2626]" /> Imprimir Caixa
             </label>
           </div>
 
@@ -924,11 +963,11 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
       {step === 'produtos' && cart.length > 0 && (
         <button
           onClick={() => setStep('carrinho')}
-          className="fixed z-40 top-2 right-3 lg:top-3 lg:right-8 bg-[#F26522] text-white rounded-full shadow-[0_8px_24px_rgba(242,101,34,0.35)] pl-3 pr-4 py-2.5 flex items-center gap-2.5 active:scale-[0.97] transition-transform"
+          className="fixed z-40 top-2 right-3 lg:top-3 lg:right-8 bg-[#DC2626] text-white rounded-full shadow-[0_8px_24px_rgba(220,38,38,0.35)] pl-3 pr-4 py-2.5 flex items-center gap-2.5 active:scale-[0.97] transition-transform"
         >
           <span className="relative">
             <ShoppingCart size={20} />
-            <span className="absolute -top-2 -right-2 bg-white text-[#F26522] text-[10px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">
+            <span className="absolute -top-2 -right-2 bg-white text-[#DC2626] text-[10px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">
               {cart.reduce((s, c) => s + c.quantidade, 0)}
             </span>
           </span>
@@ -974,7 +1013,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
             <button
               key={p.id}
               onClick={() => setSabor1(p)}
-              className={`p-3 rounded-xl text-left ${sabor1?.id === p.id ? 'bg-[#F26522] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
+              className={`p-3 rounded-xl text-left ${sabor1?.id === p.id ? 'bg-[#DC2626] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
             >
               <p className="font-medium text-sm">{p.nome}</p>
               {!isCombo && <p className="text-xs opacity-70">{brl(p.preco)}</p>}
@@ -990,7 +1029,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
                 <button
                   key={p.id}
                   onClick={() => setSabor2(sabor2?.id === p.id ? null : p)}
-                  className={`p-3 rounded-xl text-left ${sabor2?.id === p.id ? 'bg-[#F26522] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
+                  className={`p-3 rounded-xl text-left ${sabor2?.id === p.id ? 'bg-[#DC2626] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
                 >
                   <p className="font-medium text-sm">{p.nome}</p>
                   {!isCombo && <p className="text-xs opacity-70">{brl(p.preco)}</p>}
@@ -1004,14 +1043,14 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
           <>
             <p className="text-neutral-500 text-sm mb-2">Adicionais</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-              <button onClick={() => setSelectedAdicional(null)} className={`p-3 rounded-xl text-left ${!selectedAdicional ? 'bg-[#F26522] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}>
+              <button onClick={() => setSelectedAdicional(null)} className={`p-3 rounded-xl text-left ${!selectedAdicional ? 'bg-[#DC2626] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}>
                 <p className="font-medium text-sm">Nenhum</p>
               </button>
               {adicionais.map((a) => (
                 <button
                   key={a.id}
                   onClick={() => setSelectedAdicional(a)}
-                  className={`p-3 rounded-xl text-left ${selectedAdicional?.id === a.id ? 'bg-[#F26522] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
+                  className={`p-3 rounded-xl text-left ${selectedAdicional?.id === a.id ? 'bg-[#DC2626] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200'}`}
                 >
                   <p className="font-medium text-sm">{a.nome}</p>
                   <p className="text-xs opacity-70">+{brl(a.preco)}</p>
@@ -1023,7 +1062,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
 
         <div className="mb-4">
           <label className="text-neutral-500 text-sm">Observação</label>
-          <input value={itemObs} onChange={(e) => setItemObs(e.target.value)} placeholder="Ex: sem cebola, bem assada..." className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#F26522] focus:outline-none" />
+          <input value={itemObs} onChange={(e) => setItemObs(e.target.value)} placeholder="Ex: sem cebola, bem assada..." className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mt-1 focus:border-[#DC2626] focus:outline-none" />
         </div>
 
         <div className="flex items-center justify-between bg-neutral-100 rounded-xl p-3 mb-4">

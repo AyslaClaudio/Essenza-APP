@@ -83,7 +83,7 @@ export function Mesas() {
     <div className="space-y-5 animate-fadeIn">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2">
-          <LayoutGrid size={24} className="text-[#F26522]" />
+          <LayoutGrid size={24} className="text-[#DC2626]" />
           <h2 className="text-2xl font-bold text-neutral-900">Mesas do Salão</h2>
         </div>
         <div className="flex items-center gap-3 text-xs">

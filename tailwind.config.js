@@ -5,30 +5,26 @@ export default {
     extend: {
       colors: {
         essenza: {
-          // Redesign "soft-UI restaurante" — laranja-coral como cor de ação/
-          // identidade, verde só como positivo/lucro, fundo creme quente.
+          // Cor de ação/identidade: vermelho. Verde só como positivo/lucro,
+          // fundo creme quente.
           bg: '#FBF6EF',
           card: '#FFFFFF',
           text: '#26211E',
           'text-secondary': '#8A8A8A',
           border: '#EFE9E0',
-          orange: '#F26522',
-          'orange-dark': '#D2551A',
-          'orange-light': '#FDECE3',
+          red: '#DC2626',
+          'red-dark': '#B91C1C',
+          'red-light': '#FEE2E2',
           green: '#22C55E',
           'green-light': '#DCFCE7',
           amber: '#F59E0B',
           danger: '#EF4444',
-          // Aliases mantidos por compatibilidade com o restante do app (que
-          // referencia essenza.red como cor de ação principal).
-          red: '#F26522',
-          'red-dark': '#D2551A',
-          terracotta: '#F26522',
-          olive: '#F26522',
-          'olive-light': '#FDECE3',
-          'italia-green': '#F26522',
-          'italia-green-dark': '#D2551A',
-          'italia-red': '#F26522',
+          terracotta: '#DC2626',
+          olive: '#DC2626',
+          'olive-light': '#FEE2E2',
+          'italia-green': '#DC2626',
+          'italia-green-dark': '#B91C1C',
+          'italia-red': '#DC2626',
           cream: '#FBF6EF',
           gold: '#F59E0B',
           dark: '#0A0A0A',

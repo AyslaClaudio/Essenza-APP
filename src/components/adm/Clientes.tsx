@@ -130,7 +130,7 @@ export function Clientes() {
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por nome ou telefone..."
-            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-neutral-900 focus:border-[#F26522] focus:outline-none"
+            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-neutral-900 focus:border-[#DC2626] focus:outline-none"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto">
@@ -143,7 +143,7 @@ export function Clientes() {
             <button
               key={f.id}
               onClick={() => setFiltro(f.id)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${filtro === f.id ? 'bg-[#F26522] text-white' : 'bg-neutral-200 text-neutral-500'}`}
+              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${filtro === f.id ? 'bg-[#DC2626] text-white' : 'bg-neutral-200 text-neutral-500'}`}
             >
               {f.label}
             </button>

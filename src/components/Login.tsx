@@ -31,7 +31,7 @@ export function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#F26522] focus:outline-none transition-colors"
+              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#DC2626] focus:outline-none transition-colors"
               placeholder="seu@email.com"
               required
             />
@@ -42,7 +42,7 @@ export function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#F26522] focus:outline-none transition-colors"
+              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#DC2626] focus:outline-none transition-colors"
               placeholder="••••••••"
               required
             />
@@ -55,7 +55,7 @@ export function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#F26522] hover:bg-[#f6121d] text-white font-bold text-lg py-4 rounded-xl transition-colors disabled:opacity-50 active:scale-[0.98]"
+            className="w-full bg-[#DC2626] hover:bg-[#f6121d] text-white font-bold text-lg py-4 rounded-xl transition-colors disabled:opacity-50 active:scale-[0.98]"
           >
             {loading ? 'Entrando...' : 'ENTRAR'}
           </button>

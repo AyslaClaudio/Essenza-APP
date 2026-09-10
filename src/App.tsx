@@ -16,7 +16,7 @@ function AppInner() {
     return (
       <div className="min-h-screen bg-[#FBF6EF] flex items-center justify-center">
         <div className="animate-pulse">
-          <Flame size={48} className="text-[#F26522]" />
+          <Flame size={48} className="text-[#DC2626]" />
         </div>
       </div>
     );
@@ -54,7 +54,7 @@ function AppInner() {
       <div className="w-full max-w-sm">
         <button
           onClick={() => setMode('cliente')}
-          className="group w-full bg-[#F26522] hover:bg-[#f6121d] text-white font-bold text-lg py-6 rounded-2xl transition-all hover:shadow-lg hover:shadow-red-900/20 hover:-translate-y-0.5 active:scale-95 flex flex-col items-center gap-1.5"
+          className="group w-full bg-[#DC2626] hover:bg-[#f6121d] text-white font-bold text-lg py-6 rounded-2xl transition-all hover:shadow-lg hover:shadow-red-900/20 hover:-translate-y-0.5 active:scale-95 flex flex-col items-center gap-1.5"
         >
           <Flame size={26} />
           <span>FAZER PEDIDO</span>

@@ -214,7 +214,7 @@ export function Adm() {
                     key={item.id}
                     onClick={() => { setTab(item.id); setSidebarOpen(false); }}
                     className={`flex flex-col items-center gap-1.5 py-3 rounded-xl text-xs font-medium ${
-                      ativo ? 'bg-[#F26522] text-white' : 'text-neutral-600 hover:bg-[#FDECE3]'
+                      ativo ? 'bg-[#DC2626] text-white' : 'text-neutral-600 hover:bg-[#FEE2E2]'
                     }`}
                   >
                     <item.icon size={20} className={ativo ? 'text-white' : 'text-neutral-400'} />
@@ -259,8 +259,8 @@ export function Adm() {
                       onClick={() => { setTab(item.id); setSidebarOpen(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors text-left text-sm ${
                         ativo
-                          ? 'bg-[#F26522] text-white font-semibold shadow-[0_4px_12px_rgba(242,101,34,0.25)]'
-                          : 'text-neutral-600 hover:bg-[#FDECE3] hover:text-[#26211E] font-medium'
+                          ? 'bg-[#DC2626] text-white font-semibold shadow-[0_4px_12px_rgba(220,38,38,0.25)]'
+                          : 'text-neutral-600 hover:bg-[#FEE2E2] hover:text-[#26211E] font-medium'
                       }`}
                     >
                       <item.icon size={18} className={ativo ? 'text-white' : 'text-neutral-400'} />
@@ -312,8 +312,8 @@ export function Adm() {
               onClick={() => setTab(item.id)}
               className="flex-1 flex flex-col items-center gap-1 py-2.5"
             >
-              <item.icon size={20} className={ativo ? 'text-[#F26522]' : 'text-neutral-400'} />
-              <span className={`text-[10px] ${ativo ? 'text-[#F26522] font-semibold' : 'text-neutral-500 font-medium'}`}>{item.label}</span>
+              <item.icon size={20} className={ativo ? 'text-[#DC2626]' : 'text-neutral-400'} />
+              <span className={`text-[10px] ${ativo ? 'text-[#DC2626] font-semibold' : 'text-neutral-500 font-medium'}`}>{item.label}</span>
             </button>
           );
         })}
@@ -321,8 +321,8 @@ export function Adm() {
           onClick={() => setSidebarOpen(true)}
           className="flex-1 flex flex-col items-center gap-1 py-2.5"
         >
-          <Menu size={20} className={bottomNavAtivo ? 'text-neutral-400' : 'text-[#F26522]'} />
-          <span className={`text-[10px] font-medium ${bottomNavAtivo ? 'text-neutral-500' : 'text-[#F26522] font-semibold'}`}>Mais</span>
+          <Menu size={20} className={bottomNavAtivo ? 'text-neutral-400' : 'text-[#DC2626]'} />
+          <span className={`text-[10px] font-medium ${bottomNavAtivo ? 'text-neutral-500' : 'text-[#DC2626] font-semibold'}`}>Mais</span>
         </button>
       </nav>
     </div>

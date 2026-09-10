@@ -93,36 +93,37 @@ function agregar(rows: any[]): Agregado {
 }
 
 // Divide o período em "baldes" — por dia se o período for curto (≤ 45 dias),
-// por mês se for longo — pra montar a série da tendência.
-function bucketize(pedidos: any[], ini: Date, fim: Date): BucketTendencia[] {
+// por mês se for longo. Série de Faturamento vs Despesas (custo dos produtos
+// dos pedidos + saídas de caixa / custos operacionais lançados no período).
+function bucketize(pedidos: any[], saidasCaixa: any[], ini: Date, fim: Date): BucketTendencia[] {
   const spanDias = Math.round((fim.getTime() - ini.getTime()) / 86400000);
   const porMes = spanDias > 45;
   const mapa = new Map<string, BucketTendencia>();
+  const chaveDe = (d: Date) => porMes
+    ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    : dateToISO(d);
 
   if (porMes) {
     const cursor = new Date(ini.getFullYear(), ini.getMonth(), 1);
     while (cursor <= fim) {
-      const chave = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
-      mapa.set(chave, { label: `${MESES[cursor.getMonth()]}/${String(cursor.getFullYear()).slice(2)}`, faturamento: 0, pedidos: 0 });
+      mapa.set(chaveDe(cursor), { label: `${MESES[cursor.getMonth()]}/${String(cursor.getFullYear()).slice(2)}`, faturamento: 0, despesas: 0 });
       cursor.setMonth(cursor.getMonth() + 1);
     }
-    pedidos.forEach((p) => {
-      const d = new Date(p.created_at);
-      const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const b = mapa.get(chave);
-      if (b) { b.faturamento += Number(p.total || 0); b.pedidos += 1; }
-    });
   } else {
     for (let d = new Date(ini); d <= fim; d = addDays(d, 1)) {
-      const chave = dateToISO(d);
-      mapa.set(chave, { label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }), faturamento: 0, pedidos: 0 });
+      mapa.set(chaveDe(d), { label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }), faturamento: 0, despesas: 0 });
     }
-    pedidos.forEach((p) => {
-      const chave = dateToISO(new Date(p.created_at));
-      const b = mapa.get(chave);
-      if (b) { b.faturamento += Number(p.total || 0); b.pedidos += 1; }
-    });
   }
+
+  pedidos.forEach((p) => {
+    const b = mapa.get(chaveDe(new Date(p.created_at)));
+    if (b) { b.faturamento += Number(p.total || 0); b.despesas += Number(p.custo_total || 0); }
+  });
+  saidasCaixa.forEach((s) => {
+    // caixa.data é 'YYYY-MM-DD' — trata como data local pra cair no balde certo
+    const b = mapa.get(chaveDe(new Date(`${s.data}T12:00:00`)));
+    if (b) b.despesas += Number(s.valor || 0);
+  });
   return [...mapa.values()];
 }
 
@@ -136,7 +137,7 @@ function Sparkline({ valores }: { valores: number[] }) {
     .join(' ');
   return (
     <svg viewBox="0 0 100 24" preserveAspectRatio="none" className="w-16 h-6">
-      <polyline points={pontos} fill="none" stroke="#F26522" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={pontos} fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -146,7 +147,7 @@ const FILTRO_LABELS: Record<Filtro, string> = {
   '3meses': '3 meses', '6meses': '6 meses', custom: 'Personalizado',
 };
 
-const CAT_CORES = ['#F26522', '#22C55E', '#F59E0B', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6'];
+const CAT_CORES = ['#DC2626', '#22C55E', '#F59E0B', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6'];
 
 export function Dashboard({ meta }: { meta: number }) {
   const { config } = useConfig();
@@ -197,15 +198,25 @@ export function Dashboard({ meta }: { meta: number }) {
     const { ini, fim, iniPrev, fimPrev, labelPrev } = intervalos(filtro, customIni, customFim);
     setLabelPrev(labelPrev);
 
-    const { data: rows } = await supabase
-      .from('pedidos')
-      .select('id, total, lucro, custo_total, status, forma_pagamento, created_at, cliente_nome')
-      .gte('created_at', dateTimeToISO(ini))
-      .lte('created_at', dateTimeToISO(fim))
-      .neq('status', 'cancelado');
+    const [{ data: rows }, { data: saidas }] = await Promise.all([
+      supabase
+        .from('pedidos')
+        .select('id, total, lucro, custo_total, status, forma_pagamento, created_at, cliente_nome')
+        .gte('created_at', dateTimeToISO(ini))
+        .lte('created_at', dateTimeToISO(fim))
+        .neq('status', 'cancelado'),
+      // Custos operacionais / saídas de caixa lançados no período — entram como
+      // Despesas na tendência (além do custo dos produtos vendidos).
+      supabase
+        .from('caixa')
+        .select('valor, data')
+        .eq('tipo', 'saida')
+        .gte('data', dateToISO(ini))
+        .lte('data', dateToISO(fim)),
+    ]);
     const pedidos = rows || [];
     setAtual(agregar(pedidos));
-    setTendencia(bucketize(pedidos, ini, fim));
+    setTendencia(bucketize(pedidos, saidas || [], ini, fim));
 
     // Forma de pagamento dominante
     const formaCount = new Map<string, number>();
@@ -344,7 +355,7 @@ export function Dashboard({ meta }: { meta: number }) {
         <div>
           <h2 className="text-2xl font-semibold text-[#26211E] flex items-center gap-2">
             Dashboard
-            {loading && <RefreshCw size={15} className="animate-spin text-[#F26522]" />}
+            {loading && <RefreshCw size={15} className="animate-spin text-[#DC2626]" />}
           </h2>
           <p className="text-[#8A8A8A] text-sm mt-1">
             Olá, {config?.nome_loja || 'Essenza'} 👋 Aqui está o desempenho da sua operação.
@@ -360,7 +371,7 @@ export function Dashboard({ meta }: { meta: number }) {
                 key={f}
                 onClick={() => { setFiltro(f); setShowCustom(false); }}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  filtro === f ? 'bg-[#F26522] text-white' : 'text-[#8A8A8A] hover:text-[#26211E]'
+                  filtro === f ? 'bg-[#DC2626] text-white' : 'text-[#8A8A8A] hover:text-[#26211E]'
                 }`}
               >
                 {FILTRO_LABELS[f]}
@@ -369,7 +380,7 @@ export function Dashboard({ meta }: { meta: number }) {
             <button
               onClick={() => setShowCustom((v) => !v)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1 ${
-                filtro === 'custom' ? 'bg-[#F26522] text-white' : 'text-[#8A8A8A] hover:text-[#26211E]'
+                filtro === 'custom' ? 'bg-[#DC2626] text-white' : 'text-[#8A8A8A] hover:text-[#26211E]'
               }`}
             >
               <Calendar size={12} /> Personalizado
@@ -383,15 +394,15 @@ export function Dashboard({ meta }: { meta: number }) {
           <div>
             <label className="block text-[#8A8A8A] text-xs mb-1">De</label>
             <input type="date" value={customIni} max={customFim} onChange={(e) => setCustomIni(e.target.value)}
-              className="bg-[#FBF6EF] border border-[#EFE9E0] rounded-lg px-3 py-2 text-sm text-[#26211E] focus:border-[#F26522] focus:outline-none" />
+              className="bg-[#FBF6EF] border border-[#EFE9E0] rounded-lg px-3 py-2 text-sm text-[#26211E] focus:border-[#DC2626] focus:outline-none" />
           </div>
           <div>
             <label className="block text-[#8A8A8A] text-xs mb-1">Até</label>
             <input type="date" value={customFim} min={customIni} max={dateToISO(new Date())} onChange={(e) => setCustomFim(e.target.value)}
-              className="bg-[#FBF6EF] border border-[#EFE9E0] rounded-lg px-3 py-2 text-sm text-[#26211E] focus:border-[#F26522] focus:outline-none" />
+              className="bg-[#FBF6EF] border border-[#EFE9E0] rounded-lg px-3 py-2 text-sm text-[#26211E] focus:border-[#DC2626] focus:outline-none" />
           </div>
           <button onClick={() => { setFiltro('custom'); setShowCustom(false); }}
-            className="bg-[#F26522] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#D2551A]">
+            className="bg-[#DC2626] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#B91C1C]">
             Aplicar
           </button>
         </div>
@@ -404,8 +415,8 @@ export function Dashboard({ meta }: { meta: number }) {
           return (
             <div key={c.label} className="bg-white border border-[#EFE9E0] rounded-2xl p-5 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
               <div className="flex items-center justify-between mb-3">
-                <div className="w-9 h-9 rounded-xl bg-[#FDECE3] flex items-center justify-center">
-                  <c.icon size={17} className="text-[#F26522]" />
+                <div className="w-9 h-9 rounded-xl bg-[#FEE2E2] flex items-center justify-center">
+                  <c.icon size={17} className="text-[#DC2626]" />
                 </div>
                 {c.sparkline && <Sparkline valores={sparkValores} />}
               </div>
@@ -432,7 +443,7 @@ export function Dashboard({ meta }: { meta: number }) {
         <div className="lg:col-span-4">
           <div className="bg-white border border-[#EFE9E0] rounded-2xl p-5 shadow-[0_2px_12px_rgba(38,33,30,0.04)] h-full">
             <div className="flex items-center gap-2 mb-4">
-              <PieIcon size={16} className="text-[#F26522]" />
+              <PieIcon size={16} className="text-[#DC2626]" />
               <h3 className="text-[#26211E] font-semibold">Pedidos por Categoria</h3>
             </div>
             {porCategoria.length === 0 ? (
@@ -502,7 +513,7 @@ export function Dashboard({ meta }: { meta: number }) {
               </li>
             )}
             <li className="flex items-start gap-2">
-              <Receipt size={15} className="text-[#F26522] mt-0.5 shrink-0" />
+              <Receipt size={15} className="text-[#DC2626] mt-0.5 shrink-0" />
               <span className="text-[#8A8A8A]">Margem de lucro: <b className="text-[#26211E] font-medium">{margem.toFixed(0)}%</b></span>
             </li>
             {formaPagamentoDominante && (
@@ -541,7 +552,7 @@ export function Dashboard({ meta }: { meta: number }) {
             </div>
             <div className="flex-1 space-y-3">
               {[
-                { label: 'Receita', valor: atual.faturamento, cor: '#F26522' },
+                { label: 'Receita', valor: atual.faturamento, cor: '#DC2626' },
                 { label: 'Custos', valor: atual.custo, cor: '#EF4444' },
                 { label: 'Lucro', valor: atual.lucro, cor: '#22C55E' },
               ].map((linha) => (
@@ -563,7 +574,7 @@ export function Dashboard({ meta }: { meta: number }) {
           <h3 className="text-[#26211E] font-semibold mb-4">Operação Agora</h3>
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#FDECE3] flex items-center justify-center shrink-0"><ChefHat size={18} className="text-[#F26522]" /></div>
+              <div className="w-10 h-10 rounded-xl bg-[#FEE2E2] flex items-center justify-center shrink-0"><ChefHat size={18} className="text-[#DC2626]" /></div>
               <div><p className="text-[#26211E] font-semibold text-lg leading-none">{operacao.pedidosBalcao}</p><p className="text-[#8A8A8A] text-xs mt-1">Balcão/mesa em andamento</p></div>
             </div>
             <div className="flex items-center gap-3">
