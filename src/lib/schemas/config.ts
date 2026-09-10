@@ -10,7 +10,7 @@ export const configLojaSchema = z.object({
   taxa_fixa_entrega: z.number().min(0, 'Taxa deve ser >= 0').default(0),
   despesas_fixas_diaria: z.number().min(0, 'Despesas devem ser >= 0').default(0),
   meta_diaria: z.number().min(1, 'Meta diária deve ser > 0').default(2000),
-  cor_primaria: z.string().optional().default('#16A34A'),
+  cor_primaria: z.string().optional().default('#F26522'),
   cor_fundo: z.string().optional().default('#0A0A0A'),
   cor_lucro: z.string().optional().default('#22c55e'),
 });

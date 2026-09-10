@@ -179,7 +179,7 @@ export function Adm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-[#FBF6EF] flex flex-col lg:flex-row">
       <OfflineBanner />
       {/* Mobile header with dashboard strip — sem menu hambúrguer: a navegação
           mobile agora é a barra inferior fixa (ver fim do componente). */}
@@ -214,10 +214,10 @@ export function Adm() {
                     key={item.id}
                     onClick={() => { setTab(item.id); setSidebarOpen(false); }}
                     className={`flex flex-col items-center gap-1.5 py-3 rounded-xl text-xs font-medium ${
-                      ativo ? 'bg-[#DCFCE7] text-[#16A34A]' : 'text-neutral-600 hover:bg-neutral-100'
+                      ativo ? 'bg-[#F26522] text-white' : 'text-neutral-600 hover:bg-[#FDECE3]'
                     }`}
                   >
-                    <item.icon size={20} className={ativo ? 'text-[#16A34A]' : 'text-neutral-400'} />
+                    <item.icon size={20} className={ativo ? 'text-white' : 'text-neutral-400'} />
                     {item.label}
                   </button>
                 );
@@ -257,14 +257,13 @@ export function Adm() {
                     <button
                       key={item.id}
                       onClick={() => { setTab(item.id); setSidebarOpen(false); }}
-                      className={`relative w-full flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-lg transition-colors text-left text-sm ${
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors text-left text-sm ${
                         ativo
-                          ? 'bg-[#DCFCE7] text-[#16A34A] font-semibold'
-                          : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 font-medium'
+                          ? 'bg-[#F26522] text-white font-semibold shadow-[0_4px_12px_rgba(242,101,34,0.25)]'
+                          : 'text-neutral-600 hover:bg-[#FDECE3] hover:text-[#26211E] font-medium'
                       }`}
                     >
-                      {ativo && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-[#16A34A]" />}
-                      <item.icon size={18} className={ativo ? 'text-[#16A34A]' : 'text-neutral-400'} />
+                      <item.icon size={18} className={ativo ? 'text-white' : 'text-neutral-400'} />
                       <span>{item.label}</span>
                     </button>
                   );
@@ -313,8 +312,8 @@ export function Adm() {
               onClick={() => setTab(item.id)}
               className="flex-1 flex flex-col items-center gap-1 py-2.5"
             >
-              <item.icon size={20} className={ativo ? 'text-[#16A34A]' : 'text-neutral-400'} />
-              <span className={`text-[10px] ${ativo ? 'text-[#16A34A] font-semibold' : 'text-neutral-500 font-medium'}`}>{item.label}</span>
+              <item.icon size={20} className={ativo ? 'text-[#F26522]' : 'text-neutral-400'} />
+              <span className={`text-[10px] ${ativo ? 'text-[#F26522] font-semibold' : 'text-neutral-500 font-medium'}`}>{item.label}</span>
             </button>
           );
         })}
@@ -322,8 +321,8 @@ export function Adm() {
           onClick={() => setSidebarOpen(true)}
           className="flex-1 flex flex-col items-center gap-1 py-2.5"
         >
-          <Menu size={20} className={bottomNavAtivo ? 'text-neutral-400' : 'text-[#16A34A]'} />
-          <span className={`text-[10px] font-medium ${bottomNavAtivo ? 'text-neutral-500' : 'text-[#16A34A] font-semibold'}`}>Mais</span>
+          <Menu size={20} className={bottomNavAtivo ? 'text-neutral-400' : 'text-[#F26522]'} />
+          <span className={`text-[10px] font-medium ${bottomNavAtivo ? 'text-neutral-500' : 'text-[#F26522] font-semibold'}`}>Mais</span>
         </button>
       </nav>
     </div>

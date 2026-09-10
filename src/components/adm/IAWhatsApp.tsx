@@ -678,7 +678,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
       {/* Header bar */}
       <div className="p-4 border-b border-neutral-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#16A34A] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-[#F26522] flex items-center justify-center">
             <Bot size={22} className="text-white" />
           </div>
           <div>
@@ -691,19 +691,19 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
         <div className="flex bg-neutral-100 p-1.5 rounded-xl border border-neutral-200 w-full sm:w-auto">
           <button 
             onClick={() => setActiveTab('simulator')} 
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'simulator' ? 'bg-[#16A34A] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'simulator' ? 'bg-[#F26522] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
           >
             <Smartphone size={14} /> Simulador
           </button>
           <button 
             onClick={() => setActiveTab('settings')} 
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'settings' ? 'bg-[#16A34A] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'settings' ? 'bg-[#F26522] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
           >
             <Settings size={14} /> Configurações
           </button>
           <button 
             onClick={() => setActiveTab('real-connection')} 
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'real-connection' ? 'bg-[#16A34A] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'real-connection' ? 'bg-[#F26522] text-white' : 'text-neutral-500 hover:text-neutral-900'}`}
           >
             <Play size={14} /> WhatsApp Real
           </button>
@@ -719,11 +719,11 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
               <div className="p-3 border-b border-neutral-200 flex justify-between items-center">
                 <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
                   Conversas Ativas
-                  {dbLoading && <RefreshCw size={12} className="animate-spin text-[#16A34A]" />}
+                  {dbLoading && <RefreshCw size={12} className="animate-spin text-[#F26522]" />}
                 </span>
                 <button 
                   onClick={createNewChat} 
-                  className="bg-neutral-200 hover:bg-[#16A34A] text-white text-xs px-2.5 py-1.5 rounded-lg border border-neutral-200 transition-colors font-medium"
+                  className="bg-neutral-200 hover:bg-[#F26522] text-white text-xs px-2.5 py-1.5 rounded-lg border border-neutral-200 transition-colors font-medium"
                 >
                   Novo Chat
                 </button>
@@ -740,7 +740,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                       <button 
                         key={chat.id}
                         onClick={() => setActiveChatId(chat.id)}
-                        className={`w-full p-4 flex flex-col gap-1 text-left transition-colors ${active ? 'bg-neutral-200/80 border-l-4 border-l-[#16A34A]' : 'hover:bg-neutral-100/55'}`}
+                        className={`w-full p-4 flex flex-col gap-1 text-left transition-colors ${active ? 'bg-neutral-200/80 border-l-4 border-l-[#F26522]' : 'hover:bg-neutral-100/55'}`}
                       >
                         <div className="flex justify-between items-center w-full">
                           <span className="font-bold text-neutral-900 text-sm">{chat.name}</span>
@@ -783,7 +783,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
             </div>
 
             {/* Simulator Chat Area */}
-            <div className="flex-1 flex flex-col bg-[#F7F7F5] overflow-hidden relative">
+            <div className="flex-1 flex flex-col bg-[#FBF6EF] overflow-hidden relative">
               {/* Active Chat Header */}
               {activeChat ? (
                 <>
@@ -853,12 +853,12 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                       onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                       placeholder={isTyping ? "Aguardando resposta da IA..." : "Escreva uma mensagem simulando o cliente..."}
                       disabled={isTyping}
-                      className="flex-1 bg-neutral-100 text-neutral-900 placeholder-neutral-500 border border-neutral-200 rounded-xl px-4 py-3 text-sm focus:border-[#16A34A] focus:outline-none disabled:opacity-50"
+                      className="flex-1 bg-neutral-100 text-neutral-900 placeholder-neutral-500 border border-neutral-200 rounded-xl px-4 py-3 text-sm focus:border-[#F26522] focus:outline-none disabled:opacity-50"
                     />
                     <button 
                       onClick={handleSendMessage}
                       disabled={isTyping || !inputText.trim()}
-                      className="w-12 h-12 bg-[#16A34A] hover:bg-red-600 text-white rounded-xl flex items-center justify-center transition-colors disabled:opacity-40"
+                      className="w-12 h-12 bg-[#F26522] hover:bg-red-600 text-white rounded-xl flex items-center justify-center transition-colors disabled:opacity-40"
                     >
                       <Send size={18} />
                     </button>
@@ -877,7 +877,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
         {activeTab === 'settings' && (
           <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-neutral-50">
             <div className="flex items-center gap-2 text-neutral-900 font-bold text-base border-b border-neutral-200 pb-2">
-              <Settings size={18} className="text-[#16A34A]" />
+              <Settings size={18} className="text-[#F26522]" />
               <span>Configurações do Agente de IA</span>
             </div>
 
@@ -897,7 +897,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
               <div className="space-y-4">
                 <div className="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2 text-neutral-900 font-semibold text-sm">
-                    <Key size={16} className="text-[#16A34A]" />
+                    <Key size={16} className="text-[#F26522]" />
                     <span>Autenticação da IA</span>
                   </div>
                   <div>
@@ -907,7 +907,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                       value={geminiKey}
                       onChange={(e) => setGeminiKey(e.target.value)}
                       placeholder="AIzaSy..."
-                      className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#16A34A] focus:outline-none"
+                      className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#F26522] focus:outline-none"
                     />
                     <span className="text-[10px] text-neutral-500 block mt-1">Crie uma chave gratuita no Google AI Studio.</span>
                   </div>
@@ -915,7 +915,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
 
                 <div className="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2 text-neutral-900 font-semibold text-sm">
-                    <Clock size={16} className="text-[#16A34A]" />
+                    <Clock size={16} className="text-[#F26522]" />
                     <span>Lógica de Tempo de Espera</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -925,7 +925,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                         type="number"
                         value={baseWaitTime}
                         onChange={(e) => setBaseWaitTime(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#16A34A] focus:outline-none"
+                        className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#F26522] focus:outline-none"
                       />
                     </div>
                     <div>
@@ -934,7 +934,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                         type="number"
                         value={waitTimePerOrder}
                         onChange={(e) => setWaitTimePerOrder(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#16A34A] focus:outline-none"
+                        className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#F26522] focus:outline-none"
                       />
                     </div>
                   </div>
@@ -943,7 +943,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
 
                 <div className="bg-white border border-neutral-200 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2 text-neutral-900 font-semibold text-sm">
-                    <Smartphone size={16} className="text-[#16A34A]" />
+                    <Smartphone size={16} className="text-[#F26522]" />
                     <span>Integração com WhatsApp Real</span>
                   </div>
                   <div>
@@ -953,7 +953,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                       value={whatsappApiUrl}
                       onChange={(e) => setWhatsappApiUrl(e.target.value)}
                       placeholder="http://localhost:8000"
-                      className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#16A34A] focus:outline-none"
+                      className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#F26522] focus:outline-none"
                     />
                   </div>
                   <div>
@@ -963,7 +963,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                       value={whatsappToken}
                       onChange={(e) => setWhatsappToken(e.target.value)}
                       placeholder="Token de acesso"
-                      className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#16A34A] focus:outline-none"
+                      className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:border-[#F26522] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -992,7 +992,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
                   <textarea 
                     value={systemPrompt}
                     onChange={(e) => setSystemPrompt(e.target.value)}
-                    className="flex-1 bg-neutral-100 border border-neutral-200 rounded-xl p-3 text-xs text-neutral-700 focus:border-[#16A34A] focus:outline-none font-mono resize-none leading-relaxed"
+                    className="flex-1 bg-neutral-100 border border-neutral-200 rounded-xl p-3 text-xs text-neutral-700 focus:border-[#F26522] focus:outline-none font-mono resize-none leading-relaxed"
                   />
                 </div>
               </div>
@@ -1008,7 +1008,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
               </button>
               <button 
                 onClick={saveSettings} 
-                className="flex items-center gap-2 bg-[#16A34A] hover:bg-red-600 text-white text-sm px-5 py-2.5 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-red-950/40"
+                className="flex items-center gap-2 bg-[#F26522] hover:bg-red-600 text-white text-sm px-5 py-2.5 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-red-950/40"
               >
                 <CheckCircle2 size={16} /> Salvar Configurações
               </button>
@@ -1019,7 +1019,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
         {activeTab === 'real-connection' && (
           <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-neutral-50">
             <div className="flex items-center gap-2 text-neutral-900 font-bold text-base border-b border-neutral-200 pb-2">
-              <Smartphone size={18} className="text-[#16A34A]" />
+              <Smartphone size={18} className="text-[#F26522]" />
               <span>Conectar Atendimento ao WhatsApp de Verdade</span>
             </div>
 
@@ -1030,7 +1030,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
 
               <div className="bg-neutral-100 border border-neutral-200 rounded-xl p-5 space-y-4">
                 <h4 className="font-bold text-neutral-900 text-sm flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#16A34A] flex items-center justify-center text-xs text-white">1</span>
+                  <span className="w-6 h-6 rounded-full bg-[#F26522] flex items-center justify-center text-xs text-white">1</span>
                   Preparando o Ambiente Local
                 </h4>
                 <p className="text-xs text-neutral-500 leading-relaxed">
@@ -1045,7 +1045,7 @@ Por favor, analise a última mensagem do Cliente no histórico, consulte o menu 
 
               <div className="bg-neutral-100 border border-neutral-200 rounded-xl p-5 space-y-3">
                 <h4 className="font-bold text-neutral-900 text-sm flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#16A34A] flex items-center justify-center text-xs text-white">2</span>
+                  <span className="w-6 h-6 rounded-full bg-[#F26522] flex items-center justify-center text-xs text-white">2</span>
                   Escaneando o QR Code
                 </h4>
                 <p className="text-xs text-neutral-500 leading-relaxed">

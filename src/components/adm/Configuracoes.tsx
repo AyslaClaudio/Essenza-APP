@@ -27,7 +27,7 @@ export function Configuracoes() {
           { id: 'usuarios', label: 'Usuários', icon: Users },
           { id: 'marketing', label: 'Marketing', icon: Bell },
         ] as { id: Tab; label: string; icon: typeof Store }[]).map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === t.id ? 'bg-[#16A34A] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
+          <button key={t.id} onClick={() => setTab(t.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === t.id ? 'bg-[#F26522] text-white' : 'bg-neutral-200 text-neutral-500'}`}>
             <t.icon size={16} /> {t.label}
           </button>
         ))}
@@ -66,7 +66,7 @@ function ConfigLoja() {
   return (
     <div className="space-y-4">
       <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center gap-2"><Store size={20} className="text-[#16A34A]" /><h3 className="text-neutral-900 font-semibold">Dados da Loja</h3></div>
+        <div className="flex items-center gap-2"><Store size={20} className="text-[#F26522]" /><h3 className="text-neutral-900 font-semibold">Dados da Loja</h3></div>
         <Field label="Nome da Loja" value={form.nome_loja || ''} onChange={(v) => set('nome_loja', v)} />
         <Field label="Telefone" value={form.telefone_loja || ''} onChange={(v) => set('telefone_loja', v)} />
         <Field label="Endereço" value={form.endereco_loja || ''} onChange={(v) => set('endereco_loja', v)} />
@@ -74,7 +74,7 @@ function ConfigLoja() {
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center gap-2"><Clock size={20} className="text-[#16A34A]" /><h3 className="text-neutral-900 font-semibold">Horário</h3></div>
+        <div className="flex items-center gap-2"><Clock size={20} className="text-[#F26522]" /><h3 className="text-neutral-900 font-semibold">Horário</h3></div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Abertura" value={form.horario_abertura || ''} onChange={(v) => set('horario_abertura', v)} />
           <Field label="Fechamento" value={form.horario_fechamento || ''} onChange={(v) => set('horario_fechamento', v)} />
@@ -82,27 +82,27 @@ function ConfigLoja() {
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center gap-2"><Palette size={20} className="text-[#16A34A]" /><h3 className="text-neutral-900 font-semibold">Cores</h3></div>
+        <div className="flex items-center gap-2"><Palette size={20} className="text-[#F26522]" /><h3 className="text-neutral-900 font-semibold">Cores</h3></div>
         <div className="grid grid-cols-3 gap-3">
-          <ColorField label="Primária" value={form.cor_primaria || '#16A34A'} onChange={(v) => set('cor_primaria', v)} />
+          <ColorField label="Primária" value={form.cor_primaria || '#F26522'} onChange={(v) => set('cor_primaria', v)} />
           <ColorField label="Fundo" value={form.cor_fundo || '#0A0A0A'} onChange={(v) => set('cor_fundo', v)} />
           <ColorField label="Lucro" value={form.cor_lucro || '#22c55e'} onChange={(v) => set('cor_lucro', v)} />
         </div>
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center gap-2"><UserCog size={20} className="text-[#16A34A]" /><h3 className="text-neutral-900 font-semibold">Financeiro & Segurança</h3></div>
+        <div className="flex items-center gap-2"><UserCog size={20} className="text-[#F26522]" /><h3 className="text-neutral-900 font-semibold">Financeiro & Segurança</h3></div>
         <Field label="Taxa Fixa de Entrega (R$)" value={String(form.taxa_fixa_entrega ?? '')} onChange={(v) => set('taxa_fixa_entrega', parseFloat(v) || 0)} type="number" />
         <Field label="Despesas Fixas Diárias (R$)" value={String(form.despesas_fixas_diaria ?? '')} onChange={(v) => set('despesas_fixas_diaria', parseFloat(v) || 0)} type="number" />
         <Field label="Meta Diária (R$)" value={String(form.meta_diaria ?? '')} onChange={(v) => set('meta_diaria', parseFloat(v) || 0)} type="number" />
         <Field label="Senha da Tabela v12" value={form.senha_tabela || ''} onChange={(v) => set('senha_tabela', v)} />
         <label className="flex items-center gap-2 text-neutral-700 text-sm">
-          <input type="checkbox" checked={form.tabela_bloqueada ?? false} onChange={(e) => set('tabela_bloqueada', e.target.checked)} className="w-4 h-4 accent-[#16A34A]" />
+          <input type="checkbox" checked={form.tabela_bloqueada ?? false} onChange={(e) => set('tabela_bloqueada', e.target.checked)} className="w-4 h-4 accent-[#F26522]" />
           Bloquear edição da Tabela v12
         </label>
       </div>
 
-      <button onClick={save} disabled={saving} className="w-full bg-[#16A34A] text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+      <button onClick={save} disabled={saving} className="w-full bg-[#F26522] text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50">
         <Save size={18} /> {saving ? 'Salvando...' : 'Salvar Configurações'}
       </button>
     </div>
@@ -158,7 +158,7 @@ function ConfigImpressoraBluetooth() {
   return (
     <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-3">
       <div className="flex items-center gap-2">
-        <Bluetooth size={20} className="text-[#16A34A]" />
+        <Bluetooth size={20} className="text-[#F26522]" />
         <h3 className="text-neutral-900 font-semibold">Impressora Bluetooth (58mm/80mm)</h3>
       </div>
       <p className="text-neutral-500 text-sm">
@@ -189,7 +189,7 @@ function ConfigImpressoraBluetooth() {
             <button onClick={desconectar} className="px-4 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl font-semibold text-sm">Desconectar</button>
           </>
         ) : (
-          <button onClick={conectar} disabled={conectando || !bluetoothSuportado()} className="w-full flex items-center justify-center gap-2 bg-[#16A34A] text-white py-2.5 rounded-xl font-semibold text-sm disabled:opacity-50">
+          <button onClick={conectar} disabled={conectando || !bluetoothSuportado()} className="w-full flex items-center justify-center gap-2 bg-[#F26522] text-white py-2.5 rounded-xl font-semibold text-sm disabled:opacity-50">
             <Bluetooth size={16} /> {conectando ? 'Procurando...' : 'Conectar Impressora'}
           </button>
         )}
@@ -220,7 +220,7 @@ function ConfigImpressoras() {
 
       <div className="flex items-center justify-between">
         <p className="text-neutral-500 text-sm">Cadastre até 3 impressoras de bobina 80mm. Defina qual imprime Cozinha, Caixa e Entrega.</p>
-        <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 bg-[#16A34A] text-white px-4 py-2 rounded-xl text-sm font-semibold">
+        <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 bg-[#F26522] text-white px-4 py-2 rounded-xl text-sm font-semibold">
           <Plus size={18} /> Nova
         </button>
       </div>
@@ -229,7 +229,7 @@ function ConfigImpressoras() {
         {impressoras.map((imp) => (
           <div key={imp.id} className="bg-white border border-neutral-200 rounded-2xl p-4">
             <div className="flex items-start justify-between mb-2">
-              <Printer size={24} className="text-[#16A34A]" />
+              <Printer size={24} className="text-[#F26522]" />
               <div className="flex gap-1">
                 <button onClick={() => { setEditing(imp); setShowForm(true); }} className="p-1 text-neutral-500 hover:text-neutral-900"><Pencil size={14} /></button>
                 <button onClick={() => remove(imp.id)} className="p-1 text-neutral-500 hover:text-red-600"><Trash2 size={14} /></button>
@@ -294,12 +294,12 @@ function ImpressoraForm({ impressora, onClose, onSave }: { impressora: Impressor
             </div>
           )}
           <label className="flex items-center gap-2 text-neutral-700 text-sm">
-            <input type="checkbox" checked={ativa} onChange={(e) => setAtiva(e.target.checked)} className="w-4 h-4 accent-[#16A34A]" /> Ativa
+            <input type="checkbox" checked={ativa} onChange={(e) => setAtiva(e.target.checked)} className="w-4 h-4 accent-[#F26522]" /> Ativa
           </label>
         </div>
         <div className="flex gap-2 mt-5">
           <button onClick={onClose} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-          <button onClick={save} disabled={!nome} className="flex-1 py-3 bg-[#16A34A] text-white rounded-xl font-semibold disabled:opacity-50">Salvar</button>
+          <button onClick={save} disabled={!nome} className="flex-1 py-3 bg-[#F26522] text-white rounded-xl font-semibold disabled:opacity-50">Salvar</button>
         </div>
       </div>
     </div>
@@ -326,7 +326,7 @@ function ConfigEntrega() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-neutral-500 text-sm">Taxas de entrega por bairro/CEP</p>
-        <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 bg-[#16A34A] text-white px-4 py-2 rounded-xl text-sm font-semibold">
+        <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 bg-[#F26522] text-white px-4 py-2 rounded-xl text-sm font-semibold">
           <Plus size={18} /> Nova
         </button>
       </div>
@@ -372,7 +372,7 @@ function TaxaForm({ taxa, onClose, onSave }: { taxa: TaxaEntrega | null; onClose
         </div>
         <div className="flex gap-2 mt-5">
           <button onClick={onClose} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-          <button onClick={save} disabled={!bairro} className="flex-1 py-3 bg-[#16A34A] text-white rounded-xl font-semibold disabled:opacity-50">Salvar</button>
+          <button onClick={save} disabled={!bairro} className="flex-1 py-3 bg-[#F26522] text-white rounded-xl font-semibold disabled:opacity-50">Salvar</button>
         </div>
       </div>
     </div>
@@ -404,7 +404,7 @@ function ConfigPromocoes() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-neutral-500 text-sm">Promoções e Combos</p>
-        <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 bg-[#16A34A] text-white px-4 py-2 rounded-xl text-sm font-semibold">
+        <button onClick={() => { setEditing(null); setShowForm(true); }} className="flex items-center gap-2 bg-[#F26522] text-white px-4 py-2 rounded-xl text-sm font-semibold">
           <Plus size={18} /> Nova
         </button>
       </div>
@@ -468,7 +468,7 @@ function PromoForm({ promo, onClose, onSave }: { promo: Promocao | null; onClose
         </div>
         <div className="flex gap-2 mt-5">
           <button onClick={onClose} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-          <button onClick={save} disabled={!nome} className="flex-1 py-3 bg-[#16A34A] text-white rounded-xl font-semibold disabled:opacity-50">Salvar</button>
+          <button onClick={save} disabled={!nome} className="flex-1 py-3 bg-[#F26522] text-white rounded-xl font-semibold disabled:opacity-50">Salvar</button>
         </div>
       </div>
     </div>
@@ -527,7 +527,7 @@ function ConfigUsuarios() {
       <div className="flex items-center justify-between">
         <p className="text-neutral-500 text-sm">Usuários do sistema (não visível para clientes)</p>
         {usuario?.role === 'gerente' && (
-          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 bg-[#16A34A] text-white px-4 py-2 rounded-xl text-sm font-semibold">
+          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 bg-[#F26522] text-white px-4 py-2 rounded-xl text-sm font-semibold">
             <Plus size={18} /> Novo Usuário
           </button>
         )}
@@ -537,7 +537,7 @@ function ConfigUsuarios() {
         {users.map((u) => (
           <div key={u.id} className="bg-white border border-neutral-200 rounded-xl p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#16A34A]/20 flex items-center justify-center text-[#16A34A] font-bold">
+              <div className="w-10 h-10 rounded-full bg-[#F26522]/20 flex items-center justify-center text-[#F26522] font-bold">
                 {u.nome.charAt(0).toUpperCase()}
               </div>
               <div>
@@ -570,7 +570,7 @@ function ConfigUsuarios() {
             </div>
             <div className="flex gap-2 mt-5">
               <button onClick={() => setShowForm(false)} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-              <button onClick={createUser} className="flex-1 py-3 bg-[#16A34A] text-white rounded-xl font-semibold">Criar</button>
+              <button onClick={createUser} className="flex-1 py-3 bg-[#F26522] text-white rounded-xl font-semibold">Criar</button>
             </div>
           </div>
         </div>
@@ -594,9 +594,9 @@ function ConfigMarketing() {
     <div className="space-y-4">
       {/* Push notification */}
       <div className="bg-white border border-neutral-200 rounded-2xl p-5 space-y-3">
-        <div className="flex items-center gap-2"><Bell size={20} className="text-[#16A34A]" /><h3 className="text-neutral-900 font-semibold">Notificação Push</h3></div>
-        <textarea value={pushMsg} onChange={(e) => setPushMsg(e.target.value)} placeholder="Ex: Quarta da Pizza: 2 Grandes R$79,90" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 min-h-[80px] focus:border-[#16A34A] focus:outline-none" />
-        <button onClick={sendPush} disabled={!pushMsg} className="w-full bg-[#16A34A] text-white py-3 rounded-xl font-semibold disabled:opacity-50">
+        <div className="flex items-center gap-2"><Bell size={20} className="text-[#F26522]" /><h3 className="text-neutral-900 font-semibold">Notificação Push</h3></div>
+        <textarea value={pushMsg} onChange={(e) => setPushMsg(e.target.value)} placeholder="Ex: Quarta da Pizza: 2 Grandes R$79,90" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 min-h-[80px] focus:border-[#F26522] focus:outline-none" />
+        <button onClick={sendPush} disabled={!pushMsg} className="w-full bg-[#F26522] text-white py-3 rounded-xl font-semibold disabled:opacity-50">
           {sent ? 'Enviado!' : 'Enviar Notificação'}
         </button>
         <p className="text-neutral-500 text-xs">Integração com WhatsApp e Push API disponível para o futuro.</p>
@@ -608,7 +608,7 @@ function ConfigMarketing() {
         <label className="flex items-center gap-2 text-neutral-700 text-sm">
           <input type="checkbox" checked={config?.fidelidade_ativo ?? false} onChange={async (e) => {
             if (config?.id) { await supabase.from('configuracoes').update({ fidelidade_ativo: e.target.checked }).eq('id', config.id); refresh(); }
-          }} className="w-4 h-4 accent-[#16A34A]" /> Ativar programa de fidelidade
+          }} className="w-4 h-4 accent-[#F26522]" /> Ativar programa de fidelidade
         </label>
         <Field label="Regras" value={config?.fidelidade_regras || ''} onChange={async (v) => {
           if (config?.id) { await supabase.from('configuracoes').update({ fidelidade_regras: v }).eq('id', config.id); refresh(); }
@@ -628,7 +628,7 @@ function Field({ label, value, onChange, type = 'text' }: { label: string; value
   return (
     <div>
       <label className="text-neutral-500 text-sm">{label}</label>
-      <input type={type} step={type === 'number' ? '0.01' : undefined} value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#16A34A] focus:outline-none" />
+      <input type={type} step={type === 'number' ? '0.01' : undefined} value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1 focus:border-[#F26522] focus:outline-none" />
     </div>
   );
 }
@@ -639,7 +639,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
       <label className="text-neutral-500 text-sm">{label}</label>
       <div className="flex items-center gap-2 mt-1">
         <input type="color" value={value} onChange={(e) => onChange(e.target.value)} className="w-12 h-10 rounded-lg bg-neutral-100 border border-neutral-200 cursor-pointer" />
-        <input value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2.5 text-neutral-900 text-sm focus:border-[#16A34A] focus:outline-none" />
+        <input value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2.5 text-neutral-900 text-sm focus:border-[#F26522] focus:outline-none" />
       </div>
     </div>
   );

@@ -32,7 +32,7 @@ interface Insight {
 const TOM_STYLE: Record<Insight['tom'], { bg: string; icon: string; dot: string }> = {
   alerta: { bg: 'bg-red-50', icon: 'text-[#EF4444]', dot: 'bg-[#EF4444]' },
   oportunidade: { bg: 'bg-amber-50', icon: 'text-[#F59E0B]', dot: 'bg-[#F59E0B]' },
-  positivo: { bg: 'bg-[#DCFCE7]', icon: 'text-[#16A34A]', dot: 'bg-[#16A34A]' },
+  positivo: { bg: 'bg-[#DCFCE7]', icon: 'text-[#F26522]', dot: 'bg-[#F26522]' },
 };
 
 // Monta a lista de insights aplicáveis aos dados atuais, sem limite — cada regra
@@ -155,7 +155,7 @@ export function InsightIA(props: Props) {
     <div className="bg-white border border-[#E8E8E5] rounded-2xl p-5">
       <div className="flex items-center gap-2.5 mb-4">
         <div className="w-8 h-8 rounded-lg bg-[#DCFCE7] flex items-center justify-center flex-shrink-0">
-          <Sparkles size={16} className="text-[#16A34A]" />
+          <Sparkles size={16} className="text-[#F26522]" />
         </div>
         <h3 className="text-[#171717] font-semibold">Insights da Essenza</h3>
       </div>

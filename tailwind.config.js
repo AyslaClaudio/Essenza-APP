@@ -5,28 +5,31 @@ export default {
     extend: {
       colors: {
         essenza: {
-          // Redesign "SaaS profissional" — verde como cor de identidade/ação,
-          // fundo neutro off-white, cards brancos, texto em duas camadas.
-          bg: '#F7F7F5',
+          // Redesign "soft-UI restaurante" — laranja-coral como cor de ação/
+          // identidade, verde só como positivo/lucro, fundo creme quente.
+          bg: '#FBF6EF',
           card: '#FFFFFF',
-          text: '#171717',
-          'text-secondary': '#737373',
-          border: '#E8E8E5',
-          green: '#16A34A',
+          text: '#26211E',
+          'text-secondary': '#8A8A8A',
+          border: '#EFE9E0',
+          orange: '#F26522',
+          'orange-dark': '#D2551A',
+          'orange-light': '#FDECE3',
+          green: '#22C55E',
           'green-light': '#DCFCE7',
           amber: '#F59E0B',
           danger: '#EF4444',
           // Aliases mantidos por compatibilidade com o restante do app (que
           // referencia essenza.red como cor de ação principal).
-          red: '#16A34A',
-          'red-dark': '#128A3E',
-          terracotta: '#16A34A',
-          olive: '#16A34A',
-          'olive-light': '#DCFCE7',
-          'italia-green': '#16A34A',
-          'italia-green-dark': '#128A3E',
-          'italia-red': '#16A34A',
-          cream: '#F7F7F5',
+          red: '#F26522',
+          'red-dark': '#D2551A',
+          terracotta: '#F26522',
+          olive: '#F26522',
+          'olive-light': '#FDECE3',
+          'italia-green': '#F26522',
+          'italia-green-dark': '#D2551A',
+          'italia-red': '#F26522',
+          cream: '#FBF6EF',
           gold: '#F59E0B',
           dark: '#0A0A0A',
           'dark-card': '#141414',

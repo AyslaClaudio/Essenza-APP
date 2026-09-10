@@ -90,7 +90,7 @@ function Sparkline({ valores }: { valores: number[] }) {
     .join(' ');
   return (
     <svg viewBox="0 0 100 24" preserveAspectRatio="none" className="w-16 h-6">
-      <polyline points={pontos} fill="none" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={pontos} fill="none" stroke="#F26522" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -258,7 +258,7 @@ export function Dashboard({ meta }: { meta: number }) {
         <div>
           <h2 className="text-2xl font-semibold text-[#171717] flex items-center gap-2">
             Dashboard
-            {loading && <RefreshCw size={15} className="animate-spin text-[#16A34A]" />}
+            {loading && <RefreshCw size={15} className="animate-spin text-[#F26522]" />}
           </h2>
           <p className="text-[#737373] text-sm mt-1">
             Olá, {config?.nome_loja || 'Essenza'} 👋 Aqui está o desempenho da sua operação.
@@ -270,7 +270,7 @@ export function Dashboard({ meta }: { meta: number }) {
               key={f}
               onClick={() => setFiltro(f)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                filtro === f ? 'bg-[#16A34A] text-white' : 'text-[#737373] hover:text-[#171717]'
+                filtro === f ? 'bg-[#F26522] text-white' : 'text-[#737373] hover:text-[#171717]'
               }`}
             >
               {FILTRO_LABELS[f]}
@@ -284,16 +284,16 @@ export function Dashboard({ meta }: { meta: number }) {
         {cards.map((c) => {
           const subiu = c.pct >= 0;
           return (
-            <div key={c.label} className="bg-white border border-[#E8E8E5] rounded-2xl p-5">
+            <div key={c.label} className="bg-white border border-[#EFE9E0] rounded-2xl p-5 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[#737373] text-xs uppercase tracking-wide">{c.label}</span>
-                <c.icon size={16} className="text-[#a3a3a3]" />
-              </div>
-              <div className="flex items-end justify-between gap-2">
-                <p className="font-semibold text-2xl text-[#171717] tabular-nums">{c.valor}</p>
+                <div className="w-9 h-9 rounded-xl bg-[#FDECE3] flex items-center justify-center">
+                  <c.icon size={17} className="text-[#F26522]" />
+                </div>
                 {c.sparkline && <Sparkline valores={seteDiasValores} />}
               </div>
-              <div className={`flex items-center gap-1 text-xs mt-2 font-medium ${subiu ? 'text-[#16A34A]' : 'text-[#EF4444]'}`}>
+              <span className="text-[#8A8A8A] text-xs uppercase tracking-wide">{c.label}</span>
+              <p className="font-semibold text-2xl text-[#26211E] tabular-nums mt-0.5">{c.valor}</p>
+              <div className={`flex items-center gap-1 text-xs mt-2 font-medium ${subiu ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>
                 {subiu ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                 {Math.abs(c.pct).toFixed(1)}% <span className="text-[#a3a3a3] font-normal">{labelPrev}</span>
               </div>
@@ -332,21 +332,21 @@ export function Dashboard({ meta }: { meta: number }) {
         <h3 className="text-[#171717] font-semibold mb-5">Margem de Lucro</h3>
         <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-6 items-center">
           <div>
-            <p className="text-4xl font-semibold text-[#16A34A] tabular-nums">{margem.toFixed(0)}%</p>
+            <p className="text-4xl font-semibold text-[#22C55E] tabular-nums">{margem.toFixed(0)}%</p>
             <p className="text-[#737373] text-xs mt-1">do faturamento vira lucro</p>
           </div>
           <div className="space-y-3">
             {[
-              { label: 'Receita', valor: atual.faturamento, cor: '#171717', max: atual.faturamento },
+              { label: 'Receita', valor: atual.faturamento, cor: '#F26522', max: atual.faturamento },
               { label: 'Custos', valor: atual.custo, cor: '#EF4444', max: atual.faturamento },
-              { label: 'Lucro', valor: atual.lucro, cor: '#16A34A', max: atual.faturamento },
+              { label: 'Lucro', valor: atual.lucro, cor: '#22C55E', max: atual.faturamento },
             ].map((linha) => (
               <div key={linha.label}>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-[#737373]">{linha.label}</span>
                   <span className="font-medium text-[#171717]">{brl(linha.valor)}</span>
                 </div>
-                <div className="h-2 bg-[#F7F7F5] rounded-full overflow-hidden">
+                <div className="h-2 bg-[#FBF6EF] rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all"
                     style={{ width: `${linha.max > 0 ? Math.min(100, (linha.valor / linha.max) * 100) : 0}%`, backgroundColor: linha.cor }}
@@ -364,7 +364,7 @@ export function Dashboard({ meta }: { meta: number }) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#DCFCE7] flex items-center justify-center flex-shrink-0">
-              <ChefHat size={18} className="text-[#16A34A]" />
+              <ChefHat size={18} className="text-[#F26522]" />
             </div>
             <div>
               <p className="text-[#171717] font-semibold text-lg leading-none">{operacao.pedidosBalcao}</p>
