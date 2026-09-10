@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useConfig } from '../../context/ConfigContext';
 import { brl, todayISO } from '../../lib/format';
@@ -18,6 +18,16 @@ interface CartItem extends ItemPedido {
 // pro padrão de R$0 sem avisar ninguém).
 const normalizaBairro = (s: string) => s.trim().toLowerCase();
 
+// Nome sem acento, espaço extra e maiúscula — usado pra reconhecer o mesmo
+// cliente na busca e não criar "João" / "Joao" / "joão " como 3 cadastros.
+const normalizaNome = (s: string) =>
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+// Tira o que quebra a sintaxe do filtro .or() do PostgREST (parêntese,
+// vírgula, aspas) — era isso que dava erro quando o atendente digitava um
+// telefone tipo "(88) 9...". Também colapsa espaços.
+const sanitizaBusca = (s: string) => s.replace(/[(),"*]/g, ' ').replace(/\s+/g, ' ').trim();
+
 export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   const { config } = useConfig();
   const [step, setStep] = useState<'produtos' | 'carrinho' | 'cliente' | 'pagamento' | 'sucesso'>('produtos');
@@ -29,6 +39,8 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [clienteBusca, setClienteBusca] = useState('');
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [buscandoCliente, setBuscandoCliente] = useState(false);
+  const buscaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tipo, setTipo] = useState<'balcao' | 'delivery'>('balcao');
   const [taxas, setTaxas] = useState<TaxaEntrega[]>([]);
   const [bairro, setBairro] = useState('');
@@ -58,14 +70,37 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const buscaCliente = async (val: string) => {
+  // Busca cliente por nome (prioridade) ou telefone — com atraso de 300ms pra
+  // não disparar a cada tecla, texto limpo pra não quebrar o filtro do
+  // PostgREST, e estado de "buscando" pra dar retorno visual.
+  const buscaCliente = (val: string) => {
     setClienteBusca(val);
-    if (val.length >= 2) {
-      const { data } = await supabase.from('clientes').select('*').or(`nome.ilike.%${val}%,telefone.ilike.%${val}%`).limit(10);
-      setClientes((data as Cliente[]) || []);
-    } else {
+    if (buscaTimer.current) clearTimeout(buscaTimer.current);
+    const termo = sanitizaBusca(val);
+    if (termo.length < 2) {
       setClientes([]);
+      setBuscandoCliente(false);
+      return;
     }
+    setBuscandoCliente(true);
+    buscaTimer.current = setTimeout(async () => {
+      try {
+        const soDigitos = termo.replace(/\D/g, '');
+        const filtros = [`nome.ilike.%${termo}%`];
+        if (soDigitos.length >= 3) filtros.push(`telefone.ilike.%${soDigitos}%`);
+        const { data, error } = await supabase
+          .from('clientes')
+          .select('id, nome, telefone, endereco, bairro, cep, referencia')
+          .or(filtros.join(','))
+          .limit(10);
+        if (error) throw error;
+        setClientes((data as Cliente[]) || []);
+      } catch {
+        setClientes([]);
+      } finally {
+        setBuscandoCliente(false);
+      }
+    }, 300);
   };
 
   const categorias = [...new Set(produtos.map((p) => p.categoria_nome))];
@@ -239,12 +274,32 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
       if (numErr) throw numErr;
       const numero = (numData as number) || 1;
 
-      // Get or create cliente
+      // Get or create cliente — nome é o que importa (telefone é opcional).
+      // "Consumidor" é o rótulo genérico do balcão sem nome: não vira cadastro.
       let clienteId = cliente?.id || null;
-      if (!cliente && novoCliente.nome && novoCliente.telefone) {
-        const { data: nc, error: cliErr } = await supabase.from('clientes').insert(novoCliente).select().maybeSingle();
-        if (cliErr) throw cliErr;
-        clienteId = (nc as Cliente)?.id || null;
+      const nomeNovo = novoCliente.nome.trim();
+      if (!cliente && nomeNovo && normalizaNome(nomeNovo) !== 'consumidor') {
+        // Antes de criar, procura um cliente já salvo com o mesmo nome
+        // normalizado — evita "João" / "Joao" virarem cadastros diferentes.
+        const { data: existentes } = await supabase
+          .from('clientes')
+          .select('id, nome, telefone')
+          .ilike('nome', nomeNovo)
+          .limit(5);
+        const match = (existentes as Cliente[] | null || []).find(
+          (e) => normalizaNome(e.nome) === normalizaNome(nomeNovo),
+        );
+        if (match) {
+          clienteId = match.id;
+          // Completa o telefone no cadastro se ele estava vazio e agora veio um.
+          if (!match.telefone && novoCliente.telefone.trim()) {
+            await supabase.from('clientes').update({ telefone: novoCliente.telefone.trim() }).eq('id', match.id);
+          }
+        } else {
+          const { data: nc, error: cliErr } = await supabase.from('clientes').insert(novoCliente).select().maybeSingle();
+          if (cliErr) throw cliErr;
+          clienteId = (nc as Cliente)?.id || null;
+        }
       }
 
       const pedidoData = {
@@ -364,6 +419,9 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
     setCart([]);
     setCliente(null);
     setNovoCliente({ nome: '', telefone: '', endereco: '', bairro: '', cep: '', referencia: '' });
+    setClienteBusca('');
+    setClientes([]);
+    setBuscandoCliente(false);
     setBairro('');
     setObservacao('');
     setFormaPagamento('Dinheiro');
@@ -558,9 +616,13 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
         </div>
       )}
 
-      {/* Cliente step */}
+      {/* Cliente step — nome é o que importa; telefone é opcional */}
       {step === 'carrinho' && null}
-      {step === 'cliente' && (
+      {step === 'cliente' && (() => {
+        const nomeOk = !!cliente || !!novoCliente.nome.trim();
+        const entregaOk = tipo !== 'delivery' || (!!novoCliente.endereco.trim() && !!novoCliente.bairro);
+        const podeContinuar = nomeOk && entregaOk;
+        return (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <button onClick={() => setStep('carrinho')} className="flex items-center gap-1.5 text-neutral-500 hover:text-neutral-900 text-sm font-medium bg-neutral-200 px-3 py-2 rounded-xl">
@@ -569,56 +631,99 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
             <h3 className="text-xl font-bold text-neutral-900">Cliente</h3>
           </div>
 
-          {/* Search existing */}
-          <div className="relative">
-            <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-            <input
-              value={clienteBusca}
-              onChange={(e) => buscaCliente(e.target.value)}
-              placeholder="Buscar por nome ou telefone..."
-              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none"
-            />
-          </div>
-
-          {clientes.length > 0 && (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {clientes.map((c) => (
-                <button key={c.id} onClick={() => { setCliente(c); setBairro(c.bairro); setClienteBusca(''); setClientes([]); setStep('pagamento'); }} className="w-full text-left bg-white border border-neutral-200 rounded-xl p-3 hover:border-[#F26522]">
-                  <p className="text-neutral-900 font-medium">{c.nome}</p>
-                  <p className="text-neutral-500 text-sm flex items-center gap-1"><Phone size={12} /> {c.telefone} · {c.bairro}</p>
-                </button>
-              ))}
+          {/* Cliente já selecionado */}
+          {cliente ? (
+            <div className="bg-white border border-[#F26522] rounded-xl p-3 flex items-center justify-between">
+              <div>
+                <p className="text-neutral-900 font-medium">{cliente.nome}</p>
+                {(cliente.telefone || cliente.bairro) && (
+                  <p className="text-neutral-500 text-sm flex items-center gap-1">
+                    <Phone size={12} /> {cliente.telefone || 'sem telefone'}{cliente.bairro ? ` · ${cliente.bairro}` : ''}
+                  </p>
+                )}
+              </div>
+              <button onClick={() => { setCliente(null); setClienteBusca(''); }} className="text-neutral-400 hover:text-neutral-900"><X size={18} /></button>
             </div>
-          )}
+          ) : (
+            <>
+              {/* Nome do cliente = busca + cadastro no mesmo campo */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-neutral-500 text-sm">Nome do cliente</label>
+                  <button
+                    onClick={() => { setNovoCliente({ ...novoCliente, nome: 'Consumidor' }); setClienteBusca(''); setClientes([]); }}
+                    className="text-xs font-medium text-[#F26522] hover:underline"
+                  >
+                    Consumidor
+                  </button>
+                </div>
+                <div className="relative">
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                  <input
+                    autoFocus
+                    value={novoCliente.nome || clienteBusca}
+                    onChange={(e) => { setNovoCliente({ ...novoCliente, nome: e.target.value }); buscaCliente(e.target.value); }}
+                    placeholder="Digite o nome (ou telefone)"
+                    className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none"
+                  />
+                </div>
 
-          {/* New customer form */}
-          <div className="border-t border-neutral-200 pt-4 space-y-3">
-            <p className="text-neutral-500 text-sm">Cliente</p>
-            <input value={novoCliente.nome} onChange={(e) => setNovoCliente({ ...novoCliente, nome: e.target.value })} placeholder="Nome" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none" />
-            <input value={novoCliente.telefone} onChange={(e) => setNovoCliente({ ...novoCliente, telefone: e.target.value })} placeholder="Telefone (obrigatório)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none" />
-            {tipo === 'delivery' && (
-              <>
-                <input value={novoCliente.endereco} onChange={(e) => setNovoCliente({ ...novoCliente, endereco: e.target.value })} placeholder="Endereço" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none" />
-                <select value={novoCliente.bairro} onChange={(e) => { setNovoCliente({ ...novoCliente, bairro: e.target.value }); setBairro(e.target.value); }} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none">
-                  <option value="">Bairro...</option>
-                  {taxas.map((t) => <option key={t.id} value={t.bairro}>{t.bairro} - {brl(t.taxa)}</option>)}
-                </select>
-              </>
-            )}
-          </div>
+                {buscandoCliente && <p className="text-neutral-400 text-xs mt-1.5 pl-1">Buscando cadastro...</p>}
+                {!buscandoCliente && clientes.length > 0 && (
+                  <div className="mt-2 space-y-1.5 max-h-44 overflow-y-auto">
+                    {clientes.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => { setCliente(c); setBairro(c.bairro); setNovoCliente({ ...novoCliente, nome: '' }); setClienteBusca(''); setClientes([]); }}
+                        className="w-full text-left bg-white border border-neutral-200 rounded-xl p-2.5 hover:border-[#F26522]"
+                      >
+                        <p className="text-neutral-900 font-medium text-sm">{c.nome}</p>
+                        <p className="text-neutral-500 text-xs flex items-center gap-1"><Phone size={11} /> {c.telefone || 'sem telefone'}{c.bairro ? ` · ${c.bairro}` : ''}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!buscandoCliente && clienteBusca.trim().length >= 2 && clientes.length === 0 && (
+                  <p className="text-neutral-400 text-xs mt-1.5 pl-1">Nenhum cadastro — vai ser salvo como cliente novo.</p>
+                )}
+              </div>
+
+              {/* Telefone opcional */}
+              <input
+                value={novoCliente.telefone}
+                onChange={(e) => setNovoCliente({ ...novoCliente, telefone: e.target.value })}
+                placeholder="Telefone (opcional)"
+                inputMode="tel"
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none"
+              />
+
+              {tipo === 'delivery' && (
+                <>
+                  <input value={novoCliente.endereco} onChange={(e) => setNovoCliente({ ...novoCliente, endereco: e.target.value })} placeholder="Endereço" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none" />
+                  <select value={novoCliente.bairro} onChange={(e) => { setNovoCliente({ ...novoCliente, bairro: e.target.value }); setBairro(e.target.value); }} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#F26522] focus:outline-none">
+                    <option value="">Bairro...</option>
+                    {taxas.map((t) => <option key={t.id} value={t.bairro}>{t.bairro} - {brl(t.taxa)}</option>)}
+                  </select>
+                </>
+              )}
+            </>
+          )}
 
           <button
             onClick={() => setStep('pagamento')}
-            disabled={!cliente && !novoCliente.telefone.trim()}
+            disabled={!podeContinuar}
             className="w-full bg-[#F26522] text-white py-4 rounded-xl font-bold text-lg active:scale-95 disabled:opacity-40 disabled:active:scale-100"
           >
             Continuar
           </button>
-          {!cliente && !novoCliente.telefone.trim() && (
-            <p className="text-center text-neutral-500 text-xs">Informe o telefone para continuar — é o que permite mandar promoção e reconhecer o cliente na próxima compra.</p>
+          {!podeContinuar && (
+            <p className="text-center text-neutral-500 text-xs">
+              {!nomeOk ? 'Informe o nome do cliente (ou toque em "Consumidor").' : 'Preencha endereço e bairro para a entrega.'}
+            </p>
           )}
         </div>
-      )}
+        );
+      })()}
 
       {/* Pagamento step */}
       {step === 'pagamento' && (

@@ -6,11 +6,14 @@ import { Search, Phone, MapPin, Users } from 'lucide-react';
 
 /**
  * Painel de Clientes — não existia nenhuma tela pra isso no app. Agrega os
- * pedidos por telefone (só dá pra identificar cliente de verdade quem tem
- * telefone salvo — pedidos sem telefone ficam de fora dessa análise) pra
- * mostrar recorrência, ticket médio por pessoa e quem sumiu, sem precisar de
- * nenhuma tabela nova: tudo já está em `pedidos`.
+ * pedidos por NOME (normalizado: sem acento/espaço/maiúscula), já que no
+ * Balcão o nome é o dado obrigatório e o telefone é opcional. Pedidos sem
+ * nome ou marcados como "Consumidor" ficam de fora (não é cliente
+ * identificável). Nada de tabela nova: tudo já está em `pedidos`.
  */
+const normalizaNome = (s: string) =>
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+
 interface ClienteStats {
   chave: string;
   nome: string;
@@ -47,20 +50,24 @@ export function Clientes() {
     const map = new Map<string, ClienteStats>();
 
     for (const p of pedidos) {
+      const nome = (p.cliente_nome || '').trim();
+      const chave = normalizaNome(nome);
+      // Sem nome ou "Consumidor" (rótulo genérico do balcão) não é cliente identificável.
+      if (!chave || chave === 'consumidor') continue;
       const telefone = (p.cliente_telefone || '').trim();
-      if (!telefone) continue;
       const total = Number(p.total) || 0;
-      const existing = map.get(telefone);
+      const existing = map.get(chave);
       if (existing) {
         existing.pedidos += 1;
         existing.totalGasto += total;
         existing.ultimaCompra = p.created_at;
         if (p.cliente_bairro) existing.bairro = p.cliente_bairro;
-        if (p.cliente_nome) existing.nome = p.cliente_nome;
+        if (telefone) existing.telefone = telefone;
+        if (nome) existing.nome = nome;
       } else {
-        map.set(telefone, {
-          chave: telefone,
-          nome: p.cliente_nome || 'Consumidor',
+        map.set(chave, {
+          chave,
+          nome: nome || 'Cliente',
           telefone,
           bairro: p.cliente_bairro || '',
           pedidos: 1,
@@ -150,7 +157,7 @@ export function Clientes() {
         <div className="text-center py-12 text-neutral-500">
           <Users size={32} className="mx-auto mb-2 opacity-40" />
           {stats.length === 0
-            ? 'Nenhum pedido com telefone registrado ainda. A partir de agora o Balcão exige telefone, então esse painel vai preencher com o tempo.'
+            ? 'Nenhum cliente identificado ainda. Conforme o Balcão for registrando o nome dos clientes, esse painel vai preencher.'
             : 'Nenhum cliente encontrado com esse filtro.'}
         </div>
       ) : (
@@ -171,7 +178,7 @@ export function Clientes() {
                   )}
                 </div>
                 <p className="text-neutral-500 text-xs flex items-center gap-3 mt-1 flex-wrap">
-                  <span className="flex items-center gap-1"><Phone size={12} /> {c.telefone}</span>
+                  <span className="flex items-center gap-1"><Phone size={12} /> {c.telefone || 'sem telefone'}</span>
                   {c.bairro && <span className="flex items-center gap-1"><MapPin size={12} /> {c.bairro}</span>}
                 </p>
                 {fidelidadeAtiva && (
