@@ -918,24 +918,21 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
         />
       )}
 
-      {/* Carrinho flutuante — fica sempre à mão enquanto escolhe os produtos.
-          Os itens ficam salvos no carrinho; dá pra ir e voltar adicionando
-          mais sem perder nada. Fica acima da barra de navegação no mobile. */}
+      {/* Carrinho flutuante — pílula fixa no topo, sempre à mão enquanto
+          escolhe os produtos. Os itens ficam salvos; dá pra ir e voltar
+          adicionando mais sem perder nada. */}
       {step === 'produtos' && cart.length > 0 && (
         <button
           onClick={() => setStep('carrinho')}
-          className="fixed z-30 bottom-20 lg:bottom-6 left-3 right-3 lg:left-auto lg:right-8 lg:w-96 bg-[#F26522] text-white rounded-2xl shadow-[0_8px_24px_rgba(242,101,34,0.35)] px-4 py-3 flex items-center justify-between active:scale-[0.98] transition-transform"
+          className="fixed z-40 top-2 right-3 lg:top-3 lg:right-8 bg-[#F26522] text-white rounded-full shadow-[0_8px_24px_rgba(242,101,34,0.35)] pl-3 pr-4 py-2.5 flex items-center gap-2.5 active:scale-[0.97] transition-transform"
         >
-          <span className="flex items-center gap-2 font-semibold">
-            <span className="relative">
-              <ShoppingCart size={22} />
-              <span className="absolute -top-2 -right-2 bg-white text-[#F26522] text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center">
-                {cart.reduce((s, c) => s + c.quantidade, 0)}
-              </span>
+          <span className="relative">
+            <ShoppingCart size={20} />
+            <span className="absolute -top-2 -right-2 bg-white text-[#F26522] text-[10px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">
+              {cart.reduce((s, c) => s + c.quantidade, 0)}
             </span>
-            Ver carrinho
           </span>
-          <span className="font-black text-lg">{brl(subtotal)}</span>
+          <span className="font-black">{brl(subtotal)}</span>
         </button>
       )}
     </div>
