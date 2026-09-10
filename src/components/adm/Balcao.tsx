@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useConfig } from '../../context/ConfigContext';
 import { brl, todayISO } from '../../lib/format';
-import { printReceipt } from '../../lib/print';
-import type { Produto, Cliente, ItemPedido, TaxaEntrega, Adicional, Pedido } from '../../types';
-import { Search, Plus, Minus, X, ShoppingCart, Printer, Check, Phone, ArrowLeft, CloudOff } from 'lucide-react';
+import { printReceipt, printMesaComanda } from '../../lib/print';
+import type { Produto, Cliente, ItemPedido, TaxaEntrega, Adicional, Pedido, Mesa, ItemMesa } from '../../types';
+import { Search, Plus, Minus, X, ShoppingCart, Printer, Check, Phone, ArrowLeft, CloudOff, LayoutGrid } from 'lucide-react';
 import { ProductPlaceholder, usaImagemPadrao } from '../ProductPlaceholder';
 import { queueOfflinePedido } from '../../lib/offlineQueue';
 
@@ -41,9 +41,12 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [buscandoCliente, setBuscandoCliente] = useState(false);
   const buscaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [tipo, setTipo] = useState<'balcao' | 'delivery'>('balcao');
+  const [tipo, setTipo] = useState<'balcao' | 'delivery' | 'mesa'>('balcao');
   const [taxas, setTaxas] = useState<TaxaEntrega[]>([]);
   const [bairro, setBairro] = useState('');
+  const [mesas, setMesas] = useState<Mesa[]>([]);
+  const [mesaSelecionada, setMesaSelecionada] = useState<string | null>(null);
+  const [mesaLancada, setMesaLancada] = useState<number | null>(null);
   const [formaPagamento, setFormaPagamento] = useState('Dinheiro');
   const [observacao, setObservacao] = useState('');
   const [novoCliente, setNovoCliente] = useState({ nome: '', telefone: '', endereco: '', bairro: '', cep: '', referencia: '' });
@@ -58,14 +61,16 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   const [pedidoOffline, setPedidoOffline] = useState(false);
 
   const load = useCallback(async () => {
-    const [p, a, t] = await Promise.all([
+    const [p, a, t, m] = await Promise.all([
       supabase.from('produtos').select('*').eq('ativo', true).order('categoria_nome').order('nome'),
       supabase.from('adicionais').select('*').eq('ativo', true).order('nome'),
       supabase.from('taxa_entrega').select('*').eq('ativo', true).order('bairro'),
+      supabase.from('mesas').select('id, numero, status, abertura_at').order('numero'),
     ]);
     setProdutos((p.data as Produto[]) || []);
     setAdicionais((a.data as Adicional[]) || []);
     setTaxas((t.data as TaxaEntrega[]) || []);
+    setMesas((m.data as Mesa[]) || []);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -361,6 +366,54 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
     }
   };
 
+  // Lança os itens do carrinho direto numa mesa do salão (em vez de fechar um
+  // pedido). A mesa é fechada depois pelo módulo Mesas com o fluxo padrão
+  // (RPC fechar_mesa → pedido tipo=mesa + caixa). Mesma mecânica que o
+  // MesaDetalhe.handleAddItens usa quando lança item pelo salão.
+  const lancarNaMesa = async () => {
+    if (cart.length === 0 || !mesaSelecionada) return;
+    const mesa = mesas.find((m) => m.id === mesaSelecionada);
+    if (!mesa) return;
+    if (!navigator.onLine) {
+      alert('Lançar na mesa precisa de internet. Tente de novo quando a conexão voltar.');
+      return;
+    }
+    try {
+      const novos = cart.map((c) => ({
+        mesa_id: mesa.id,
+        produto_id: c.produto_id,
+        produto_nome: c.produto_nome,
+        quantidade: c.quantidade,
+        preco_unitario: c.preco_unitario,
+        custo_unitario: c.custo_unitario,
+        observacao: c.observacao,
+        sabor1: c.sabor1,
+        sabor2: c.sabor2,
+        adicional: c.adicional,
+        adicional_preco: c.adicional_preco,
+      }));
+      const { data: inserted, error } = await supabase.from('itens_mesa').insert(novos).select();
+      if (error) throw error;
+
+      if (mesa.status === 'livre') {
+        await supabase.from('mesas').update({ status: 'ocupada', abertura_at: new Date().toISOString() }).eq('id', mesa.id);
+      } else if (mesa.status === 'fechando') {
+        await supabase.from('mesas').update({ status: 'ocupada' }).eq('id', mesa.id);
+      }
+
+      if (config && inserted && inserted.length > 0) {
+        printMesaComanda(mesa.numero, inserted as ItemMesa[], config);
+      }
+
+      setMesaLancada(mesa.numero);
+      setCart([]);
+      setStep('sucesso');
+      onOrderComplete();
+    } catch (e: any) {
+      alert('Erro ao lançar na mesa: ' + (e?.message || 'tente novamente'));
+    }
+  };
+
   // Salva o pedido no navegador (localStorage) para envio automático assim
   // que a internet voltar. Mostra um número temporário (não é o número
   // sequencial oficial — esse só existe quando sincroniza com o servidor).
@@ -425,12 +478,33 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
     setBairro('');
     setObservacao('');
     setFormaPagamento('Dinheiro');
+    setTipo('balcao');
+    setMesaSelecionada(null);
+    setMesaLancada(null);
     setStep('produtos');
     setUltimoPedido(null);
+    load();
   };
 
   // === SUCESSO ===
   if (step === 'sucesso') {
+    // Variante Mesa: itens foram pra uma mesa do salão, não viraram pedido.
+    if (mesaLancada !== null) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[70vh] animate-fadeIn">
+          <div className="w-24 h-24 rounded-full flex items-center justify-center mb-4 bg-green-500/20">
+            <LayoutGrid size={44} className="text-green-600" />
+          </div>
+          <h2 className="text-3xl font-black text-neutral-900">MESA {mesaLancada}</h2>
+          <p className="text-neutral-500 mt-2 text-center max-w-sm">
+            Itens lançados e comanda enviada pra cozinha. A conta fecha pelo módulo <b className="text-neutral-700">Mesas</b>, como sempre.
+          </p>
+          <button onClick={reset} className="mt-6 flex items-center gap-2 bg-[#F26522] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#f6121d]">
+            <Plus size={20} /> Novo Pedido
+          </button>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] animate-fadeIn">
         <div className={`w-24 h-24 rounded-full flex items-center justify-center mb-4 ${pedidoOffline ? 'bg-amber-500/20' : 'bg-green-500/20'}`}>
@@ -469,21 +543,14 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
 
   return (
     <div className="space-y-4 animate-fadeIn">
-      {/* Header with cart button */}
+      {/* Header — o carrinho principal agora é a barra flutuante embaixo */}
       <div className="flex items-center justify-between gap-3 sticky top-0 lg:top-[57px] z-10 bg-[#FBF6EF] py-2">
         <h2 className="text-2xl font-bold text-neutral-900">Balcão Rápido</h2>
-        <button
-          onClick={() => setStep('carrinho')}
-          className="relative flex items-center gap-2 bg-[#F26522] text-white px-5 py-3 rounded-xl font-bold text-lg active:scale-95"
-        >
-          <ShoppingCart size={22} />
-          Carrinho
-          {cart.length > 0 && (
-            <span className="absolute -top-2 -right-2 bg-[#22c55e] text-black text-xs font-black w-6 h-6 rounded-full flex items-center justify-center">
-              {cart.reduce((s, c) => s + c.quantidade, 0)}
-            </span>
-          )}
-        </button>
+        {step !== 'produtos' && (
+          <button onClick={() => setStep('produtos')} className="flex items-center gap-1.5 text-neutral-500 hover:text-neutral-900 text-sm font-medium bg-neutral-200 px-3 py-2 rounded-xl">
+            <ArrowLeft size={16} /> Cardápio
+          </button>
+        )}
       </div>
 
       {step === 'produtos' && (
@@ -580,10 +647,15 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
                 ))}
               </div>
 
+              <button onClick={() => setStep('produtos')} className="w-full flex items-center justify-center gap-2 border border-[#F26522] text-[#F26522] rounded-xl py-2.5 font-semibold hover:bg-[#FDECE3]">
+                <Plus size={18} /> Adicionar mais itens
+              </button>
+
               {/* Type selector */}
-              <div className="flex gap-2">
-                <button onClick={() => setTipo('balcao')} className={`flex-1 py-3 rounded-xl font-semibold ${tipo === 'balcao' ? 'bg-[#F26522] text-white' : 'bg-neutral-200 text-neutral-500'}`}>Balcão</button>
-                <button onClick={() => setTipo('delivery')} className={`flex-1 py-3 rounded-xl font-semibold ${tipo === 'delivery' ? 'bg-[#F26522] text-white' : 'bg-neutral-200 text-neutral-500'}`}>Entrega</button>
+              <div className="grid grid-cols-3 gap-2">
+                <button onClick={() => setTipo('balcao')} className={`py-3 rounded-xl font-semibold ${tipo === 'balcao' ? 'bg-[#F26522] text-white' : 'bg-neutral-200 text-neutral-500'}`}>Balcão</button>
+                <button onClick={() => setTipo('delivery')} className={`py-3 rounded-xl font-semibold ${tipo === 'delivery' ? 'bg-[#F26522] text-white' : 'bg-neutral-200 text-neutral-500'}`}>Entrega</button>
+                <button onClick={() => setTipo('mesa')} className={`py-3 rounded-xl font-semibold ${tipo === 'mesa' ? 'bg-[#F26522] text-white' : 'bg-neutral-200 text-neutral-500'}`}>Mesa</button>
               </div>
 
               {tipo === 'delivery' && (
@@ -601,16 +673,53 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
                 </div>
               )}
 
+              {tipo === 'mesa' && (
+                <div>
+                  <label className="text-neutral-500 text-sm">Mesa</label>
+                  <div className="grid grid-cols-4 gap-2 mt-1">
+                    {mesas.map((m) => {
+                      const sel = mesaSelecionada === m.id;
+                      const ocupada = m.status !== 'livre';
+                      return (
+                        <button
+                          key={m.id}
+                          onClick={() => setMesaSelecionada(m.id)}
+                          className={`py-3 rounded-xl font-bold text-center border transition-colors ${
+                            sel ? 'bg-[#F26522] text-white border-[#F26522]'
+                            : ocupada ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : 'bg-white text-neutral-700 border-neutral-200'
+                          }`}
+                        >
+                          {m.numero}
+                          <span className="block text-[10px] font-medium opacity-80">{ocupada ? 'em uso' : 'livre'}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-neutral-500 text-xs mt-2">Os itens entram na mesa. A conta fecha pelo módulo Mesas, com o fluxo de sempre.</p>
+                </div>
+              )}
+
               {/* Totals */}
               <div className="bg-white border border-neutral-200 rounded-2xl p-4 space-y-2">
                 <div className="flex justify-between text-neutral-500"><span>Subtotal</span><span className="text-neutral-900">{brl(subtotal)}</span></div>
                 {tipo === 'delivery' && <div className="flex justify-between text-neutral-500"><span>Entrega</span><span className="text-neutral-900">{brl(taxaEntrega)}</span></div>}
-                <div className="flex justify-between text-xl font-bold border-t border-neutral-200 pt-2"><span className="text-neutral-900">Total</span><span className="text-[#22c55e]">{brl(total)}</span></div>
+                <div className="flex justify-between text-xl font-bold border-t border-neutral-200 pt-2"><span className="text-neutral-900">Total</span><span className="text-[#22c55e]">{brl(tipo === 'mesa' ? subtotal : total)}</span></div>
               </div>
 
-              <button onClick={() => setStep('cliente')} className="w-full bg-[#F26522] text-white py-4 rounded-xl font-bold text-lg active:scale-95">
-                Continuar
-              </button>
+              {tipo === 'mesa' ? (
+                <button
+                  onClick={lancarNaMesa}
+                  disabled={!mesaSelecionada}
+                  className="w-full bg-[#F26522] text-white py-4 rounded-xl font-bold text-lg active:scale-95 disabled:opacity-40 disabled:active:scale-100"
+                >
+                  {mesaSelecionada ? `Lançar na Mesa ${mesas.find((m) => m.id === mesaSelecionada)?.numero ?? ''}` : 'Selecione uma mesa'}
+                </button>
+              ) : (
+                <button onClick={() => setStep('cliente')} className="w-full bg-[#F26522] text-white py-4 rounded-xl font-bold text-lg active:scale-95">
+                  Continuar
+                </button>
+              )}
             </>
           )}
         </div>
@@ -807,6 +916,27 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
           onConfirm={confirmSabor}
           onClose={() => setShowSabores(null)}
         />
+      )}
+
+      {/* Carrinho flutuante — fica sempre à mão enquanto escolhe os produtos.
+          Os itens ficam salvos no carrinho; dá pra ir e voltar adicionando
+          mais sem perder nada. Fica acima da barra de navegação no mobile. */}
+      {step === 'produtos' && cart.length > 0 && (
+        <button
+          onClick={() => setStep('carrinho')}
+          className="fixed z-30 bottom-20 lg:bottom-6 left-3 right-3 lg:left-auto lg:right-8 lg:w-96 bg-[#F26522] text-white rounded-2xl shadow-[0_8px_24px_rgba(242,101,34,0.35)] px-4 py-3 flex items-center justify-between active:scale-[0.98] transition-transform"
+        >
+          <span className="flex items-center gap-2 font-semibold">
+            <span className="relative">
+              <ShoppingCart size={22} />
+              <span className="absolute -top-2 -right-2 bg-white text-[#F26522] text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center">
+                {cart.reduce((s, c) => s + c.quantidade, 0)}
+              </span>
+            </span>
+            Ver carrinho
+          </span>
+          <span className="font-black text-lg">{brl(subtotal)}</span>
+        </button>
       )}
     </div>
   );
