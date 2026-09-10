@@ -186,9 +186,9 @@ export function Cliente() {
           <Check size={48} className="text-green-600" />
         </div>
         <h1 className="font-display text-3xl font-bold text-neutral-900 text-center">Pedido Recebido!</h1>
-        <p className="text-neutral-500 mt-2 text-center">Seu pedido <span className="text-[#DC2626] font-bold">#{ultimoNum}</span> foi confirmado.</p>
+        <p className="text-neutral-500 mt-2 text-center">Seu pedido <span className="text-[#B91C1C] font-bold">#{ultimoNum}</span> foi confirmado.</p>
         <p className="text-neutral-500 text-sm mt-1 text-center">Acompanhe o status: Confirmado {'>'} Entregue</p>
-        <button onClick={() => { setStep('menu'); setCliente({ nome: '', telefone: '', endereco: '', bairro: '', cep: '', referencia: '' }); }} className="mt-8 bg-[#DC2626] text-white px-8 py-3 rounded-xl font-bold">
+        <button onClick={() => { setStep('menu'); setCliente({ nome: '', telefone: '', endereco: '', bairro: '', cep: '', referencia: '' }); }} className="mt-8 bg-[#B91C1C] text-white px-8 py-3 rounded-xl font-bold">
           Fazer Novo Pedido
         </button>
       </div>
@@ -209,7 +209,7 @@ export function Cliente() {
           </div>
           <button
             onClick={() => setShowCart(true)}
-            className="relative flex items-center gap-2 bg-[#DC2626] text-white px-3.5 py-2 rounded-xl font-semibold text-sm active:scale-95 hover:bg-red-600 hover:shadow-md transition-all"
+            className="relative flex items-center gap-2 bg-[#B91C1C] text-white px-3.5 py-2 rounded-xl font-semibold text-sm active:scale-95 hover:bg-red-600 hover:shadow-md transition-all"
           >
             <ShoppingCart size={18} />
             {cart.length > 0 && (
@@ -251,7 +251,7 @@ export function Cliente() {
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
             placeholder="Buscar no cardápio..."
-            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none"
+            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-10 pr-4 py-3 text-neutral-900 focus:border-[#B91C1C] focus:outline-none"
           />
         </div>
       </div>
@@ -259,9 +259,9 @@ export function Cliente() {
       {/* Categories */}
       <div className="max-w-4xl mx-auto px-4 mt-3">
         <div className="flex gap-2 overflow-x-auto pb-1">
-          <button onClick={() => setCatFiltro('todas')} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === 'todas' ? 'bg-[#DC2626] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-600'}`}>Todos</button>
+          <button onClick={() => setCatFiltro('todas')} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === 'todas' ? 'bg-[#B91C1C] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-600'}`}>Todos</button>
           {categorias.map((c) => (
-            <button key={c} onClick={() => setCatFiltro(c)} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === c ? 'bg-[#DC2626] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-600'}`}>{c}</button>
+            <button key={c} onClick={() => setCatFiltro(c)} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors ${catFiltro === c ? 'bg-[#B91C1C] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-500 hover:text-neutral-900 hover:border-neutral-600'}`}>{c}</button>
           ))}
         </div>
       </div>
@@ -279,7 +279,7 @@ export function Cliente() {
                   <button
                     key={p.id}
                     onClick={() => handleProductClick(p)}
-                    className="group relative bg-white border border-neutral-200 rounded-2xl overflow-hidden text-left hover:border-[#DC2626]/60 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/40 active:scale-95 transition-all"
+                    className="group relative bg-white border border-neutral-200 rounded-2xl overflow-hidden text-left hover:border-[#B91C1C]/60 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/40 active:scale-95 transition-all"
                   >
                     <div className="relative aspect-square w-full overflow-hidden">
                       {p.foto && !usaImagemPadrao(p.categoria_nome) ? (
@@ -297,13 +297,13 @@ export function Cliente() {
                           <Star size={10} fill="currentColor" /> Destaque
                         </span>
                       )}
-                      <span className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-[#DC2626] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                      <span className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-[#B91C1C] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
                         <Plus size={18} />
                       </span>
                     </div>
                     <div className="p-3">
                       <p className="text-neutral-900 font-semibold text-sm leading-tight line-clamp-2">{p.nome}</p>
-                      <p className="text-[#DC2626] font-black text-lg mt-1.5">{brl(p.preco)}</p>
+                      <p className="text-[#B91C1C] font-black text-lg mt-1.5">{brl(p.preco)}</p>
                     </div>
                   </button>
                 ))}
@@ -352,7 +352,7 @@ export function Cliente() {
                     <div className="flex justify-between text-neutral-500 text-sm"><span>Entrega</span><span className="text-neutral-900">{brl(taxaEntrega)}</span></div>
                     <div className="flex justify-between font-bold text-lg border-t border-neutral-200 pt-2"><span className="text-neutral-900">Total</span><span className="text-[#22c55e]">{brl(total)}</span></div>
                   </div>
-                  <button onClick={() => { setShowCart(false); setStep('checkout'); }} className="w-full bg-[#DC2626] text-white py-4 rounded-xl font-bold text-lg active:scale-95">
+                  <button onClick={() => { setShowCart(false); setStep('checkout'); }} className="w-full bg-[#B91C1C] text-white py-4 rounded-xl font-bold text-lg active:scale-95">
                     Finalizar Pedido
                   </button>
                 </>
@@ -373,14 +373,14 @@ export function Cliente() {
             {/* Customer data */}
             <div className="space-y-3">
               <h4 className="text-neutral-900 font-semibold">Seus dados</h4>
-              <input value={cliente.nome} onChange={(e) => setCliente({ ...cliente, nome: e.target.value })} placeholder="Nome completo" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
-              <input value={cliente.telefone} onChange={(e) => setCliente({ ...cliente, telefone: e.target.value })} placeholder="Telefone / WhatsApp" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
-              <input value={cliente.endereco} onChange={(e) => setCliente({ ...cliente, endereco: e.target.value })} placeholder="Endereço (rua, número)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
-              <select value={cliente.bairro || bairro} onChange={(e) => { setCliente({ ...cliente, bairro: e.target.value }); setBairro(e.target.value); }} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none">
+              <input value={cliente.nome} onChange={(e) => setCliente({ ...cliente, nome: e.target.value })} placeholder="Nome completo" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B91C1C] focus:outline-none" />
+              <input value={cliente.telefone} onChange={(e) => setCliente({ ...cliente, telefone: e.target.value })} placeholder="Telefone / WhatsApp" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B91C1C] focus:outline-none" />
+              <input value={cliente.endereco} onChange={(e) => setCliente({ ...cliente, endereco: e.target.value })} placeholder="Endereço (rua, número)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B91C1C] focus:outline-none" />
+              <select value={cliente.bairro || bairro} onChange={(e) => { setCliente({ ...cliente, bairro: e.target.value }); setBairro(e.target.value); }} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B91C1C] focus:outline-none">
                 <option value="">Selecione o bairro...</option>
                 {taxas.map((t) => <option key={t.id} value={t.bairro}>{t.bairro} - Entrega {brl(t.taxa)}</option>)}
               </select>
-              <input value={cliente.referencia} onChange={(e) => setCliente({ ...cliente, referencia: e.target.value })} placeholder="Ponto de referência (opcional)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
+              <input value={cliente.referencia} onChange={(e) => setCliente({ ...cliente, referencia: e.target.value })} placeholder="Ponto de referência (opcional)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B91C1C] focus:outline-none" />
             </div>
 
             {/* Payment */}
@@ -388,13 +388,13 @@ export function Cliente() {
               <h4 className="text-neutral-900 font-semibold">Pagamento</h4>
               <div className="grid grid-cols-3 gap-2">
                 {['Pix', 'Cartão', 'Dinheiro'].map((f) => (
-                  <button key={f} onClick={() => setFormaPagamento(f)} className={`py-3 rounded-xl font-medium ${formaPagamento === f ? 'bg-[#DC2626] text-white' : 'bg-neutral-200 text-neutral-500'}`}>{f}</button>
+                  <button key={f} onClick={() => setFormaPagamento(f)} className={`py-3 rounded-xl font-medium ${formaPagamento === f ? 'bg-[#B91C1C] text-white' : 'bg-neutral-200 text-neutral-500'}`}>{f}</button>
                 ))}
               </div>
             </div>
 
             <div>
-              <input value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Observação (ex: sem cebola, troco para R$50)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
+              <input value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Observação (ex: sem cebola, troco para R$50)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B91C1C] focus:outline-none" />
             </div>
 
             {/* Summary */}
@@ -468,7 +468,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
         <p className="text-neutral-500 text-sm mb-2">{isCombo ? `Esfirra${comboDuo ? ' 1' : ''}` : 'Sabor 1'}</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">
           {opcoesSabor.map((p) => (
-            <button key={p.id} onClick={() => setSabor1(p)} className={`p-3 rounded-xl text-left transition-colors ${sabor1?.id === p.id ? 'bg-[#DC2626] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
+            <button key={p.id} onClick={() => setSabor1(p)} className={`p-3 rounded-xl text-left transition-colors ${sabor1?.id === p.id ? 'bg-[#B91C1C] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
               <p className="font-medium text-sm">{p.nome}</p>
               {!isCombo && <p className="text-xs opacity-70">{brl(p.preco)}</p>}
             </button>
@@ -480,7 +480,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
             <p className="text-neutral-500 text-sm mb-2">{isCombo ? 'Esfirra 2' : 'Sabor 2 — meio a meio (cobra o mais caro)'}</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">
               {opcoesSabor.map((p) => (
-                <button key={p.id} onClick={() => setSabor2(sabor2?.id === p.id ? null : p)} className={`p-3 rounded-xl text-left transition-colors ${sabor2?.id === p.id ? 'bg-[#DC2626] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
+                <button key={p.id} onClick={() => setSabor2(sabor2?.id === p.id ? null : p)} className={`p-3 rounded-xl text-left transition-colors ${sabor2?.id === p.id ? 'bg-[#B91C1C] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
                   <p className="font-medium text-sm">{p.nome}</p>
                   {!isCombo && <p className="text-xs opacity-70">{brl(p.preco)}</p>}
                 </button>
@@ -493,11 +493,11 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
           <>
             <p className="text-neutral-500 text-sm mb-2">Adicionais</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-              <button onClick={() => setSelectedAdicional(null)} className={`p-3 rounded-xl text-left transition-colors ${!selectedAdicional ? 'bg-[#DC2626] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
+              <button onClick={() => setSelectedAdicional(null)} className={`p-3 rounded-xl text-left transition-colors ${!selectedAdicional ? 'bg-[#B91C1C] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
                 <p className="font-medium text-sm">Nenhum</p>
               </button>
               {adicionais.map((a) => (
-                <button key={a.id} onClick={() => setSelectedAdicional(a)} className={`p-3 rounded-xl text-left transition-colors ${selectedAdicional?.id === a.id ? 'bg-[#DC2626] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
+                <button key={a.id} onClick={() => setSelectedAdicional(a)} className={`p-3 rounded-xl text-left transition-colors ${selectedAdicional?.id === a.id ? 'bg-[#B91C1C] text-white' : 'bg-neutral-100 text-neutral-700 border border-neutral-200 hover:border-neutral-600'}`}>
                   <p className="font-medium text-sm">{a.nome}</p>
                   <p className="text-xs opacity-70">+{brl(a.preco)}</p>
                 </button>
@@ -507,7 +507,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
         )}
 
         <div className="mb-4">
-          <input value={itemObs} onChange={(e) => setItemObs(e.target.value)} placeholder="Observação (ex: sem cebola)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
+          <input value={itemObs} onChange={(e) => setItemObs(e.target.value)} placeholder="Observação (ex: sem cebola)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B91C1C] focus:outline-none" />
         </div>
 
         <div className="flex items-center justify-between bg-neutral-100 rounded-xl p-3 mb-4">

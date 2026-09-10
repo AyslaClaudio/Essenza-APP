@@ -43,7 +43,7 @@ export function Financeiro() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === t.id ? 'bg-[#DC2626] text-white' : 'bg-neutral-200 text-neutral-500'}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${tab === t.id ? 'bg-[#B91C1C] text-white' : 'bg-neutral-200 text-neutral-500'}`}
           >
             <t.icon size={16} /> {t.label}
           </button>
@@ -110,7 +110,7 @@ function Caixa() {
         </div>
       </div>
 
-      <button onClick={() => setShowForm(true)} className="w-full bg-[#DC2626] text-white py-3 rounded-xl font-bold active:scale-95">
+      <button onClick={() => setShowForm(true)} className="w-full bg-[#B91C1C] text-white py-3 rounded-xl font-bold active:scale-95">
         Lançar Movimentação
       </button>
 
@@ -142,14 +142,14 @@ function Caixa() {
               <button onClick={() => setTipo('entrada')} className={`flex-1 py-3 rounded-xl font-semibold ${tipo === 'entrada' ? 'bg-green-500 text-white' : 'bg-neutral-200 text-neutral-500'}`}>Entrada</button>
               <button onClick={() => setTipo('saida')} className={`flex-1 py-3 rounded-xl font-semibold ${tipo === 'saida' ? 'bg-red-500 text-white' : 'bg-neutral-200 text-neutral-500'}`}>Saída</button>
             </div>
-            <input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Descrição" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#DC2626] focus:outline-none" />
-            <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#DC2626] focus:outline-none" />
-            <select value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#DC2626] focus:outline-none">
+            <input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Descrição" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#B91C1C] focus:outline-none" />
+            <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#B91C1C] focus:outline-none" />
+            <select value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#B91C1C] focus:outline-none">
               <option>Dinheiro</option><option>Cartão</option><option>Pix</option><option>Outro</option>
             </select>
             <div className="flex gap-2">
               <button onClick={() => setShowForm(false)} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-              <button onClick={save} className="flex-1 py-3 bg-[#DC2626] text-white rounded-xl font-semibold">Salvar</button>
+              <button onClick={save} className="flex-1 py-3 bg-[#B91C1C] text-white rounded-xl font-semibold">Salvar</button>
             </div>
           </div>
         </div>
@@ -214,7 +214,7 @@ function CustosOperacionais() {
           <p className="text-red-600 font-bold text-2xl">{brl(total)}</p>
         </div>
         <input type="month" value={mes} onChange={(e) => setMes(e.target.value)}
-          className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-sm text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
+          className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-sm text-neutral-900 focus:border-[#B91C1C] focus:outline-none" />
       </div>
 
       {/* Form de lançamento */}
@@ -222,13 +222,13 @@ function CustosOperacionais() {
         <p className="text-neutral-900 font-semibold text-sm">Lançar custo</p>
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px_150px_auto] gap-2">
           <input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex: Salário João, Aluguel, Energia"
-            className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
+            className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B91C1C] focus:outline-none" />
           <input value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor R$" inputMode="decimal"
-            className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
+            className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B91C1C] focus:outline-none" />
           <input type="date" value={data} onChange={(e) => setData(e.target.value)}
-            className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
+            className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B91C1C] focus:outline-none" />
           <button onClick={salvar} disabled={salvando || !descricao.trim() || !valor}
-            className="bg-[#DC2626] text-white px-5 py-3 rounded-xl font-semibold disabled:opacity-40">Lançar</button>
+            className="bg-[#B91C1C] text-white px-5 py-3 rounded-xl font-semibold disabled:opacity-40">Lançar</button>
         </div>
       </div>
 
@@ -334,7 +334,7 @@ function Fechamento() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <input type="date" value={dataFiltro} onChange={(e) => setDataFiltro(e.target.value)} className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 focus:border-[#DC2626] focus:outline-none" />
+        <input type="date" value={dataFiltro} onChange={(e) => setDataFiltro(e.target.value)} className="bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 focus:border-[#B91C1C] focus:outline-none" />
         <button onClick={printFechamento} className="flex items-center gap-2 bg-neutral-200 text-neutral-900 px-4 py-2.5 rounded-xl text-sm hover:bg-neutral-700">
           <Printer size={18} /> Imprimir
         </button>
@@ -600,7 +600,7 @@ function Relatorios() {
             onClick={() => setTabAtiva(t.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap ${
               tabAtiva === t.id
-                ? 'bg-[#DC2626] text-white'
+                ? 'bg-[#B91C1C] text-white'
                 : 'bg-neutral-200 text-neutral-500 hover:bg-neutral-700'
             }`}
           >
@@ -672,7 +672,7 @@ function Relatorios() {
           {periodoEmAndamento && (
             <div className="bg-white border border-neutral-200 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2">
-                <Target size={20} className="text-[#DC2626]" />
+                <Target size={20} className="text-[#B91C1C]" />
                 <span className="text-neutral-900 font-semibold">Projeção de fechamento do período</span>
               </div>
               <span className="text-neutral-900 font-black text-xl">{brl(projecaoFechamento)}</span>
@@ -704,14 +704,14 @@ function Relatorios() {
 
             <div className="bg-white border border-neutral-200 rounded-2xl p-5">
               <div className="flex items-center gap-2 mb-3">
-                <TrendingUp size={20} className="text-[#DC2626]" />
+                <TrendingUp size={20} className="text-[#B91C1C]" />
                 <h3 className="text-neutral-900 font-semibold">Top 5 Mais Vendidos</h3>
               </div>
               <div className="space-y-2">
                 {top10Vendidos.slice(0, 5).map((p, i) => (
                   <div key={p.nome} className="flex items-center gap-3">
                     <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      i === 0 ? 'bg-[#DC2626] text-white' : 'bg-neutral-200 text-neutral-500'
+                      i === 0 ? 'bg-[#B91C1C] text-white' : 'bg-neutral-200 text-neutral-500'
                     }`}>{i + 1}</span>
                     <span className="flex-1 text-neutral-900 text-sm">{p.nome}</span>
                     <span className="text-neutral-500 text-sm">{p.quantidade}x</span>
@@ -756,7 +756,7 @@ function Relatorios() {
                   <div key={d.nome} className="flex items-center gap-3">
                     <span className="text-neutral-500 text-xs w-16 flex-shrink-0">{d.nome}</span>
                     <div className="flex-1 h-5 bg-neutral-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-essenza-terracotta to-[#DC2626] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      <div className="h-full bg-gradient-to-r from-essenza-terracotta to-[#B91C1C] rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
                     <span className="text-neutral-900 text-xs font-semibold w-20 text-right flex-shrink-0">{brl(d.faturamento)}</span>
                   </div>
@@ -773,7 +773,7 @@ function Relatorios() {
           {/* Margem por categoria — visão de linha de produto, não item a item */}
           <div className="bg-white border border-neutral-200 rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
-              <Tag size={20} className="text-[#DC2626]" />
+              <Tag size={20} className="text-[#B91C1C]" />
               <h3 className="text-neutral-900 font-semibold">Margem por Categoria</h3>
             </div>
             <div className="space-y-2">
@@ -851,7 +851,7 @@ function Relatorios() {
                     <span className="text-neutral-500 text-xs">{pct.toFixed(0)}% do delivery</span>
                   </div>
                   <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden mb-4">
-                    <div className="h-full bg-[#DC2626] rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="h-full bg-[#B91C1C] rounded-full" style={{ width: `${pct}%` }} />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                     <div><p className="text-neutral-500">Faturamento</p><p className="text-neutral-900 font-bold">{brl(kpi.faturamento)}</p></div>
@@ -891,7 +891,7 @@ function Relatorios() {
                       <span className="text-neutral-500 text-xs">{pct.toFixed(0)}% do faturamento</span>
                     </div>
                     <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden mb-4">
-                      <div className="h-full bg-[#DC2626] rounded-full" style={{ width: `${pct}%` }} />
+                      <div className="h-full bg-[#B91C1C] rounded-full" style={{ width: `${pct}%` }} />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                       <div><p className="text-neutral-500">Faturamento</p><p className="text-neutral-900 font-bold">{brl(kpi.faturamento)}</p></div>
@@ -1003,7 +1003,7 @@ function Metas() {
         )}
       </div>
 
-      <button onClick={() => setShowForm(true)} className="w-full bg-[#DC2626] text-white py-3 rounded-xl font-bold">Nova Meta</button>
+      <button onClick={() => setShowForm(true)} className="w-full bg-[#B91C1C] text-white py-3 rounded-xl font-bold">Nova Meta</button>
 
       <div className="space-y-2">
         {metas.map((m) => (
@@ -1024,13 +1024,13 @@ function Metas() {
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
           <div className="bg-white border border-neutral-200 rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-neutral-900 font-bold text-lg mb-4">Nova Meta</h3>
-            <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#DC2626] focus:outline-none" />
-            <select value={periodo} onChange={(e) => setPeriodo(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#DC2626] focus:outline-none">
+            <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor (R$)" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-3 focus:border-[#B91C1C] focus:outline-none" />
+            <select value={periodo} onChange={(e) => setPeriodo(e.target.value)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 mb-4 focus:border-[#B91C1C] focus:outline-none">
               <option value="dia">Diária</option><option value="semana">Semanal</option><option value="mes">Mensal</option>
             </select>
             <div className="flex gap-2">
               <button onClick={() => setShowForm(false)} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
-              <button onClick={save} className="flex-1 py-3 bg-[#DC2626] text-white rounded-xl font-semibold">Salvar</button>
+              <button onClick={save} className="flex-1 py-3 bg-[#B91C1C] text-white rounded-xl font-semibold">Salvar</button>
             </div>
           </div>
         </div>

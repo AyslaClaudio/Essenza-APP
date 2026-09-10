@@ -137,7 +137,7 @@ function Sparkline({ valores }: { valores: number[] }) {
     .join(' ');
   return (
     <svg viewBox="0 0 100 24" preserveAspectRatio="none" className="w-16 h-6">
-      <polyline points={pontos} fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={pontos} fill="none" stroke="#B91C1C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -147,7 +147,7 @@ const FILTRO_LABELS: Record<Filtro, string> = {
   '3meses': '3 meses', '6meses': '6 meses', custom: 'Personalizado',
 };
 
-const CAT_CORES = ['#DC2626', '#22C55E', '#F59E0B', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6'];
+const CAT_CORES = ['#B91C1C', '#22C55E', '#F59E0B', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6'];
 
 export function Dashboard({ meta }: { meta: number }) {
   const { config } = useConfig();
@@ -355,7 +355,7 @@ export function Dashboard({ meta }: { meta: number }) {
         <div>
           <h2 className="text-2xl font-semibold text-[#26211E] flex items-center gap-2">
             Dashboard
-            {loading && <RefreshCw size={15} className="animate-spin text-[#DC2626]" />}
+            {loading && <RefreshCw size={15} className="animate-spin text-[#B91C1C]" />}
           </h2>
           <p className="text-[#8A8A8A] text-sm mt-1">
             Olá, {config?.nome_loja || 'Essenza'} 👋 Aqui está o desempenho da sua operação.
@@ -371,7 +371,7 @@ export function Dashboard({ meta }: { meta: number }) {
                 key={f}
                 onClick={() => { setFiltro(f); setShowCustom(false); }}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  filtro === f ? 'bg-[#DC2626] text-white' : 'text-[#8A8A8A] hover:text-[#26211E]'
+                  filtro === f ? 'bg-[#B91C1C] text-white' : 'text-[#8A8A8A] hover:text-[#26211E]'
                 }`}
               >
                 {FILTRO_LABELS[f]}
@@ -380,7 +380,7 @@ export function Dashboard({ meta }: { meta: number }) {
             <button
               onClick={() => setShowCustom((v) => !v)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1 ${
-                filtro === 'custom' ? 'bg-[#DC2626] text-white' : 'text-[#8A8A8A] hover:text-[#26211E]'
+                filtro === 'custom' ? 'bg-[#B91C1C] text-white' : 'text-[#8A8A8A] hover:text-[#26211E]'
               }`}
             >
               <Calendar size={12} /> Personalizado
@@ -394,15 +394,15 @@ export function Dashboard({ meta }: { meta: number }) {
           <div>
             <label className="block text-[#8A8A8A] text-xs mb-1">De</label>
             <input type="date" value={customIni} max={customFim} onChange={(e) => setCustomIni(e.target.value)}
-              className="bg-[#FBF6EF] border border-[#EFE9E0] rounded-lg px-3 py-2 text-sm text-[#26211E] focus:border-[#DC2626] focus:outline-none" />
+              className="bg-[#FBF6EF] border border-[#EFE9E0] rounded-lg px-3 py-2 text-sm text-[#26211E] focus:border-[#B91C1C] focus:outline-none" />
           </div>
           <div>
             <label className="block text-[#8A8A8A] text-xs mb-1">Até</label>
             <input type="date" value={customFim} min={customIni} max={dateToISO(new Date())} onChange={(e) => setCustomFim(e.target.value)}
-              className="bg-[#FBF6EF] border border-[#EFE9E0] rounded-lg px-3 py-2 text-sm text-[#26211E] focus:border-[#DC2626] focus:outline-none" />
+              className="bg-[#FBF6EF] border border-[#EFE9E0] rounded-lg px-3 py-2 text-sm text-[#26211E] focus:border-[#B91C1C] focus:outline-none" />
           </div>
           <button onClick={() => { setFiltro('custom'); setShowCustom(false); }}
-            className="bg-[#DC2626] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#B91C1C]">
+            className="bg-[#B91C1C] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#991B1B]">
             Aplicar
           </button>
         </div>
@@ -416,7 +416,7 @@ export function Dashboard({ meta }: { meta: number }) {
             <div key={c.label} className="bg-white border border-[#EFE9E0] rounded-2xl p-5 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
               <div className="flex items-center justify-between mb-3">
                 <div className="w-9 h-9 rounded-xl bg-[#FEE2E2] flex items-center justify-center">
-                  <c.icon size={17} className="text-[#DC2626]" />
+                  <c.icon size={17} className="text-[#B91C1C]" />
                 </div>
                 {c.sparkline && <Sparkline valores={sparkValores} />}
               </div>
@@ -443,7 +443,7 @@ export function Dashboard({ meta }: { meta: number }) {
         <div className="lg:col-span-4">
           <div className="bg-white border border-[#EFE9E0] rounded-2xl p-5 shadow-[0_2px_12px_rgba(38,33,30,0.04)] h-full">
             <div className="flex items-center gap-2 mb-4">
-              <PieIcon size={16} className="text-[#DC2626]" />
+              <PieIcon size={16} className="text-[#B91C1C]" />
               <h3 className="text-[#26211E] font-semibold">Pedidos por Categoria</h3>
             </div>
             {porCategoria.length === 0 ? (
@@ -513,7 +513,7 @@ export function Dashboard({ meta }: { meta: number }) {
               </li>
             )}
             <li className="flex items-start gap-2">
-              <Receipt size={15} className="text-[#DC2626] mt-0.5 shrink-0" />
+              <Receipt size={15} className="text-[#B91C1C] mt-0.5 shrink-0" />
               <span className="text-[#8A8A8A]">Margem de lucro: <b className="text-[#26211E] font-medium">{margem.toFixed(0)}%</b></span>
             </li>
             {formaPagamentoDominante && (
@@ -552,7 +552,7 @@ export function Dashboard({ meta }: { meta: number }) {
             </div>
             <div className="flex-1 space-y-3">
               {[
-                { label: 'Receita', valor: atual.faturamento, cor: '#DC2626' },
+                { label: 'Receita', valor: atual.faturamento, cor: '#B91C1C' },
                 { label: 'Custos', valor: atual.custo, cor: '#EF4444' },
                 { label: 'Lucro', valor: atual.lucro, cor: '#22C55E' },
               ].map((linha) => (
@@ -574,7 +574,7 @@ export function Dashboard({ meta }: { meta: number }) {
           <h3 className="text-[#26211E] font-semibold mb-4">Operação Agora</h3>
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#FEE2E2] flex items-center justify-center shrink-0"><ChefHat size={18} className="text-[#DC2626]" /></div>
+              <div className="w-10 h-10 rounded-xl bg-[#FEE2E2] flex items-center justify-center shrink-0"><ChefHat size={18} className="text-[#B91C1C]" /></div>
               <div><p className="text-[#26211E] font-semibold text-lg leading-none">{operacao.pedidosBalcao}</p><p className="text-[#8A8A8A] text-xs mt-1">Balcão/mesa em andamento</p></div>
             </div>
             <div className="flex items-center gap-3">
