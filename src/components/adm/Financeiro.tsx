@@ -14,9 +14,9 @@ import { GraficoBarras } from './dashboard/GraficoBarras';
 import { GraficoRosca } from './dashboard/GraficoRosca';
 import { printFechamentoDia } from '../../lib/print';
 import type { Pedido, CaixaEntry, ItemPedido } from '../../types';
-import { Wallet, TrendingUp, DollarSign, ArrowUpCircle, ArrowDownCircle, FileText, Target, Trophy, Receipt, X, Printer, BarChart3, CreditCard, MapPin, Clock, Tag, Users, Trash2 } from 'lucide-react';
+import { Wallet, DollarSign, ArrowUpCircle, ArrowDownCircle, FileText, Target, Trophy, Receipt, X, Printer, BarChart3, CreditCard, MapPin, Clock, Tag, Trash2 } from 'lucide-react';
 
-type Tab = 'caixa' | 'custos' | 'fechamento' | 'relatorios' | 'metas';
+type Tab = 'caixa' | 'fechamento' | 'relatorios' | 'metas';
 
 const TIPO_LABELS: Record<string, string> = {
   balcao: 'Balcão',
@@ -35,7 +35,6 @@ export function Financeiro() {
       <div className="flex gap-2 overflow-x-auto pb-1">
         {([
           { id: 'caixa', label: 'Caixa', icon: Wallet },
-          { id: 'custos', label: 'Custos Operacionais', icon: Users },
           { id: 'fechamento', label: 'Fechamento do Dia', icon: Receipt },
           { id: 'relatorios', label: 'Relatórios', icon: FileText },
           { id: 'metas', label: 'Metas', icon: Target },
@@ -50,11 +49,33 @@ export function Financeiro() {
         ))}
       </div>
 
-      {tab === 'caixa' && <Caixa />}
-      {tab === 'custos' && <CustosOperacionais />}
+      {tab === 'caixa' && <CaixaGeral />}
       {tab === 'fechamento' && <Fechamento />}
       {tab === 'relatorios' && <Relatorios />}
       {tab === 'metas' && <Metas />}
+    </div>
+  );
+}
+
+// Caixa (entradas/saídas do dia) e Custos Operacionais são as duas faces da
+// mesma coisa — "lançar uma movimentação de dinheiro" — então viraram
+// sub-abas de uma única aba "Caixa" em vez de brigar por espaço no menu
+// principal do Financeiro.
+function CaixaGeral() {
+  const [sub, setSub] = useState<'movimentacoes' | 'custos'>('movimentacoes');
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <button
+          onClick={() => setSub('movimentacoes')}
+          className={`px-4 py-2 rounded-xl text-sm font-medium ${sub === 'movimentacoes' ? 'bg-[#B91C1C] text-white' : 'bg-neutral-200 text-neutral-500'}`}
+        >Movimentações do Dia</button>
+        <button
+          onClick={() => setSub('custos')}
+          className={`px-4 py-2 rounded-xl text-sm font-medium ${sub === 'custos' ? 'bg-[#B91C1C] text-white' : 'bg-neutral-200 text-neutral-500'}`}
+        >Custos Operacionais</button>
+      </div>
+      {sub === 'movimentacoes' ? <Caixa /> : <CustosOperacionais />}
     </div>
   );
 }
@@ -404,7 +425,11 @@ function StatCard({ label, value, color }: { label: string; value: string; color
 function Relatorios() {
   const { config } = useConfig();
   const [periodo, setPeriodo] = useState({ dataInicio: new Date(), dataFim: new Date() });
-  const [tabAtiva, setTabAtiva] = useState<'resumo' | 'produtos' | 'tipo' | 'bairro' | 'evolucao'>('resumo');
+  // Resumo (visão geral) → Evolução (tendência no tempo) → Segmentação
+  // (detalhe por tipo/bairro) → Produtos (detalhe por item) — progressão do
+  // geral pro específico, em vez da ordem solta de antes.
+  const [tabAtiva, setTabAtiva] = useState<'resumo' | 'evolucao' | 'segmentacao' | 'produtos'>('resumo');
+  const [segmentoPor, setSegmentoPor] = useState<'tipo' | 'bairro'>('tipo');
 
   const { pedidos, loading } = usePedidosPeriodo({
     dataInicio: periodo.dataInicio,
@@ -516,9 +541,6 @@ function Relatorios() {
   // Pedidos por horário do dia — pra saber a janela de pico.
   const porHora = calcularPorHora(pedidos).map((h) => ({ dia: `${h.hora}h`, label: `${h.hora}h`, valor: h.pedidos }));
 
-  const top10Lucrativos = produtos.slice(0, 10);
-  const top10Vendidos = [...produtos].sort((a, b) => b.quantidade - a.quantidade).slice(0, 10);
-
   // Faturamento por dia dentro do período selecionado (para o gráfico de tendência)
   // p.created_at é UTC — usar dateToISO(new Date(...)) em vez de .slice(0,10) direto,
   // senão pedidos feitos à noite (fuso Brasil = UTC-3) somam no dia seguinte errado.
@@ -575,6 +597,9 @@ function Relatorios() {
       {/* Sempre montado — se ficasse dentro do "if (loading)" abaixo, o seletor
           perderia o período escolhido (remontava do zero) toda vez que os dados
           recarregassem, voltando sempre para "Este Mês". */}
+      <p className="text-neutral-500 text-sm -mt-1">
+        Análise a fundo com período livre — pra "agora/hoje" de relance, use o <b className="text-neutral-700 font-medium">Dashboard</b>.
+      </p>
       <div className="flex items-center gap-3 flex-wrap">
         <PeriodSelector onPeriodChange={handlePeriodChange} defaultPeriod="mes" />
         <button onClick={printRelatorio} className="flex items-center gap-2 bg-neutral-200 text-neutral-900 px-4 py-2.5 rounded-xl text-sm hover:bg-neutral-700">
@@ -590,10 +615,9 @@ function Relatorios() {
       <div className="flex gap-2 overflow-x-auto pb-2">
         {([
           { id: 'resumo', label: 'Resumo', icon: BarChart3 },
-          { id: 'produtos', label: 'Produtos', icon: Trophy },
-          { id: 'tipo', label: 'Por Tipo', icon: TrendingUp },
-          { id: 'bairro', label: 'Por Bairro', icon: MapPin },
           { id: 'evolucao', label: 'Evolução', icon: Clock },
+          { id: 'segmentacao', label: 'Segmentação', icon: MapPin },
+          { id: 'produtos', label: 'Produtos', icon: Trophy },
         ] as const).map((t) => (
           <button
             key={t.id}
@@ -609,12 +633,15 @@ function Relatorios() {
         ))}
       </div>
 
-      {/* RESUMO TAB */}
+      {/* RESUMO TAB — 3 blocos em ordem de prioridade: visão executiva,
+          metas/saúde do negócio, depois padrão de operação. */}
       {tabAtiva === 'resumo' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <p className="text-neutral-400 text-xs font-semibold uppercase tracking-wide">Visão Executiva</p>
           {/* DRE + gráfico de custo vs lucro lado a lado */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-white border border-neutral-200 rounded-2xl p-5">
+            <div className="bg-white border border-[#EFE9E0] rounded-2xl p-5 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
               <h3 className="text-neutral-900 font-semibold mb-3">Demonstração de Resultado</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -644,124 +671,85 @@ function Relatorios() {
 
           {/* Tendência de faturamento no período */}
           <GraficoBarras data={tendencia} titulo="Faturamento por dia no período" />
-
-          {/* KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <StatCard label="Ticket Médio" value={brl(kpis.ticketMedio)} color="text-neutral-900" />
-            <StatCard label="Margem Média" value={`${kpis.margemMedia.toFixed(1)}%`} color="text-green-600" />
-            <StatCard label="Margem Máxima" value={`${estatisticas.maxima.toFixed(1)}%`} color="text-[#22c55e]" />
-            <StatCard label="Margem Mínima" value={`${estatisticas.minima.toFixed(1)}%`} color="text-red-600" />
-            <StatCard label="Total Pedidos" value={String(kpis.pedidosCount)} color="text-neutral-900" />
-            <StatCard label="Entregues" value={String(kpis.pedidosEntregues)} color="text-green-600" />
-            <StatCard label="Em Andamento" value={String(kpis.pedidosEmAndamento)} color="text-amber-700" />
-            <StatCard label="Cancelados" value={String(kpis.pedidosCancelados)} color="text-red-600" />
           </div>
 
-          {/* Ponto de equilíbrio, desconto concedido, projeção e novos x recorrentes */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <StatCard
-              label="Ponto de Equilíbrio / Dia"
-              value={despesaFixaDiaria > 0 ? brl(pontoEquilibrioDiario) : 'Sem despesa fixa'}
-              color="text-neutral-900"
-            />
-            <StatCard label="Desconto Concedido" value={brl(descontoTotal)} color="text-orange-600" />
-            <StatCard label="Clientes Novos" value={String(novosRecorrentes.novos)} color="text-blue-600" />
-            <StatCard label="Clientes Recorrentes" value={String(novosRecorrentes.recorrentes)} color="text-[#22c55e]" />
-          </div>
-
-          {periodoEmAndamento && (
-            <div className="bg-white border border-neutral-200 rounded-2xl p-5 flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-2">
-                <Target size={20} className="text-[#B91C1C]" />
-                <span className="text-neutral-900 font-semibold">Projeção de fechamento do período</span>
-              </div>
-              <span className="text-neutral-900 font-black text-xl">{brl(projecaoFechamento)}</span>
+          <div className="space-y-3">
+            <p className="text-neutral-400 text-xs font-semibold uppercase tracking-wide">Metas e Saúde do Negócio</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <StatCard label="Ticket Médio" value={brl(kpis.ticketMedio)} color="text-neutral-900" />
+              <StatCard label="Margem Média" value={`${kpis.margemMedia.toFixed(1)}%`} color="text-green-600" />
+              <StatCard label="Margem (mín–máx)" value={`${estatisticas.minima.toFixed(0)}%–${estatisticas.maxima.toFixed(0)}%`} color="text-neutral-900" />
+              <StatCard label="Total Pedidos" value={String(kpis.pedidosCount)} color="text-neutral-900" />
+              <StatCard label="Cancelados" value={String(kpis.pedidosCancelados)} color="text-red-600" />
+              <StatCard
+                label="Ponto de Equilíbrio / Dia"
+                value={despesaFixaDiaria > 0 ? brl(pontoEquilibrioDiario) : 'Sem despesa fixa'}
+                color="text-neutral-900"
+              />
+              <StatCard label="Desconto Concedido" value={brl(descontoTotal)} color="text-orange-600" />
+              <StatCard label="Clientes Novos" value={String(novosRecorrentes.novos)} color="text-blue-600" />
+              <StatCard label="Clientes Recorrentes" value={String(novosRecorrentes.recorrentes)} color="text-[#22c55e]" />
             </div>
-          )}
 
-          {/* Pedidos por horário do dia */}
-          <GraficoBarras data={porHora} titulo="Pedidos por horário do dia" formatValor={(v) => `${Math.round(v)} pedido${Math.round(v) === 1 ? '' : 's'}`} />
+            {periodoEmAndamento && (
+              <div className="bg-white border border-[#EFE9E0] rounded-2xl p-5 flex items-center justify-between flex-wrap gap-3 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
+                <div className="flex items-center gap-2">
+                  <Target size={20} className="text-[#B91C1C]" />
+                  <span className="text-neutral-900 font-semibold">Projeção de fechamento do período</span>
+                </div>
+                <span className="text-neutral-900 font-black text-xl">{brl(projecaoFechamento)}</span>
+              </div>
+            )}
+          </div>
 
-          {/* Top 5 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-white border border-neutral-200 rounded-2xl p-5">
+          <div className="space-y-3">
+            <p className="text-neutral-400 text-xs font-semibold uppercase tracking-wide">Padrão de Operação</p>
+
+            {/* Pedidos por horário do dia */}
+            <GraficoBarras data={porHora} titulo="Pedidos por horário do dia" formatValor={(v) => `${Math.round(v)} pedido${Math.round(v) === 1 ? '' : 's'}`} />
+
+            {/* Faturamento por forma de pagamento */}
+            <div className="bg-white border border-[#EFE9E0] rounded-2xl p-5 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
               <div className="flex items-center gap-2 mb-3">
-                <Trophy size={20} className="text-[#22c55e]" />
-                <h3 className="text-neutral-900 font-semibold">Top 5 Mais Lucrativos</h3>
+                <CreditCard size={20} className="text-[#22c55e]" />
+                <h3 className="text-neutral-900 font-semibold">Faturamento por Forma de Pagamento</h3>
               </div>
-              <div className="space-y-2">
-                {top10Lucrativos.slice(0, 5).map((p, i) => (
-                  <div key={p.nome} className="flex items-center gap-3">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      i === 0 ? 'bg-[#22c55e] text-black' : 'bg-neutral-200 text-neutral-500'
-                    }`}>{i + 1}</span>
-                    <span className="flex-1 text-neutral-900 text-sm">{p.nome}</span>
-                    <span className="text-[#22c55e] font-semibold text-sm">{brl(p.lucro)}</span>
-                  </div>
-                ))}
+              <div className="space-y-3">
+                {formasPagamento.map(([forma, kpi]) => {
+                  const pct = faturamentoTotalFormas > 0 ? (kpi.faturamento / faturamentoTotalFormas) * 100 : 0;
+                  return (
+                    <div key={forma}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-neutral-700">{forma}</span>
+                        <span className="text-neutral-900 font-semibold">{brl(kpi.faturamento)} <span className="text-neutral-500 font-normal">({kpi.pedidosCount})</span></span>
+                      </div>
+                      <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-[#22c55e] rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                {formasPagamento.length === 0 && <p className="text-center text-neutral-500 text-sm py-4">Sem dados no período.</p>}
               </div>
             </div>
 
-            <div className="bg-white border border-neutral-200 rounded-2xl p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp size={20} className="text-[#B91C1C]" />
-                <h3 className="text-neutral-900 font-semibold">Top 5 Mais Vendidos</h3>
+            {/* Desempenho por dia da semana */}
+            <div className="bg-white border border-[#EFE9E0] rounded-2xl p-5 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
+              <h3 className="text-neutral-900 font-semibold mb-3">Faturamento por Dia da Semana</h3>
+              <div className="space-y-2.5">
+                {porDiaSemana.map((d) => {
+                  const pct = (d.faturamento / maxDiaSemana) * 100;
+                  return (
+                    <div key={d.nome} className="flex items-center gap-3">
+                      <span className="text-neutral-500 text-xs w-16 flex-shrink-0">{d.nome}</span>
+                      <div className="flex-1 h-5 bg-neutral-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-essenza-terracotta to-[#B91C1C] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-neutral-900 text-xs font-semibold w-20 text-right flex-shrink-0">{brl(d.faturamento)}</span>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="space-y-2">
-                {top10Vendidos.slice(0, 5).map((p, i) => (
-                  <div key={p.nome} className="flex items-center gap-3">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      i === 0 ? 'bg-[#B91C1C] text-white' : 'bg-neutral-200 text-neutral-500'
-                    }`}>{i + 1}</span>
-                    <span className="flex-1 text-neutral-900 text-sm">{p.nome}</span>
-                    <span className="text-neutral-500 text-sm">{p.quantidade}x</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Faturamento por forma de pagamento */}
-          <div className="bg-white border border-neutral-200 rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <CreditCard size={20} className="text-[#22c55e]" />
-              <h3 className="text-neutral-900 font-semibold">Faturamento por Forma de Pagamento</h3>
-            </div>
-            <div className="space-y-3">
-              {formasPagamento.map(([forma, kpi]) => {
-                const pct = faturamentoTotalFormas > 0 ? (kpi.faturamento / faturamentoTotalFormas) * 100 : 0;
-                return (
-                  <div key={forma}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-neutral-700">{forma}</span>
-                      <span className="text-neutral-900 font-semibold">{brl(kpi.faturamento)} <span className="text-neutral-500 font-normal">({kpi.pedidosCount})</span></span>
-                    </div>
-                    <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-[#22c55e] rounded-full" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-              {formasPagamento.length === 0 && <p className="text-center text-neutral-500 text-sm py-4">Sem dados no período.</p>}
-            </div>
-          </div>
-
-          {/* Desempenho por dia da semana */}
-          <div className="bg-white border border-neutral-200 rounded-2xl p-5">
-            <h3 className="text-neutral-900 font-semibold mb-3">Faturamento por Dia da Semana</h3>
-            <div className="space-y-2.5">
-              {porDiaSemana.map((d) => {
-                const pct = (d.faturamento / maxDiaSemana) * 100;
-                return (
-                  <div key={d.nome} className="flex items-center gap-3">
-                    <span className="text-neutral-500 text-xs w-16 flex-shrink-0">{d.nome}</span>
-                    <div className="flex-1 h-5 bg-neutral-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-essenza-terracotta to-[#B91C1C] rounded-full transition-all" style={{ width: `${pct}%` }} />
-                    </div>
-                    <span className="text-neutral-900 text-xs font-semibold w-20 text-right flex-shrink-0">{brl(d.faturamento)}</span>
-                  </div>
-                );
-              })}
             </div>
           </div>
         </div>
@@ -771,7 +759,7 @@ function Relatorios() {
       {tabAtiva === 'produtos' && (
         <div className="space-y-4">
           {/* Margem por categoria — visão de linha de produto, não item a item */}
-          <div className="bg-white border border-neutral-200 rounded-2xl p-5">
+          <div className="bg-white border border-[#EFE9E0] rounded-2xl p-5 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
             <div className="flex items-center gap-2 mb-3">
               <Tag size={20} className="text-[#B91C1C]" />
               <h3 className="text-neutral-900 font-semibold">Margem por Categoria</h3>
@@ -792,7 +780,7 @@ function Relatorios() {
             </div>
           </div>
 
-          <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
+          <div className="bg-white border border-[#EFE9E0] rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
             <div className="px-4 py-3 bg-neutral-100/50 border-b border-neutral-200 flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-neutral-900 font-semibold">Análise de Produtos ({produtos.length} produtos)</h3>
               <p className="text-neutral-500 text-xs">Curva ABC: A = até 80% do lucro acumulado, B = até 95%, C = o resto</p>
@@ -833,19 +821,64 @@ function Relatorios() {
         </div>
       )}
 
-      {/* BAIRRO TAB */}
-      {tabAtiva === 'bairro' && (
+      {/* EVOLUÇÃO TAB */}
+      {tabAtiva === 'evolucao' && (
         <div className="space-y-4">
-          {(() => {
+          <GraficoBarras data={evolucaoMensal} titulo="Faturamento — últimos 6 meses" />
+          {evolucaoMensal.every((m) => m.valor === 0) && (
+            <p className="text-center text-neutral-500 text-sm">Ainda não há histórico suficiente pra montar essa comparação.</p>
+          )}
+        </div>
+      )}
+
+      {/* SEGMENTAÇÃO TAB — Por Tipo e Por Bairro eram duas abas fazendo a
+          mesma conta (agrupar KPIs por uma dimensão); viram um seletor. */}
+      {tabAtiva === 'segmentacao' && (
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSegmentoPor('tipo')}
+              className={`px-4 py-2 rounded-xl text-sm font-medium ${segmentoPor === 'tipo' ? 'bg-[#B91C1C] text-white' : 'bg-neutral-200 text-neutral-500'}`}
+            >Por Tipo</button>
+            <button
+              onClick={() => setSegmentoPor('bairro')}
+              className={`px-4 py-2 rounded-xl text-sm font-medium ${segmentoPor === 'bairro' ? 'bg-[#B91C1C] text-white' : 'bg-neutral-200 text-neutral-500'}`}
+            >Por Bairro</button>
+          </div>
+
+          {segmentoPor === 'tipo' ? (() => {
+            const totalFaturamento = Object.values(kpisPorTipo).reduce((s, k) => s + k.faturamento, 0);
+            const entradas = Object.entries(kpisPorTipo).sort((a, b) => b[1].faturamento - a[1].faturamento);
+            if (entradas.length === 0) return <p className="text-center text-neutral-500 text-sm py-8">Sem pedidos no período.</p>;
+            return entradas.map(([tipo, kpi]) => {
+              const pct = totalFaturamento > 0 ? (kpi.faturamento / totalFaturamento) * 100 : 0;
+              return (
+                <div key={tipo} className="bg-white border border-[#EFE9E0] rounded-2xl p-5 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-neutral-900 font-semibold capitalize">{TIPO_LABELS[tipo] || tipo}</h3>
+                    <span className="text-neutral-500 text-xs">{pct.toFixed(0)}% do faturamento</span>
+                  </div>
+                  <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden mb-4">
+                    <div className="h-full bg-[#B91C1C] rounded-full" style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                    <div><p className="text-neutral-500">Faturamento</p><p className="text-neutral-900 font-bold">{brl(kpi.faturamento)}</p></div>
+                    <div><p className="text-neutral-500">Lucro</p><p className="text-[#22c55e] font-bold">{brl(kpi.lucroTotal)}</p></div>
+                    <div><p className="text-neutral-500">Pedidos</p><p className="text-neutral-900 font-bold">{kpi.pedidosCount}</p></div>
+                    <div><p className="text-neutral-500">Ticket Médio</p><p className="text-neutral-900 font-bold">{brl(kpi.ticketMedio)}</p></div>
+                    <div><p className="text-neutral-500">Margem Média</p><p className="text-green-600 font-bold">{kpi.margemMedia.toFixed(1)}%</p></div>
+                  </div>
+                </div>
+              );
+            });
+          })() : (() => {
             const totalFaturamentoBairro = Object.values(kpisPorBairro).reduce((s, k) => s + k.faturamento, 0);
             const entradas = Object.entries(kpisPorBairro).sort((a, b) => b[1].faturamento - a[1].faturamento);
-            if (entradas.length === 0) {
-              return <p className="text-center text-neutral-500 text-sm py-8">Sem pedidos de entrega no período.</p>;
-            }
+            if (entradas.length === 0) return <p className="text-center text-neutral-500 text-sm py-8">Sem pedidos de entrega no período.</p>;
             return entradas.map(([bairro, kpi]) => {
               const pct = totalFaturamentoBairro > 0 ? (kpi.faturamento / totalFaturamentoBairro) * 100 : 0;
               return (
-                <div key={bairro} className="bg-white border border-neutral-200 rounded-2xl p-5">
+                <div key={bairro} className="bg-white border border-[#EFE9E0] rounded-2xl p-5 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
                   <div className="flex items-center justify-between mb-1">
                     <h3 className="text-neutral-900 font-semibold">{bairro}</h3>
                     <span className="text-neutral-500 text-xs">{pct.toFixed(0)}% do delivery</span>
@@ -861,48 +894,6 @@ function Relatorios() {
                 </div>
               );
             });
-          })()}
-        </div>
-      )}
-
-      {/* EVOLUÇÃO TAB */}
-      {tabAtiva === 'evolucao' && (
-        <div className="space-y-4">
-          <GraficoBarras data={evolucaoMensal} titulo="Faturamento — últimos 6 meses" />
-          {evolucaoMensal.every((m) => m.valor === 0) && (
-            <p className="text-center text-neutral-500 text-sm">Ainda não há histórico suficiente pra montar essa comparação.</p>
-          )}
-        </div>
-      )}
-
-      {/* TIPO TAB */}
-      {tabAtiva === 'tipo' && (
-        <div className="space-y-4">
-          {(() => {
-            const totalFaturamento = Object.values(kpisPorTipo).reduce((s, k) => s + k.faturamento, 0);
-            return Object.entries(kpisPorTipo)
-              .sort((a, b) => b[1].faturamento - a[1].faturamento)
-              .map(([tipo, kpi]) => {
-                const pct = totalFaturamento > 0 ? (kpi.faturamento / totalFaturamento) * 100 : 0;
-                return (
-                  <div key={tipo} className="bg-white border border-neutral-200 rounded-2xl p-5">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="text-neutral-900 font-semibold capitalize">{TIPO_LABELS[tipo] || tipo}</h3>
-                      <span className="text-neutral-500 text-xs">{pct.toFixed(0)}% do faturamento</span>
-                    </div>
-                    <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden mb-4">
-                      <div className="h-full bg-[#B91C1C] rounded-full" style={{ width: `${pct}%` }} />
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                      <div><p className="text-neutral-500">Faturamento</p><p className="text-neutral-900 font-bold">{brl(kpi.faturamento)}</p></div>
-                      <div><p className="text-neutral-500">Lucro</p><p className="text-[#22c55e] font-bold">{brl(kpi.lucroTotal)}</p></div>
-                      <div><p className="text-neutral-500">Pedidos</p><p className="text-neutral-900 font-bold">{kpi.pedidosCount}</p></div>
-                      <div><p className="text-neutral-500">Ticket Médio</p><p className="text-neutral-900 font-bold">{brl(kpi.ticketMedio)}</p></div>
-                      <div><p className="text-neutral-500">Margem Média</p><p className="text-green-600 font-bold">{kpi.margemMedia.toFixed(1)}%</p></div>
-                    </div>
-                  </div>
-                );
-              });
           })()}
         </div>
       )}

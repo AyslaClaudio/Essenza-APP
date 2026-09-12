@@ -31,12 +31,20 @@ type Filtro = 'todos' | 'recorrentes' | 'novos' | 'sumidos';
 const DIAS_SUMIDO = 21;
 const META_FIDELIDADE = 10;
 
-export function Clientes() {
+// buscaInicial: preenchida pela busca global do topo do app (Adm.tsx) — o
+// nonce muda a cada busca pra forçar o efeito mesmo se o texto for igual ao
+// já digitado antes.
+export function Clientes({ buscaInicial }: { buscaInicial?: { valor: string; nonce: number } } = {}) {
   const { config } = useConfig();
   const [stats, setStats] = useState<ClienteStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState('');
   const [filtro, setFiltro] = useState<Filtro>('todos');
+
+  useEffect(() => {
+    if (buscaInicial) setBusca(buscaInicial.valor);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buscaInicial?.nonce]);
 
   const load = useCallback(async () => {
     setLoading(true);

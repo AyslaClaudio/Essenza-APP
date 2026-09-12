@@ -358,7 +358,7 @@ export function Dashboard({ meta }: { meta: number }) {
             {loading && <RefreshCw size={15} className="animate-spin text-[#B91C1C]" />}
           </h2>
           <p className="text-[#8A8A8A] text-sm mt-1">
-            Olá, {config?.nome_loja || 'Essenza'} 👋 Aqui está o desempenho da sua operação.
+            Olá, {config?.nome_loja || 'Essenza'} 👋 Aqui está o desempenho da sua operação. Pra análise a fundo com período livre, use o <b className="text-[#26211E] font-medium">Financeiro → Relatórios</b>.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

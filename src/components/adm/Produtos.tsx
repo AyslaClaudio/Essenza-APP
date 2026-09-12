@@ -6,13 +6,19 @@ import { brl, lucroProduto, margemProduto } from '../../lib/format';
 import type { Produto, Categoria, Adicional } from '../../types';
 import { Plus, Pencil, Trash2, Search, Lock, Unlock, X, Flame, Image as ImageIcon, Upload, Loader2 } from 'lucide-react';
 
-export function Produtos() {
+// buscaInicial vem da busca global do topo do app (Adm.tsx).
+export function Produtos({ buscaInicial }: { buscaInicial?: { valor: string; nonce: number } } = {}) {
   const { usuario } = useAuth();
   const { config } = useConfig();
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [filtro, setFiltro] = useState('');
   const [catFiltro, setCatFiltro] = useState('todas');
+
+  useEffect(() => {
+    if (buscaInicial) { setFiltro(buscaInicial.valor); setCatFiltro('todas'); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buscaInicial?.nonce]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Produto | null>(null);
 

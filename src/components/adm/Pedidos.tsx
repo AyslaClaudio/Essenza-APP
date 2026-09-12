@@ -15,7 +15,8 @@ const STATUS_LABELS: Record<PedidoStatus, string> = {
   cancelado: 'Cancelado',
 };
 
-export function Pedidos() {
+// buscaInicial vem da busca global do topo do app (Adm.tsx).
+export function Pedidos({ buscaInicial }: { buscaInicial?: { valor: string; nonce: number } } = {}) {
   const { config } = useConfig();
   const { usuario } = useAuth();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
@@ -24,6 +25,14 @@ export function Pedidos() {
   const [selected, setSelected] = useState<Pedido | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Pedido | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Pedido | null>(null);
+
+  useEffect(() => {
+    if (buscaInicial) {
+      setBusca(buscaInicial.valor);
+      setFiltro('todos'); // senão um pedido já entregue/antigo pode não aparecer
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buscaInicial?.nonce]);
 
   const isGerente = usuario?.role === 'gerente';
 

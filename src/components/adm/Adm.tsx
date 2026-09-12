@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useConfig } from '../../context/ConfigContext';
 import { brl } from '../../lib/format';
-import { Flame, LayoutDashboard, UtensilsCrossed, ShoppingCart, Wallet, Settings, Package, LogOut, Menu, X, TrendingUp, MessageSquare, MessageCircle, Radio, LayoutGrid, Users } from 'lucide-react';
+import { Flame, LayoutDashboard, UtensilsCrossed, ShoppingCart, Wallet, Settings, Package, LogOut, Menu, X, TrendingUp, MessageSquare, MessageCircle, Radio, LayoutGrid, Users, Search } from 'lucide-react';
 import { OfflineBanner } from '../OfflineBanner';
 // Cada aba carrega sob demanda, só quando é aberta pela primeira vez — antes
 // tudo (Financeiro, Estoque, WhatsApp, IA, etc.) ia num bundle único carregado
@@ -32,12 +32,89 @@ interface DashboardData {
   numPedidos: number;
 }
 
+interface BuscaResultado {
+  tipo: 'produto' | 'cliente' | 'pedido';
+  titulo: string;
+  sub: string;
+  tab: Tab;
+  valor: string;
+}
+
 export function Adm() {
   const { usuario, signOut } = useAuth();
   const { config } = useConfig();
   const [tab, setTab] = useState<Tab>('dashboard');
   const [dash, setDash] = useState<DashboardData>({ lucro: 0, faturamento: 0, numPedidos: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Busca global do topo — um campo só pra achar produto, cliente ou pedido
+  // sem trocar de aba manualmente. Ao clicar num resultado, troca de aba e
+  // preenche a busca da tela de destino via `buscaAlvo` (prop `buscaInicial`).
+  const [buscaGlobal, setBuscaGlobal] = useState('');
+  const [buscaResultados, setBuscaResultados] = useState<BuscaResultado[]>([]);
+  const [buscandoGlobal, setBuscandoGlobal] = useState(false);
+  const [buscaAberta, setBuscaAberta] = useState(false);
+  const [buscaMobileAberta, setBuscaMobileAberta] = useState(false);
+  const [buscaAlvo, setBuscaAlvo] = useState<{ tab: Tab; valor: string; nonce: number } | null>(null);
+
+  useEffect(() => {
+    const termo = buscaGlobal.trim();
+    if (termo.length < 2) {
+      setBuscaResultados([]);
+      setBuscandoGlobal(false);
+      return;
+    }
+    setBuscandoGlobal(true);
+    const handle = setTimeout(async () => {
+      // Sanitiza pra não quebrar o filtro .ilike/.or() do PostgREST caso a
+      // pessoa cole um telefone com parênteses/vírgula.
+      const termoSanitizado = termo.replace(/[(),"*]/g, '');
+      if (!termoSanitizado) { setBuscaResultados([]); setBuscandoGlobal(false); return; }
+      const numerico = /^\d+$/.test(termoSanitizado);
+
+      const [produtosRes, pedidosPorNomeRes, pedidosPorNumeroRes] = await Promise.all([
+        supabase.from('produtos').select('id, nome').ilike('nome', `%${termoSanitizado}%`).limit(5),
+        supabase
+          .from('pedidos')
+          .select('id, numero, cliente_nome, cliente_telefone')
+          .ilike('cliente_nome', `%${termoSanitizado}%`)
+          .order('created_at', { ascending: false })
+          .limit(20),
+        numerico
+          ? supabase.from('pedidos').select('id, numero, cliente_nome').eq('numero', Number(termoSanitizado)).limit(5)
+          : Promise.resolve({ data: [] as { id: string; numero: number; cliente_nome: string }[] }),
+      ]);
+
+      const resultados: BuscaResultado[] = [];
+      for (const p of produtosRes.data || []) {
+        resultados.push({ tipo: 'produto', titulo: p.nome, sub: 'Cardápio', tab: 'produtos', valor: p.nome });
+      }
+      const nomesVistos = new Set<string>();
+      for (const p of (pedidosPorNomeRes.data || []) as { cliente_nome: string; cliente_telefone: string }[]) {
+        const nome = (p.cliente_nome || '').trim();
+        const chave = nome.toLowerCase();
+        if (!nome || chave === 'consumidor' || nomesVistos.has(chave)) continue;
+        nomesVistos.add(chave);
+        resultados.push({ tipo: 'cliente', titulo: nome, sub: p.cliente_telefone || 'Cliente', tab: 'clientes', valor: nome });
+        if (nomesVistos.size >= 5) break;
+      }
+      for (const p of (pedidosPorNumeroRes.data || []) as { numero: number; cliente_nome: string }[]) {
+        resultados.push({ tipo: 'pedido', titulo: `Pedido #${p.numero}`, sub: p.cliente_nome || '', tab: 'pedidos', valor: String(p.numero) });
+      }
+      setBuscaResultados(resultados);
+      setBuscandoGlobal(false);
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [buscaGlobal]);
+
+  const selecionarResultado = (r: BuscaResultado) => {
+    setTab(r.tab);
+    setBuscaAlvo({ tab: r.tab, valor: r.valor, nonce: Date.now() });
+    setBuscaGlobal('');
+    setBuscaResultados([]);
+    setBuscaAberta(false);
+    setBuscaMobileAberta(false);
+  };
 
   const loadDashboard = useCallback(async () => {
     const start = new Date();
@@ -161,14 +238,43 @@ export function Adm() {
   ];
   const bottomNavAtivo = BOTTOM_NAV.some((i) => i.id === tab);
 
+  const iconePorTipo = { produto: Flame, cliente: Users, pedido: UtensilsCrossed } as const;
+
+  const renderResultadosBusca = () => (
+    <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden z-50 max-h-80 overflow-y-auto">
+      {buscandoGlobal ? (
+        <p className="text-neutral-500 text-sm text-center py-4">Buscando...</p>
+      ) : buscaResultados.length === 0 ? (
+        <p className="text-neutral-500 text-sm text-center py-4">Nenhum resultado pra "{buscaGlobal.trim()}"</p>
+      ) : (
+        buscaResultados.map((r, i) => {
+          const Icone = iconePorTipo[r.tipo];
+          return (
+            <button
+              key={`${r.tipo}-${r.valor}-${i}`}
+              onClick={() => selecionarResultado(r)}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-[#FEE2E2] border-b border-neutral-100 last:border-b-0"
+            >
+              <Icone size={16} className="text-neutral-400 shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm text-neutral-900 font-medium truncate">{r.titulo}</span>
+                <span className="block text-xs text-neutral-500 truncate">{r.sub}</span>
+              </span>
+            </button>
+          );
+        })
+      )}
+    </div>
+  );
+
   const renderTab = () => {
     switch (tab) {
       case 'dashboard': return <Dashboard meta={config?.meta_diaria || 2000} />;
-      case 'produtos': return <Produtos />;
+      case 'produtos': return <Produtos buscaInicial={buscaAlvo?.tab === 'produtos' ? buscaAlvo : undefined} />;
       case 'balcao': return <Balcao onOrderComplete={loadDashboard} />;
       case 'mesas': return <Mesas />;
-      case 'pedidos': return <Pedidos />;
-      case 'clientes': return <Clientes />;
+      case 'pedidos': return <Pedidos buscaInicial={buscaAlvo?.tab === 'pedidos' ? buscaAlvo : undefined} />;
+      case 'clientes': return <Clientes buscaInicial={buscaAlvo?.tab === 'clientes' ? buscaAlvo : undefined} />;
       case 'financeiro': return <Financeiro />;
       case 'estoque': return <Estoque />;
       case 'ia': return <IAWhatsApp />;
@@ -184,12 +290,34 @@ export function Adm() {
       {/* Mobile header with dashboard strip — sem menu hambúrguer: a navegação
           mobile agora é a barra inferior fixa (ver fim do componente). */}
       <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-neutral-200">
-        <div className="flex items-center px-4 py-3">
+        <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="ESSENZA" className="w-8 h-8 rounded-lg object-cover" />
             <span className="font-display font-bold text-neutral-900 text-lg">ESSENZA</span>
           </div>
+          <button
+            onClick={() => setBuscaMobileAberta((v) => !v)}
+            className="p-2 text-neutral-500 hover:text-[#B91C1C]"
+            aria-label="Buscar"
+          >
+            <Search size={20} />
+          </button>
         </div>
+        {buscaMobileAberta && (
+          <div className="relative px-4 pb-3">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+              <input
+                autoFocus
+                value={buscaGlobal}
+                onChange={(e) => setBuscaGlobal(e.target.value)}
+                placeholder="Buscar produto, cliente ou pedido..."
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-9 pr-3 py-2 text-sm text-neutral-900 focus:border-[#B91C1C] focus:outline-none"
+              />
+            </div>
+            {buscaGlobal.trim().length >= 2 && renderResultadosBusca()}
+          </div>
+        )}
         {/* Profit strip always visible */}
         <ProfitStrip dash={dash} />
       </div>
@@ -292,6 +420,20 @@ export function Adm() {
       <main className="flex-1 overflow-x-hidden">
         {/* Desktop profit dashboard - always fixed at top */}
         <div className="hidden lg:block sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-neutral-200">
+          <div className="relative px-6 pt-4">
+            <div className="relative max-w-sm">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+              <input
+                value={buscaGlobal}
+                onChange={(e) => setBuscaGlobal(e.target.value)}
+                onFocus={() => setBuscaAberta(true)}
+                onBlur={() => setTimeout(() => setBuscaAberta(false), 150)}
+                placeholder="Buscar produto, cliente ou pedido..."
+                className="w-full bg-neutral-100 border border-neutral-200 rounded-xl pl-9 pr-3 py-2 text-sm text-neutral-900 focus:border-[#B91C1C] focus:outline-none"
+              />
+              {buscaAberta && buscaGlobal.trim().length >= 2 && renderResultadosBusca()}
+            </div>
+          </div>
           <ProfitStrip dash={dash} />
         </div>
         <div className="p-4 pb-20 lg:pb-6 lg:p-6 max-w-7xl mx-auto">
