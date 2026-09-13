@@ -4,9 +4,11 @@ import { useConfig } from '../../context/ConfigContext';
 import { brl, todayISO } from '../../lib/format';
 import { printReceipt, printMesaComanda } from '../../lib/print';
 import type { Produto, Cliente, ItemPedido, TaxaEntrega, Adicional, Pedido, Mesa, ItemMesa } from '../../types';
-import { Search, Plus, Minus, X, ShoppingCart, Printer, Check, Phone, ArrowLeft, CloudOff, LayoutGrid } from 'lucide-react';
+import { Search, Plus, Minus, X, ShoppingCart, Printer, Check, Phone, ArrowLeft, CloudOff, LayoutGrid, Wheat } from 'lucide-react';
 import { ProductPlaceholder, usaImagemPadrao } from '../ProductPlaceholder';
 import { queueOfflinePedido } from '../../lib/offlineQueue';
+import { useMassaHoje } from '../../hooks/useMassaHoje';
+import { consumoMassa } from '../../lib/massa';
 
 interface CartItem extends ItemPedido {
   produto: Produto;
@@ -34,6 +36,7 @@ const RASCUNHO_KEY = 'essenza_balcao_rascunho';
 
 export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   const { config } = useConfig();
+  const massa = useMassaHoje();
   const [step, setStep] = useState<'produtos' | 'carrinho' | 'cliente' | 'pagamento' | 'sucesso'>('produtos');
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [adicionais, setAdicionais] = useState<Adicional[]>([]);
@@ -152,7 +155,34 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
     return matchFiltro && matchCat;
   });
 
+  // Quanto de massa (pizza/esfirra) o carrinho atual já reserva — soma dos
+  // itens ainda não enviados ao banco. Usado tanto pra mostrar o saldo ao
+  // vivo (banner) quanto pra bloquear lançar mais do que a massa do dia dá.
+  const consumoCarrinho = cart.reduce((acc, c) => {
+    const m = consumoMassa(c.produto, c.quantidade);
+    return { pizza: acc.pizza + m.pizza, esfiha: acc.esfiha + m.esfiha };
+  }, { pizza: 0, esfiha: 0 });
+  const pizzaDisponivel = massa.pizzaRestante - consumoCarrinho.pizza;
+  const esfihaDisponivel = massa.esfihaRestante - consumoCarrinho.esfiha;
+
+  // Confere se dá pra lançar mais `necessario` massas antes de adicionar ao
+  // carrinho. Só bloqueia se a contagem do dia foi lançada (inicial > 0) —
+  // sem contagem lançada, o controle fica desligado. Pergunta antes de
+  // recusar, pra não travar em caso de contagem errada/emergência.
+  const checarMassaDisponivel = (necessario: { pizza: number; esfiha: number }): boolean => {
+    if (necessario.pizza > 0 && massa.pizzaInicial > 0 && necessario.pizza > pizzaDisponivel) {
+      const falta = Math.max(0, pizzaDisponivel);
+      return confirm(`Só resta${falta === 1 ? '' : 'm'} ${falta} massa${falta === 1 ? '' : 's'} de pizza hoje. Lançar mesmo assim?`);
+    }
+    if (necessario.esfiha > 0 && massa.esfihaInicial > 0 && necessario.esfiha > esfihaDisponivel) {
+      const falta = Math.max(0, esfihaDisponivel);
+      return confirm(`Só resta${falta === 1 ? '' : 'm'} ${falta} massa${falta === 1 ? '' : 's'} de esfirra hoje. Lançar mesmo assim?`);
+    }
+    return true;
+  };
+
   const addToCart = (item: CartItem) => {
+    if (!checarMassaDisponivel(consumoMassa(item.produto, item.quantidade))) return;
     setCart((prev) => {
       const existing = prev.find((c) => c.produto_nome === item.produto_nome && c.sabor1 === item.sabor1 && c.sabor2 === item.sabor2 && c.adicional === item.adicional && c.observacao === item.observacao);
       if (existing) {
@@ -167,6 +197,10 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   };
 
   const updateQty = (index: number, delta: number) => {
+    if (delta > 0) {
+      const alvo = cart[index];
+      if (alvo && !checarMassaDisponivel(consumoMassa(alvo.produto, delta))) return;
+    }
     setCart((prev) => prev.map((c, i) => {
       if (i !== index) return c;
       const q = c.quantidade + delta;
@@ -288,7 +322,10 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
     if (cart.length === 0) return;
 
     const custoTotal = cart.reduce((s, c) => s + c.quantidade * c.custo_unitario, 0);
-    const lucro = subtotal - custoTotal;
+    // Lucro precisa sair de `total` (subtotal + taxa de entrega), não só do
+    // subtotal — senão a taxa de entrega vira faturamento que nunca aparece
+    // como lucro em nenhuma linha do relatório (ficava "perdida" na conta).
+    const lucro = total - custoTotal;
 
     const itensBase = cart.map((c) => ({
       produto_id: c.produto_id,
@@ -592,6 +629,24 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
         )}
       </div>
 
+      {/* Saldo de massas do dia — visível durante todo o lançamento (produtos
+          e carrinho) pra atendente saber na hora se ainda tem massa. Só
+          aparece se a contagem do dia foi lançada no Dashboard. */}
+      {(massa.pizzaInicial > 0 || massa.esfihaInicial > 0) && (
+        <div className="flex flex-wrap gap-2 text-sm">
+          {massa.pizzaInicial > 0 && (
+            <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold ${pizzaDisponivel <= 0 ? 'bg-red-100 text-red-700' : pizzaDisponivel <= Math.max(1, Math.round(massa.pizzaInicial * 0.15)) ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+              <Wheat size={14} /> Massa Pizza: {Math.max(0, pizzaDisponivel)} restante{pizzaDisponivel === 1 ? '' : 's'}
+            </span>
+          )}
+          {massa.esfihaInicial > 0 && (
+            <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold ${esfihaDisponivel <= 0 ? 'bg-red-100 text-red-700' : esfihaDisponivel <= Math.max(1, Math.round(massa.esfihaInicial * 0.15)) ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+              <Wheat size={14} /> Massa Esfirra: {Math.max(0, esfihaDisponivel)} restante{esfihaDisponivel === 1 ? '' : 's'}
+            </span>
+          )}
+        </div>
+      )}
+
       {step === 'produtos' && (
         <>
           {/* Search & filters */}
@@ -767,8 +822,11 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
       {/* Cliente step — nome é o que importa; telefone é opcional */}
       {step === 'carrinho' && null}
       {step === 'cliente' && (() => {
-        const nomeOk = !!cliente || !!novoCliente.nome.trim();
-        const entregaOk = tipo !== 'delivery' || (!!novoCliente.endereco.trim() && !!novoCliente.bairro);
+        // Cliente cadastrado com `nome` vazio/nulo no banco não deve passar só
+        // por existir o registro — mesma checagem de nome exigida de quem digita
+        // na hora, pra não deixar dado ruim vindo do cadastro furar a validação.
+        const nomeOk = !!cliente?.nome?.trim() || !!novoCliente.nome.trim();
+        const entregaOk = tipo !== 'delivery' || (!!novoCliente.endereco.trim() && !!novoCliente.bairro.trim());
         const podeContinuar = nomeOk && entregaOk;
         return (
         <div className="space-y-4">
@@ -792,7 +850,22 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
               </div>
               <button onClick={() => { setCliente(null); setClienteBusca(''); }} className="text-neutral-400 hover:text-neutral-900"><X size={18} /></button>
             </div>
-          ) : (
+          ) : null}
+
+          {/* Endereço/bairro de entrega — mostrado tanto pra cliente novo quanto
+              pra cliente cadastrado selecionado (cadastro pode não ter endereço
+              salvo, ou o endereço pode ter mudado), editável nos dois casos. */}
+          {cliente && tipo === 'delivery' && (
+            <>
+              <input value={novoCliente.endereco} onChange={(e) => setNovoCliente({ ...novoCliente, endereco: e.target.value })} placeholder="Endereço" className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B91C1C] focus:outline-none" />
+              <select value={novoCliente.bairro} onChange={(e) => { setNovoCliente({ ...novoCliente, bairro: e.target.value }); setBairro(e.target.value); }} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3 text-neutral-900 focus:border-[#B91C1C] focus:outline-none">
+                <option value="">Bairro...</option>
+                {taxas.map((t) => <option key={t.id} value={t.bairro}>{t.bairro} - {brl(t.taxa)}</option>)}
+              </select>
+            </>
+          )}
+
+          {!cliente && (
             <>
               {/* Nome do cliente = busca + cadastro no mesmo campo */}
               <div>
@@ -822,7 +895,26 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
                     {clientes.map((c) => (
                       <button
                         key={c.id}
-                        onClick={() => { setCliente(c); setBairro(c.bairro); setNovoCliente({ ...novoCliente, nome: '' }); setClienteBusca(''); setClientes([]); }}
+                        onClick={() => {
+                          setCliente(c);
+                          setBairro(c.bairro);
+                          // Copia o cadastro pra dentro de novoCliente também — é esse
+                          // objeto (não o `cliente`) que a validação de entrega
+                          // (entregaOk) e os campos abaixo leem. Sem isso, endereco/
+                          // bairro ficavam vazios e o botão "Continuar" travava
+                          // silenciosamente (disabled, sem nenhum erro na tela)
+                          // sempre que o pedido era delivery e o cliente vinha do
+                          // cadastro em vez de digitado na hora.
+                          setNovoCliente({
+                            ...novoCliente,
+                            nome: '',
+                            telefone: novoCliente.telefone || c.telefone || '',
+                            endereco: c.endereco || '',
+                            bairro: c.bairro || '',
+                          });
+                          setClienteBusca('');
+                          setClientes([]);
+                        }}
                         className="w-full text-left bg-white border border-neutral-200 rounded-xl p-2.5 hover:border-[#B91C1C]"
                       >
                         <p className="text-neutral-900 font-medium text-sm">{c.nome}</p>

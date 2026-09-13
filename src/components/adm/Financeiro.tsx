@@ -2,14 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useConfig } from '../../context/ConfigContext';
 import { brl, margemProduto, todayISO } from '../../lib/format';
-import { dateToISO, dateTimeToISO, startOfDay, endOfDay, addDays } from '../../lib/dateUtils';
+import { dateToISO, dateTimeToISO, startOfDay, endOfDay, startOfMonth, endOfMonth, addDays } from '../../lib/dateUtils';
 import { PeriodSelector } from '../PeriodSelector';
 import { usePedidosPeriodo } from '../../hooks/usePedidosPeriodo';
 import {
   calcularKPIs, agruparPorTipo, agruparPorFormaPagamento, analisarProdutos, calcularEstatisticasMargem,
-  calcularLucroLiquido, calcularPontoEquilibrio, calcularDescontoTotal, calcularProjecao, calcularPorHora,
+  calcularPontoEquilibrio, calcularDescontoTotal, calcularProjecao, calcularPorHora,
   agruparPorBairro, classificarCurvaABC, analisarPorCategoria, calcularNovosRecorrentes,
+  calcularFinanceiroBase, calcularLucroLiquido, calcularReceitaPorOrigem,
 } from '../../lib/reportUtils';
+import { buscarCustosOperacionais, type CustoOperacionalEntry } from '../../lib/custosOperacionais';
+import { buscarFaturamentoPeriodo } from '../../lib/financeQueries';
 import { GraficoBarras } from './dashboard/GraficoBarras';
 import { GraficoRosca } from './dashboard/GraficoRosca';
 import { printFechamentoDia } from '../../lib/print';
@@ -184,7 +187,7 @@ function Caixa() {
 // visão focada só nesses lançamentos, e eles entram como Despesa no gráfico
 // do Dashboard e no Lucro Líquido dos Relatórios.
 function CustosOperacionais() {
-  const [entries, setEntries] = useState<CaixaEntry[]>([]);
+  const [entries, setEntries] = useState<CustoOperacionalEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [descricao, setDescricao] = useState('');
   const [valor, setValor] = useState('');
@@ -192,38 +195,45 @@ function CustosOperacionais() {
   const [salvando, setSalvando] = useState(false);
   const [mes, setMes] = useState(todayISO().slice(0, 7)); // YYYY-MM
 
+  const [total, setTotal] = useState(0);
+
   const load = useCallback(async () => {
     setLoading(true);
-    const ini = `${mes}-01`;
-    const fim = `${mes}-31`;
-    const { data: d } = await supabase
-      .from('caixa')
-      .select('*')
-      .eq('tipo', 'saida')
-      .gte('data', ini)
-      .lte('data', fim)
-      .order('data', { ascending: false });
-    setEntries((d as CaixaEntry[]) || []);
+    const [ano, mesNum] = mes.split('-').map(Number);
+    const ini = new Date(ano, mesNum - 1, 1);
+    const fim = new Date(ano, mesNum, 0);
+    // Mesma fonte usada no Dashboard (Despesas) e no Lucro Líquido dos
+    // Relatórios — pra essa lista, com nome/data/valor de cada lançamento,
+    // não só o total agregado.
+    const { total: t, entries: e } = await buscarCustosOperacionais(ini, fim);
+    setEntries(e);
+    setTotal(t);
     setLoading(false);
   }, [mes]);
 
   useEffect(() => { load(); }, [load]);
 
-  const total = entries.reduce((s, e) => s + Number(e.valor), 0);
-
   const salvar = async () => {
     const v = parseFloat(valor.replace(',', '.'));
     if (!descricao.trim() || !v || v <= 0 || salvando) return;
     setSalvando(true);
-    await supabase.from('caixa').insert({ tipo: 'saida', descricao: descricao.trim(), valor: v, forma_pagamento: '', data });
-    setDescricao(''); setValor(''); setData(todayISO());
+    const { error } = await supabase.from('caixa').insert({ tipo: 'saida', descricao: descricao.trim(), valor: v, forma_pagamento: '', data });
     setSalvando(false);
+    if (error) {
+      // Antes esse erro era engolido: o lançamento falhava e a tela agia
+      // como se tivesse dado certo, limpando o formulário sem mostrar nada —
+      // exatamente o "lancei e não aparece em lugar nenhum".
+      alert(`Não foi possível salvar o custo: ${error.message}`);
+      return;
+    }
+    setDescricao(''); setValor(''); setData(todayISO());
     load();
   };
 
   const excluir = async (id: string) => {
     if (!confirm('Excluir este custo?')) return;
-    await supabase.from('caixa').delete().eq('id', id);
+    const { error } = await supabase.from('caixa').delete().eq('id', id);
+    if (error) { alert(`Não foi possível excluir: ${error.message}`); return; }
     load();
   };
 
@@ -287,19 +297,27 @@ function Fechamento() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [itens, setItens] = useState<Record<string, ItemPedido[]>>({});
   const [dataFiltro, setDataFiltro] = useState(todayISO());
+  // Custos Operacionais lançados no dia — mesma fonte usada no Dashboard e em
+  // Financeiro > Relatórios, pra Fechamento do Dia e Relatórios nunca mais
+  // divergirem no mesmo conceito de "despesa do dia" (era a fonte #3 desse bug).
+  const [custosOperacionaisDia, setCustosOperacionaisDia] = useState(0);
 
   const load = useCallback(async () => {
     const start = new Date(dataFiltro + 'T00:00:00');
     const end = new Date(dataFiltro + 'T23:59:59');
-    const { data: peds } = await supabase
-      .from('pedidos')
-      .select('*')
-      .gte('created_at', start.toISOString())
-      .lte('created_at', end.toISOString())
-      .neq('status', 'cancelado')
-      .order('created_at');
+    const [{ data: peds }, custos] = await Promise.all([
+      supabase
+        .from('pedidos')
+        .select('*')
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString())
+        .neq('status', 'cancelado')
+        .order('created_at'),
+      buscarCustosOperacionais(start, end),
+    ]);
     const pedsData = (peds as Pedido[]) || [];
     setPedidos(pedsData);
+    setCustosOperacionaisDia(custos.total);
 
     // Itens de todos os pedidos do dia numa única query (era uma query por
     // pedido antes — lento com o dia cheio).
@@ -317,11 +335,11 @@ function Fechamento() {
 
   useEffect(() => { load(); }, [load]);
 
-  const faturamento = pedidos.reduce((s, p) => s + Number(p.total), 0);
-  const custoTotal = pedidos.reduce((s, p) => s + Number(p.custo_total), 0);
-  const lucroBruto = pedidos.reduce((s, p) => s + Number(p.lucro), 0);
-  const despesasFixas = config?.despesas_fixas_diaria || 0;
-  const lucroLiquido = lucroBruto - despesasFixas;
+  const { faturamento, custoTotal, lucroTotal: lucroBruto } = calcularFinanceiroBase(pedidos);
+  const lucroLiquido = calcularLucroLiquido(lucroBruto, custosOperacionaisDia);
+  // Quanto do faturamento é venda de produto (pizza/esfirra) x taxa de
+  // entrega — os dois são faturamento, mas são coisas diferentes.
+  const { vendaProdutos, taxaEntrega } = calcularReceitaPorOrigem(pedidos);
 
   // Product breakdown
   const productMap: Record<string, { qtd: number; custo: number; venda: number; lucro: number }> = {};
@@ -345,10 +363,12 @@ function Fechamento() {
       faturamento,
       custoTotal,
       lucroBruto,
-      despesasFixas,
+      custosOperacionaisDia,
       lucroLiquido,
       produtos.map(([nome, d]) => ({ nome, qtd: d.qtd, lucro: d.lucro })),
       config,
+      vendaProdutos,
+      taxaEntrega,
     );
   };
 
@@ -371,7 +391,14 @@ function Fechamento() {
         <StatCard label="Faturamento" value={brl(faturamento)} color="text-neutral-900" />
         <StatCard label="Custo Produtos" value={brl(custoTotal)} color="text-orange-600" />
         <StatCard label="Lucro Bruto" value={brl(lucroBruto)} color="text-[#22c55e]" />
-        <StatCard label="Despesas Fixas" value={brl(despesasFixas)} color="text-red-600" />
+        <StatCard label="Custos Operacionais" value={brl(custosOperacionaisDia)} color="text-red-600" />
+      </div>
+
+      {/* Faturamento não é só uma coisa: separa venda de produto (pizza/esfirra)
+          da taxa de entrega, que também é faturamento mas é outra origem. */}
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard label="Venda de Produtos" value={brl(vendaProdutos)} color="text-neutral-900" />
+        <StatCard label="Taxa de Entrega" value={brl(taxaEntrega)} color="text-blue-600" />
       </div>
 
       {/* Product breakdown */}
@@ -441,6 +468,21 @@ function Relatorios() {
   const [primeiraCompraPorTelefone, setPrimeiraCompraPorTelefone] = useState<Record<string, string>>({});
   const [evolucaoMensal, setEvolucaoMensal] = useState<{ dia: string; label: string; valor: number }[]>([]);
 
+  // Custos Operacionais lançados no período — mesma fonte usada no gráfico de
+  // Despesas do Dashboard. Antes o Lucro Líquido daqui nem consultava essa
+  // tabela: descontava só `despesas_fixas_diaria` (um valor configurado à
+  // parte em Configurações), então lançar um custo operacional real não
+  // mudava em nada o Lucro Líquido do relatório — apesar do texto da tela de
+  // Custos Operacionais prometer que mudaria.
+  const [custosOperacionaisPeriodo, setCustosOperacionaisPeriodo] = useState(0);
+  const [custosOperacionaisEntries, setCustosOperacionaisEntries] = useState<CustoOperacionalEntry[]>([]);
+  useEffect(() => {
+    buscarCustosOperacionais(periodo.dataInicio, periodo.dataFim).then((r) => {
+      setCustosOperacionaisPeriodo(r.total);
+      setCustosOperacionaisEntries(r.entries);
+    });
+  }, [periodo.dataInicio, periodo.dataFim]);
+
   useEffect(() => {
     (async () => {
       // Categoria de cada produto (pra margem por categoria) — carrega tudo, ativo ou não,
@@ -504,6 +546,9 @@ function Relatorios() {
   });
 
   const kpis = calcularKPIs(pedidos);
+  // Venda de produto (pizza/esfirra) x taxa de entrega — as duas são
+  // faturamento, mas o dono precisa saber separado quanto veio de cada uma.
+  const { vendaProdutos, taxaEntrega } = calcularReceitaPorOrigem(pedidos);
   const kpisPorTipo = agruparPorTipo(pedidos);
   const kpisPorFormaPagamento = agruparPorFormaPagamento(pedidos);
   const produtos = analisarProdutos(pedidos, itensMap);
@@ -512,11 +557,14 @@ function Relatorios() {
   const porCategoria = analisarPorCategoria(pedidos, itensMap, produtoCategoriaMap);
   const kpisPorBairro = agruparPorBairro(pedidos);
 
-  // Lucro líquido real do período (desconta despesa fixa proporcional aos
-  // dias, não só no fechamento de um dia único) e ponto de equilíbrio.
+  // Lucro líquido real do período — desconta os Custos Operacionais
+  // efetivamente lançados no período (mesma fonte do Dashboard), não uma
+  // despesa fixa estimada em Configurações.
   const diasNoPeriodo = Math.max(1, Math.round((startOfDay(periodo.dataFim).getTime() - startOfDay(periodo.dataInicio).getTime()) / 86400000) + 1);
   const despesaFixaDiaria = config?.despesas_fixas_diaria || 0;
-  const lucroLiquido = calcularLucroLiquido(kpis, despesaFixaDiaria, diasNoPeriodo);
+  const lucroLiquido = calcularLucroLiquido(kpis.lucroTotal, custosOperacionaisPeriodo);
+  // Ponto de equilíbrio é projeção (quanto precisa faturar por dia pra cobrir
+  // o custo fixo) — esse sim usa a despesa fixa configurada, não o histórico.
   const pontoEquilibrioDiario = calcularPontoEquilibrio(despesaFixaDiaria, kpis.margemMedia);
   const descontoTotal = calcularDescontoTotal(pedidos);
 
@@ -574,7 +622,9 @@ function Relatorios() {
 
   // Imprime o relatório do período selecionado (dia/semana/mês) na mesma
   // impressora térmica das comandas — reaproveita o layout do Fechamento do
-  // Dia, sem despesas fixas (essas só fazem sentido por dia, não por período).
+  // Dia. Antes imprimia sempre Lucro Líquido = Lucro Bruto e Despesa = 0,
+  // ignorando os Custos Operacionais que a própria tela (DRE acima) já
+  // descontava — o papel impresso divergia do que aparecia na tela.
   const printRelatorio = () => {
     if (!config) return;
     const inicioStr = periodo.dataInicio.toLocaleDateString('pt-BR');
@@ -585,10 +635,12 @@ function Relatorios() {
       kpis.faturamento,
       kpis.custoTotal,
       kpis.lucroTotal,
-      0,
-      kpis.lucroTotal,
+      custosOperacionaisPeriodo,
+      lucroLiquido,
       produtos.map((p) => ({ nome: p.nome, qtd: p.quantidade, lucro: p.lucro })),
       config,
+      vendaProdutos,
+      taxaEntrega,
     );
   };
 
@@ -648,6 +700,14 @@ function Relatorios() {
                   <span className="text-neutral-500">Faturamento</span>
                   <span className="text-neutral-900 font-medium">{brl(kpis.faturamento)}</span>
                 </div>
+                <div className="flex justify-between pl-3 text-xs">
+                  <span className="text-neutral-400">Venda de Produtos</span>
+                  <span className="text-neutral-500">{brl(vendaProdutos)}</span>
+                </div>
+                <div className="flex justify-between pl-3 text-xs">
+                  <span className="text-neutral-400">Taxa de Entrega</span>
+                  <span className="text-neutral-500">{brl(taxaEntrega)}</span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-neutral-500">(-) Custo dos Produtos</span>
                   <span className="text-orange-600">{brl(kpis.custoTotal)}</span>
@@ -657,8 +717,8 @@ function Relatorios() {
                   <span className="text-[#22c55e] font-bold">{brl(kpis.lucroTotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-neutral-500">(-) Despesa Fixa ({diasNoPeriodo}d × {brl(despesaFixaDiaria)})</span>
-                  <span className="text-orange-600">{brl(despesaFixaDiaria * diasNoPeriodo)}</span>
+                  <span className="text-neutral-500">(-) Custos Operacionais</span>
+                  <span className="text-orange-600">{brl(custosOperacionaisPeriodo)}</span>
                 </div>
                 <div className="flex justify-between border-t border-neutral-200 pt-2">
                   <span className="text-neutral-700 font-medium">Lucro Líquido</span>
@@ -666,7 +726,30 @@ function Relatorios() {
                 </div>
               </div>
             </div>
-            <GraficoRosca custo={kpis.custoTotal} lucro={kpis.lucroTotal} />
+            <GraficoRosca custo={kpis.custoTotal} lucro={kpis.lucroTotal} faturamento={kpis.faturamento} />
+          </div>
+
+          {/* Cada lançamento de Custos Operacionais do período, um por um —
+              antes só o total aparecia aqui, então quem lançava um custo
+              (ex: diária de funcionário) não tinha como ver ONDE esse
+              lançamento estava refletido fora da própria tela de lançamento. */}
+          <div className="bg-white border border-[#EFE9E0] rounded-2xl p-5 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
+            <h3 className="text-neutral-900 font-semibold mb-3">Custos Operacionais do Período ({brl(custosOperacionaisPeriodo)})</h3>
+            {custosOperacionaisEntries.length === 0 ? (
+              <p className="text-neutral-500 text-sm py-2">Nenhum custo operacional lançado neste período.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {custosOperacionaisEntries.map((e) => (
+                  <div key={e.id} className="flex items-center justify-between text-sm border-b border-neutral-200/60 last:border-0 pb-1.5 last:pb-0">
+                    <span className="text-neutral-700">{e.descricao}</span>
+                    <div className="flex items-center gap-4 shrink-0">
+                      <span className="text-neutral-500 text-xs">{new Date(`${e.data}T12:00:00`).toLocaleDateString('pt-BR')}</span>
+                      <span className="text-orange-600 font-semibold w-20 text-right">{brl(e.valor)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Tendência de faturamento no período */}
@@ -921,15 +1004,12 @@ function Metas() {
   const load = useCallback(async () => {
     const { data } = await supabase.from('metas').select('*').order('created_at', { ascending: false });
     setMetas((data as typeof metas) || []);
-    const start = new Date(); start.setHours(0, 0, 0, 0);
-    const end = new Date(); end.setHours(23, 59, 59, 999);
-    const { data: peds } = await supabase.from('pedidos').select('total').gte('created_at', start.toISOString()).lte('created_at', end.toISOString()).neq('status', 'cancelado');
-    setFaturamentoHoje((peds || []).reduce((s: number, p: { total: number }) => s + Number(p.total), 0));
-
-    const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0);
-    const fimMes = new Date(inicioMes); fimMes.setMonth(fimMes.getMonth() + 1); fimMes.setDate(0); fimMes.setHours(23, 59, 59, 999);
-    const { data: pedsMes } = await supabase.from('pedidos').select('total').gte('created_at', inicioMes.toISOString()).lte('created_at', fimMes.toISOString()).neq('status', 'cancelado');
-    setFaturamentoMes((pedsMes || []).reduce((s: number, p: { total: number }) => s + Number(p.total), 0));
+    // Mesma fonte/limites de dia e mês usados no Dashboard (startOfDay/endOfDay/
+    // startOfMonth/endOfMonth de dateUtils) — antes essa tela calculava os
+    // limites à mão com `new Date().setHours(...)`, um segundo lugar onde um
+    // futuro ajuste de fuso horário podia ser esquecido.
+    setFaturamentoHoje(await buscarFaturamentoPeriodo(startOfDay(new Date()), endOfDay(new Date())));
+    setFaturamentoMes(await buscarFaturamentoPeriodo(startOfMonth(new Date()), endOfMonth(new Date())));
   }, []);
 
   useEffect(() => { load(); }, [load]);

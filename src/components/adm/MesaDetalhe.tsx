@@ -3,9 +3,11 @@ import { supabase } from '../../lib/supabase';
 import { brl } from '../../lib/format';
 import { printMesaComanda, printMesaConta } from '../../lib/print';
 import {
-  ArrowLeft, Plus, Trash2, Printer, DoorClosed, X, Clock, RefreshCw, User, StickyNote,
+  ArrowLeft, Plus, Trash2, Printer, DoorClosed, X, Clock, RefreshCw, User, StickyNote, Wheat,
 } from 'lucide-react';
 import { ProductPlaceholder, usaImagemPadrao } from '../ProductPlaceholder';
+import { useMassaHoje } from '../../hooks/useMassaHoje';
+import { consumoMassa } from '../../lib/massa';
 import type { Mesa, ItemMesa, Produto, Configuracao } from '../../types';
 
 interface Props {
@@ -19,6 +21,7 @@ interface Props {
 const FORMAS_PAGAMENTO = ['Dinheiro', 'Pix', 'Cartão'];
 
 export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props) {
+  const massa = useMassaHoje();
   const [itens, setItens] = useState<ItemMesa[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -214,6 +217,22 @@ export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props
         </div>
       </div>
 
+      {/* Saldo de massas do dia — só aparece se a contagem foi lançada no Dashboard */}
+      {(massa.pizzaInicial > 0 || massa.esfihaInicial > 0) && (
+        <div className="flex flex-wrap gap-2 text-sm">
+          {massa.pizzaInicial > 0 && (
+            <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold ${massa.pizzaRestante <= 0 ? 'bg-red-100 text-red-700' : massa.pizzaRestante <= Math.max(1, Math.round(massa.pizzaInicial * 0.15)) ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+              <Wheat size={14} /> Massa Pizza: {Math.max(0, massa.pizzaRestante)} restante{massa.pizzaRestante === 1 ? '' : 's'}
+            </span>
+          )}
+          {massa.esfihaInicial > 0 && (
+            <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold ${massa.esfihaRestante <= 0 ? 'bg-red-100 text-red-700' : massa.esfihaRestante <= Math.max(1, Math.round(massa.esfihaInicial * 0.15)) ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+              <Wheat size={14} /> Massa Esfirra: {Math.max(0, massa.esfihaRestante)} restante{massa.esfihaRestante === 1 ? '' : 's'}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Garçom responsável + observação da mesa (aniversário, cliente VIP, etc.) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex items-center gap-2 bg-white border border-neutral-200 rounded-xl px-3 py-2">
@@ -288,7 +307,7 @@ export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props
       </div>
 
       {showAdd && (
-        <AddItemModal produtos={produtos} busy={busy} onAdd={handleAddItens} onClose={() => setShowAdd(false)} />
+        <AddItemModal produtos={produtos} busy={busy} onAdd={handleAddItens} onClose={() => setShowAdd(false)} massa={massa} />
       )}
       {showClose && (
         <CloseMesaModal total={subtotal} busy={busy} onConfirm={handleCloseMesa} onClose={handleCancelClose} />
@@ -305,11 +324,13 @@ function AddItemModal({
   busy,
   onAdd,
   onClose,
+  massa,
 }: {
   produtos: Produto[];
   busy: boolean;
   onAdd: (itens: ItemDraft[]) => Promise<boolean>;
   onClose: () => void;
+  massa: ReturnType<typeof useMassaHoje>;
 }) {
   const [prod1Id, setProd1Id] = useState('');
   const [meioMeio, setMeioMeio] = useState(false);
@@ -337,6 +358,28 @@ function AddItemModal({
   const podeAdicionar = !!prod1 && (!meioMeio || !!prod2) && quantidade > 0;
   const totalCarrinho = carrinho.reduce((s, i) => s + i.quantidade * (i.preco_unitario + i.adicional_preco), 0);
 
+  // Quanto de massa a lista atual (ainda não enviada) já reserva, e o saldo
+  // ao vivo considerando isso — mesma lógica do Balcão.
+  const consumoCarrinho = carrinho.reduce((acc, it) => {
+    const prod = produtos.find((p) => p.id === it.produto_id);
+    const m = consumoMassa(prod, it.quantidade);
+    return { pizza: acc.pizza + m.pizza, esfiha: acc.esfiha + m.esfiha };
+  }, { pizza: 0, esfiha: 0 });
+  const pizzaDisponivel = massa.pizzaRestante - consumoCarrinho.pizza;
+  const esfihaDisponivel = massa.esfihaRestante - consumoCarrinho.esfiha;
+
+  const checarMassaDisponivel = (necessario: { pizza: number; esfiha: number }): boolean => {
+    if (necessario.pizza > 0 && massa.pizzaInicial > 0 && necessario.pizza > pizzaDisponivel) {
+      const falta = Math.max(0, pizzaDisponivel);
+      return confirm(`Só resta${falta === 1 ? '' : 'm'} ${falta} massa${falta === 1 ? '' : 's'} de pizza hoje. Adicionar mesmo assim?`);
+    }
+    if (necessario.esfiha > 0 && massa.esfihaInicial > 0 && necessario.esfiha > esfihaDisponivel) {
+      const falta = Math.max(0, esfihaDisponivel);
+      return confirm(`Só resta${falta === 1 ? '' : 'm'} ${falta} massa${falta === 1 ? '' : 's'} de esfirra hoje. Adicionar mesmo assim?`);
+    }
+    return true;
+  };
+
   const limparFormulario = () => {
     setProd1Id('');
     setMeioMeio(false);
@@ -352,6 +395,7 @@ function AddItemModal({
 
   const adicionarAoCarrinho = () => {
     if (!prod1) return;
+    if (!checarMassaDisponivel(consumoMassa(prod1, quantidade))) return;
     const nome = meioMeio && prod2 ? `${prod1.nome} / ${prod2.nome}` : nomeComCategoria(prod1);
     setCarrinho((c) => [
       ...c,
@@ -377,7 +421,9 @@ function AddItemModal({
 
   const confirmar = async () => {
     // Se o usuário deixou algo selecionado no formulário sem clicar em "Adicionar
-    // à lista", inclui esse item também para não perder o que já preencheu.
+    // à lista", inclui esse item também para não perder o que já preencheu — mas
+    // confere a massa antes (os itens já na lista já passaram por essa checagem).
+    if (podeAdicionar && prod1 && !checarMassaDisponivel(consumoMassa(prod1, quantidade))) return;
     const itens = podeAdicionar
       ? [
           ...carrinho,
@@ -420,6 +466,21 @@ function AddItemModal({
             <X size={20} />
           </button>
         </div>
+
+        {(massa.pizzaInicial > 0 || massa.esfihaInicial > 0) && (
+          <div className="flex flex-wrap gap-2 text-xs px-4 pt-3">
+            {massa.pizzaInicial > 0 && (
+              <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold ${pizzaDisponivel <= 0 ? 'bg-red-100 text-red-700' : pizzaDisponivel <= Math.max(1, Math.round(massa.pizzaInicial * 0.15)) ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                <Wheat size={12} /> Pizza: {Math.max(0, pizzaDisponivel)} restante{pizzaDisponivel === 1 ? '' : 's'}
+              </span>
+            )}
+            {massa.esfihaInicial > 0 && (
+              <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold ${esfihaDisponivel <= 0 ? 'bg-red-100 text-red-700' : esfihaDisponivel <= Math.max(1, Math.round(massa.esfihaInicial * 0.15)) ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                <Wheat size={12} /> Esfirra: {Math.max(0, esfihaDisponivel)} restante{esfihaDisponivel === 1 ? '' : 's'}
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="p-4 space-y-4">
           {/* Busca de produto */}

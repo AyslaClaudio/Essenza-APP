@@ -6,14 +6,18 @@ import {
   startOfDay, endOfDay, startOfMonth, endOfMonth,
   addDays, dateTimeToISO, dateToISO,
 } from '../../lib/dateUtils';
+import { calcularFinanceiroBase, calcularMargem, calcularReceitaPorOrigem } from '../../lib/reportUtils';
+import { buscarFaturamentoPeriodo } from '../../lib/financeQueries';
 import {
   TrendingUp, TrendingDown, DollarSign, Receipt, ShoppingBag, RefreshCw, ChefHat, LayoutGrid,
   Calendar, PieChart as PieIcon, Trophy, Clock,
 } from 'lucide-react';
+import { buscarCustosOperacionais, type CustoOperacionalEntry } from '../../lib/custosOperacionais';
 import { GraficoTendencia, type BucketTendencia } from './dashboard/GraficoTendencia';
 import { GraficoTopSabores, type SaborTop } from './dashboard/GraficoTopSabores';
 import { MetaProgresso } from './dashboard/MetaProgresso';
 import { InsightIA } from './dashboard/InsightIA';
+import { ContagemMassas } from './dashboard/ContagemMassas';
 
 type Filtro = 'hoje' | '7dias' | '30dias' | 'mes' | '3meses' | '6meses' | 'custom';
 
@@ -22,6 +26,8 @@ interface Agregado {
   lucro: number;
   custo: number;
   num: number;
+  vendaProdutos: number;
+  taxaEntrega: number;
 }
 
 interface Operacao {
@@ -84,11 +90,15 @@ function intervalos(filtro: Filtro, customIni: string, customFim: string): { ini
 }
 
 function agregar(rows: any[]): Agregado {
+  const { faturamento, custoTotal, lucroTotal } = calcularFinanceiroBase(rows);
+  const { vendaProdutos, taxaEntrega } = calcularReceitaPorOrigem(rows);
   return {
-    faturamento: rows.reduce((s, p) => s + Number(p.total || 0), 0),
-    lucro: rows.reduce((s, p) => s + Number(p.lucro || 0), 0),
-    custo: rows.reduce((s, p) => s + Number(p.custo_total || 0), 0),
+    faturamento,
+    lucro: lucroTotal,
+    custo: custoTotal,
     num: rows.filter((p) => p.status === 'entregue').length,
+    vendaProdutos,
+    taxaEntrega,
   };
 }
 
@@ -127,6 +137,15 @@ function bucketize(pedidos: any[], saidasCaixa: any[], ini: Date, fim: Date): Bu
   return [...mapa.values()];
 }
 
+function ResumoItem({ label, valor, cor }: { label: string; valor: number; cor?: string }) {
+  return (
+    <div>
+      <p className="text-[#8A8A8A] text-xs uppercase tracking-wide mb-1">{label}</p>
+      <p className={`font-bold text-lg ${cor || 'text-[#26211E]'}`}>{brl(valor)}</p>
+    </div>
+  );
+}
+
 function Sparkline({ valores }: { valores: number[] }) {
   if (valores.length < 2 || valores.every((v) => v === 0)) return null;
   const max = Math.max(...valores);
@@ -157,8 +176,8 @@ export function Dashboard({ meta }: { meta: number }) {
   const [customFim, setCustomFim] = useState(dateToISO(new Date()));
   const [loading, setLoading] = useState(true);
 
-  const [atual, setAtual] = useState<Agregado>({ faturamento: 0, lucro: 0, custo: 0, num: 0 });
-  const [anterior, setAnterior] = useState<Agregado>({ faturamento: 0, lucro: 0, custo: 0, num: 0 });
+  const [atual, setAtual] = useState<Agregado>({ faturamento: 0, lucro: 0, custo: 0, num: 0, vendaProdutos: 0, taxaEntrega: 0 });
+  const [anterior, setAnterior] = useState<Agregado>({ faturamento: 0, lucro: 0, custo: 0, num: 0, vendaProdutos: 0, taxaEntrega: 0 });
   const [labelPrev, setLabelPrev] = useState('vs ontem');
   const [tendencia, setTendencia] = useState<BucketTendencia[]>([]);
   const [topSabores, setTopSabores] = useState<SaborTop[]>([]);
@@ -170,6 +189,7 @@ export function Dashboard({ meta }: { meta: number }) {
   const [operacao, setOperacao] = useState<Operacao>({ pedidosBalcao: 0, pedidosDelivery: 0, mesasOcupadas: 0, mesasTotal: 0 });
   const [produtoCat, setProdutoCat] = useState<Record<string, string>>({});
   const [primeiraCompra, setPrimeiraCompra] = useState<Record<string, string>>({});
+  const [custosOperacionais, setCustosOperacionais] = useState<CustoOperacionalEntry[]>([]);
 
   // Dados que não dependem do período — carregados uma vez.
   useEffect(() => {
@@ -198,25 +218,22 @@ export function Dashboard({ meta }: { meta: number }) {
     const { ini, fim, iniPrev, fimPrev, labelPrev } = intervalos(filtro, customIni, customFim);
     setLabelPrev(labelPrev);
 
-    const [{ data: rows }, { data: saidas }] = await Promise.all([
+    const [{ data: rows }, custosOp] = await Promise.all([
       supabase
         .from('pedidos')
-        .select('id, total, lucro, custo_total, status, forma_pagamento, created_at, cliente_nome')
+        .select('id, total, lucro, custo_total, subtotal, taxa_entrega, status, forma_pagamento, created_at, cliente_nome')
         .gte('created_at', dateTimeToISO(ini))
         .lte('created_at', dateTimeToISO(fim))
         .neq('status', 'cancelado'),
-      // Custos operacionais / saídas de caixa lançados no período — entram como
-      // Despesas na tendência (além do custo dos produtos vendidos).
-      supabase
-        .from('caixa')
-        .select('valor, data')
-        .eq('tipo', 'saida')
-        .gte('data', dateToISO(ini))
-        .lte('data', dateToISO(fim)),
+      // Custos operacionais no período — mesma fonte usada em Financeiro >
+      // Relatórios (Lucro Líquido) e na tela Custos Operacionais, pra evitar
+      // as 3 telas mostrarem despesa diferente pro mesmo período.
+      buscarCustosOperacionais(ini, fim),
     ]);
     const pedidos = rows || [];
     setAtual(agregar(pedidos));
-    setTendencia(bucketize(pedidos, saidas || [], ini, fim));
+    setTendencia(bucketize(pedidos, custosOp.entries, ini, fim));
+    setCustosOperacionais(custosOp.entries);
 
     // Forma de pagamento dominante
     const formaCount = new Map<string, number>();
@@ -240,7 +257,7 @@ export function Dashboard({ meta }: { meta: number }) {
     // Período anterior (só pro %)
     const { data: rowsPrev } = await supabase
       .from('pedidos')
-      .select('total, lucro, custo_total, status')
+      .select('total, lucro, custo_total, subtotal, taxa_entrega, status')
       .gte('created_at', dateTimeToISO(iniPrev))
       .lte('created_at', dateTimeToISO(fimPrev))
       .neq('status', 'cancelado');
@@ -263,11 +280,7 @@ export function Dashboard({ meta }: { meta: number }) {
     if (filtro === 'hoje') {
       setFaturamentoHoje(agregar(pedidos).faturamento);
     } else {
-      const { data: rh } = await supabase.from('pedidos').select('total')
-        .gte('created_at', dateTimeToISO(startOfDay(new Date())))
-        .lte('created_at', dateTimeToISO(endOfDay(new Date())))
-        .neq('status', 'cancelado');
-      setFaturamentoHoje((rh || []).reduce((s, p) => s + Number(p.total || 0), 0));
+      setFaturamentoHoje(await buscarFaturamentoPeriodo(startOfDay(new Date()), endOfDay(new Date())));
     }
 
     // Itens do período → top sabores + categorias
@@ -330,7 +343,7 @@ export function Dashboard({ meta }: { meta: number }) {
 
   const ticketMedio = atual.num > 0 ? atual.faturamento / atual.num : 0;
   const ticketMedioPrev = anterior.num > 0 ? anterior.faturamento / anterior.num : 0;
-  const margem = atual.faturamento > 0 ? (atual.lucro / atual.faturamento) * 100 : 0;
+  const margem = calcularMargem(atual.lucro, atual.faturamento);
   const sparkValores = tendencia.map((d) => d.faturamento);
   const totalStatus = status.entregue + status.emAndamento + status.cancelado || 1;
 
@@ -388,6 +401,9 @@ export function Dashboard({ meta }: { meta: number }) {
           </div>
         </div>
       </div>
+
+      {/* Contagem de massas do dia */}
+      <ContagemMassas />
 
       {showCustom && (
         <div className="bg-white border border-[#EFE9E0] rounded-2xl p-4 flex flex-wrap items-end gap-3">
@@ -506,6 +522,10 @@ export function Dashboard({ meta }: { meta: number }) {
               <TrendingUp size={15} className="text-[#22C55E] mt-0.5 shrink-0" />
               <span className="text-[#8A8A8A]">Faturamento <b className={`font-medium ${atual.faturamento >= anterior.faturamento ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{pctChange(atual.faturamento, anterior.faturamento).toFixed(1)}%</b> {labelPrev}</span>
             </li>
+            <li className="flex items-start gap-2">
+              <DollarSign size={15} className="text-[#3B82F6] mt-0.5 shrink-0" />
+              <span className="text-[#8A8A8A]">Venda de produtos <b className="text-[#26211E] font-medium">{brl(atual.vendaProdutos)}</b> · Taxa de entrega <b className="text-[#26211E] font-medium">{brl(atual.taxaEntrega)}</b></span>
+            </li>
             {topSabor && (
               <li className="flex items-start gap-2">
                 <Trophy size={15} className="text-[#F59E0B] mt-0.5 shrink-0" />
@@ -524,6 +544,38 @@ export function Dashboard({ meta }: { meta: number }) {
             )}
           </ul>
         </div>
+      </div>
+
+      {/* DRE resumido do período + custos operacionais um por um — antes só
+          existia um número de "Despesas" dentro do gráfico de tendência, sem
+          nenhum jeito de ver o que compunha esse número (custo de produto x
+          custo operacional) nem qual lançamento específico entrava na conta. */}
+      <div className="bg-white border border-[#EFE9E0] rounded-2xl p-5 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
+        <h3 className="text-[#26211E] font-semibold mb-4">Faturamento, Custos e Lucro do Período</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+          <ResumoItem label="Faturamento" valor={atual.faturamento} />
+          <ResumoItem label="Venda Produtos" valor={atual.vendaProdutos} />
+          <ResumoItem label="Taxa Entrega" valor={atual.taxaEntrega} cor="text-blue-600" />
+          <ResumoItem label="Custo Produtos" valor={atual.custo} cor="text-orange-600" />
+          <ResumoItem label="Custos Operacionais" valor={custosOperacionais.reduce((s, e) => s + Number(e.valor), 0)} cor="text-orange-600" />
+          <ResumoItem label="Lucro" valor={atual.lucro} cor={atual.lucro >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'} />
+        </div>
+        <p className="text-[#8A8A8A] text-xs font-semibold uppercase tracking-wide mb-2">Custos Operacionais lançados no período</p>
+        {custosOperacionais.length === 0 ? (
+          <p className="text-[#8A8A8A] text-sm">Nenhum custo operacional lançado neste período.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {custosOperacionais.map((e) => (
+              <div key={e.id} className="flex items-center justify-between text-sm border-b border-[#EFE9E0] last:border-0 pb-1.5 last:pb-0">
+                <span className="text-[#26211E]">{e.descricao}</span>
+                <div className="flex items-center gap-4 shrink-0">
+                  <span className="text-[#8A8A8A] text-xs">{new Date(`${e.data}T12:00:00`).toLocaleDateString('pt-BR')}</span>
+                  <span className="text-orange-600 font-semibold w-20 text-right">{brl(e.valor)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Insights */}

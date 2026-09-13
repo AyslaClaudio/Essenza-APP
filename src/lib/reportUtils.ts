@@ -27,13 +27,68 @@ export interface ProdutoAnalise {
   margem: number;
 }
 
+// ===== Fonte única de Faturamento / Custo dos Produtos / Lucro Bruto =====
+// Qualquer tela que precise desses 3 números deve chamar esta função — não
+// reimplementar o reduce à mão. Foi exatamente essa duplicação (Dashboard,
+// Fechamento do Dia e Relatórios cada um somando pedidos por conta própria)
+// que causou divergência de valores entre telas.
+export interface FinanceiroBase {
+  faturamento: number;
+  custoTotal: number;
+  lucroTotal: number;
+}
+
+export function calcularFinanceiroBase(
+  pedidos: { total: number | string; custo_total: number | string; lucro: number | string }[]
+): FinanceiroBase {
+  return {
+    faturamento: pedidos.reduce((s, p) => s + Number(p.total), 0),
+    custoTotal: pedidos.reduce((s, p) => s + Number(p.custo_total), 0),
+    lucroTotal: pedidos.reduce((s, p) => s + Number(p.lucro), 0),
+  };
+}
+
+// Faturamento não é uma coisa só: pedido de delivery embute taxa de entrega
+// (serviço de levar) junto com a venda do produto (pizza/esfirra) em cima do
+// mesmo `total`. Pra saber "quanto vendemos de comida" x "quanto entrou de
+// taxa de entrega" sem misturar os dois, soma-se `subtotal` (venda de
+// produto, existe em pedido de qualquer tipo) separado de `taxa_entrega` (só
+// > 0 em delivery). subtotal + taxa_entrega = total = Faturamento.
+export interface ReceitaPorOrigem {
+  vendaProdutos: number;
+  taxaEntrega: number;
+}
+
+export function calcularReceitaPorOrigem(
+  pedidos: { subtotal: number | string; taxa_entrega: number | string }[]
+): ReceitaPorOrigem {
+  return {
+    vendaProdutos: pedidos.reduce((s, p) => s + Number(p.subtotal || 0), 0),
+    taxaEntrega: pedidos.reduce((s, p) => s + Number(p.taxa_entrega || 0), 0),
+  };
+}
+
+// Margem sobre o faturamento — fonte única (Dashboard e GraficoRosca tinham
+// cada um sua própria fórmula, uma delas dividindo por custo+lucro em vez de
+// faturamento).
+export function calcularMargem(lucro: number, faturamento: number): number {
+  return faturamento > 0 ? (lucro / faturamento) * 100 : 0;
+}
+
+// Despesa operacional real do período = soma dos lançamentos de "Custos
+// Operacionais" (tabela `caixa`, tipo='saida') já filtrados pelo período pelo
+// chamador. Fonte única — Fechamento do Dia e Relatórios usavam antes um
+// valor fixo configurado manualmente, que nunca refletia o que era realmente
+// lançado em Custos Operacionais.
+export function calcularDespesaOperacional(saidasCaixa: { valor: number | string }[]): number {
+  return saidasCaixa.reduce((s, e) => s + Number(e.valor), 0);
+}
+
 export function calcularKPIs(pedidos: Pedido[]): KPIs {
-  const faturamento = pedidos.reduce((s, p) => s + Number(p.total), 0);
-  const custoTotal = pedidos.reduce((s, p) => s + Number(p.custo_total), 0);
-  const lucroTotal = pedidos.reduce((s, p) => s + Number(p.lucro), 0);
+  const { faturamento, custoTotal, lucroTotal } = calcularFinanceiroBase(pedidos);
   const pedidosCount = pedidos.length;
   const ticketMedio = pedidosCount > 0 ? faturamento / pedidosCount : 0;
-  const margemMedia = faturamento > 0 ? (lucroTotal / faturamento) * 100 : 0;
+  const margemMedia = calcularMargem(lucroTotal, faturamento);
 
   const margensIndividuais = pedidos
     .filter((p) => Number(p.total) > 0)
@@ -140,19 +195,25 @@ export function calcularEstatisticasMargem(kpis: KPIs) {
   return { minima, maxima, media, mediana };
 }
 
-// ===== Lucro líquido, ponto de equilíbrio e desconto — despesa fixa era só
-// aplicada no Fechamento de um dia único; nos relatórios de semana/mês o
-// "lucro" mostrado nunca descontava despesa fixa nenhuma. =====
+// ===== Lucro líquido e ponto de equilíbrio =====
+// Lucro Líquido = Lucro Bruto do período − despesa operacional REAL do mesmo
+// período (soma de calcularDespesaOperacional). Antes descontava um valor
+// fixo configurado à mão em Configurações, que não tinha nenhuma relação com
+// o que era de fato lançado em "Custos Operacionais" — a própria tela de
+// Custos Operacionais já dizia ao usuário que esses lançamentos afetavam o
+// Lucro Líquido dos Relatórios, o que não era verdade. Ver [[mesas-modulo]]
+// sobre o histórico de bugs de inconsistência financeira deste app.
 
-export function calcularLucroLiquido(kpis: KPIs, despesaFixaDiaria: number, diasNoPeriodo: number): number {
-  return kpis.lucroTotal - despesaFixaDiaria * diasNoPeriodo;
+export function calcularLucroLiquido(lucroBruto: number, despesaOperacional: number): number {
+  return lucroBruto - despesaOperacional;
 }
 
-// Faturamento diário necessário só para cobrir a despesa fixa, dada a margem
-// média do período — abaixo disso o dia fecha no vermelho mesmo vendendo.
-export function calcularPontoEquilibrio(despesaFixaDiaria: number, margemMediaPct: number): number {
+// Faturamento diário necessário só para cobrir a despesa operacional média
+// diária, dada a margem média do período — abaixo disso o dia fecha no
+// vermelho mesmo vendendo.
+export function calcularPontoEquilibrio(despesaOperacionalDiaria: number, margemMediaPct: number): number {
   if (margemMediaPct <= 0) return 0;
-  return despesaFixaDiaria / (margemMediaPct / 100);
+  return despesaOperacionalDiaria / (margemMediaPct / 100);
 }
 
 export function calcularDescontoTotal(pedidos: Pedido[]): number {

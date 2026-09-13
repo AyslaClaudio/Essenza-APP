@@ -94,6 +94,9 @@ function ConfigLoja() {
         <div className="flex items-center gap-2"><UserCog size={20} className="text-[#B91C1C]" /><h3 className="text-neutral-900 font-semibold">Financeiro & Segurança</h3></div>
         <Field label="Taxa Fixa de Entrega (R$)" value={String(form.taxa_fixa_entrega ?? '')} onChange={(v) => set('taxa_fixa_entrega', parseFloat(v) || 0)} type="number" />
         <Field label="Despesas Fixas Diárias (R$)" value={String(form.despesas_fixas_diaria ?? '')} onChange={(v) => set('despesas_fixas_diaria', parseFloat(v) || 0)} type="number" />
+        <p className="text-neutral-500 text-xs -mt-2">
+          Usado só como referência pro Ponto de Equilíbrio nos Relatórios. O Lucro Líquido real usa os lançamentos de "Custos Operacionais" (Financeiro &gt; Caixa), não este valor.
+        </p>
         <Field label="Meta Diária (R$)" value={String(form.meta_diaria ?? '')} onChange={(v) => set('meta_diaria', parseFloat(v) || 0)} type="number" />
         <Field label="Senha da Tabela v12" value={form.senha_tabela || ''} onChange={(v) => set('senha_tabela', v)} />
         <label className="flex items-center gap-2 text-neutral-700 text-sm">

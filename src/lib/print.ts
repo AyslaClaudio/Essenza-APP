@@ -54,10 +54,12 @@ export async function printFechamentoDia(
   faturamento: number,
   custoTotal: number,
   lucroBruto: number,
-  despesasFixas: number,
+  despesasOperacionais: number,
   lucroLiquido: number,
   produtos: FechamentoProduto[],
   config: Configuracao,
+  vendaProdutos: number,
+  taxaEntrega: number,
 ) {
   if (temImpressoraPareada()) {
     const lines: string[] = [];
@@ -66,9 +68,11 @@ export async function printFechamentoDia(
     lines.push(CENTER + dataLabel);
     lines.push(LINE);
     lines.push(LEFT + `Faturamento:     ${brl(faturamento)}`);
+    lines.push(`  Venda Produtos:  ${brl(vendaProdutos)}`);
+    lines.push(`  Taxa Entrega:    ${brl(taxaEntrega)}`);
     lines.push(`Custo Produtos:  ${brl(custoTotal)}`);
     lines.push(`Lucro Bruto:     ${brl(lucroBruto)}`);
-    lines.push(`Despesas Fixas:  ${brl(despesasFixas)}`);
+    lines.push(`Despesas Operac: ${brl(despesasOperacionais)}`);
     lines.push(BOLD_ON + `LUCRO LIQUIDO:   ${brl(lucroLiquido)}` + BOLD_OFF);
     lines.push(LINE);
     lines.push(BOLD_ON + 'POR PRODUTO' + BOLD_OFF);
@@ -92,9 +96,11 @@ export async function printFechamentoDia(
     <div class="center">${dataLabel}</div>
     <div class="sep">--------------------------------</div>
     <div>Faturamento: ${brl(faturamento)}</div>
+    <div style="padding-left:12px">Venda Produtos: ${brl(vendaProdutos)}</div>
+    <div style="padding-left:12px">Taxa Entrega: ${brl(taxaEntrega)}</div>
     <div>Custo Produtos: ${brl(custoTotal)}</div>
     <div>Lucro Bruto: ${brl(lucroBruto)}</div>
-    <div>Despesas Fixas: ${brl(despesasFixas)}</div>
+    <div>Despesas Operacionais: ${brl(despesasOperacionais)}</div>
     <div class="total">LUCRO LIQUIDO: ${brl(lucroLiquido)}</div>
     <div class="sep">--------------------------------</div>
     <div><b>POR PRODUTO</b></div>

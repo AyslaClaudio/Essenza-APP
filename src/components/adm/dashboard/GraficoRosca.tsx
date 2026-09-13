@@ -1,19 +1,23 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { brl } from '../../../lib/format';
+import { calcularMargem } from '../../../lib/reportUtils';
 
 /**
  * Gráfico de rosca — Custo vs Lucro do período.
  * Usa os dados reais que o app já grava em cada pedido (custo_total e lucro),
  * a "Tabela v12" da operação. Verde = Lucro, Vermelho = Custo.
  */
-export function GraficoRosca({ custo, lucro }: { custo: number; lucro: number }) {
+export function GraficoRosca({ custo, lucro, faturamento }: { custo: number; lucro: number; faturamento: number }) {
   const data = [
     { nome: 'Lucro', valor: Math.max(0, lucro), cor: '#22c55e' },
     { nome: 'Custo', valor: Math.max(0, custo), cor: '#B91C1C' },
   ];
-  const totalBruto = custo + lucro;
-  const margem = totalBruto > 0 ? (lucro / totalBruto) * 100 : 0;
-  const semDados = totalBruto === 0;
+  // Margem = lucro/faturamento, mesma fórmula usada no Dashboard e em
+  // reportUtils.calcularKPIs — antes dividia por custo+lucro, que só bate com
+  // faturamento se lucro for sempre exatamente faturamento-custo (sem
+  // desconto/ajuste de arredondamento).
+  const margem = calcularMargem(lucro, faturamento);
+  const semDados = custo + lucro === 0;
 
   return (
     <div className="bg-white border border-neutral-200 rounded-2xl p-5">

@@ -244,6 +244,17 @@ export interface Meta {
   ativo: boolean;
 }
 
+export type MassaTipo = 'pizza' | 'esfiha';
+
+export interface ContagemMassa {
+  id: string;
+  data: string;
+  tipo: MassaTipo;
+  quantidade: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Avaliacao {
   id: string;
   pedido_id: string;
