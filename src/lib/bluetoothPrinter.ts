@@ -105,7 +105,7 @@ export function desconectarImpressora() {
 // aqui é uma conversão simples (Latin-1). Acentos podem sair levemente diferentes
 // dependendo da code page da impressora; é uma limitação conhecida desse tipo de
 // impressora barata, não só desse app.
-function textoParaBytes(text: string): Uint8Array {
+export function textoParaBytes(text: string): Uint8Array {
   const bytes = new Uint8Array(text.length);
   for (let i = 0; i < text.length; i++) {
     bytes[i] = text.charCodeAt(i) & 0xff;
@@ -125,7 +125,7 @@ export function ultimoErroImpressao(): string | null {
   return ultimoErro;
 }
 
-export async function imprimirViaBluetooth(escposText: string): Promise<boolean> {
+export async function imprimirViaBluetooth(escposText: string | Uint8Array): Promise<boolean> {
   // Impressora BLE parada por um tempo (ex: só imprime de novo na hora do
   // fechamento do dia/semana, horas depois da última comanda) costuma cair a
   // conexão GATT sozinha. Se já pareamos com um dispositivo nesta sessão,
@@ -146,7 +146,7 @@ export async function imprimirViaBluetooth(escposText: string): Promise<boolean>
   }
   ultimoErro = null;
   try {
-    const bytes = textoParaBytes(escposText);
+    const bytes = typeof escposText === 'string' ? textoParaBytes(escposText) : escposText;
     for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
       const slice = bytes.slice(i, i + CHUNK_SIZE);
       if (characteristic.properties.writeWithoutResponse) {
