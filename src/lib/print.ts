@@ -28,9 +28,10 @@ function marcaEscPos(nomeLoja: string): string {
   ].join('\n');
 }
 
-function marcaHtml(nomeLoja: string): string {
+function marcaHtml(nomeLoja: string, logo?: string | null): string {
   return `
     <div class="marca">
+      ${logo ? `<img class="marca-logo" src="${logo}" alt="${nomeLoja || 'ESSENZA'}" />` : ''}
       <div class="center">* &nbsp; * &nbsp; *</div>
       <div class="center"><b>${nomeLoja || 'ESSENZA'}</b></div>
       <div class="center">PIZZARIA</div>
@@ -124,10 +125,7 @@ export function buildKitchenReceipt(pedido: Pedido, config: Configuracao): strin
   if (pedido.cliente_nome) lines.push(`Cliente: ${pedido.cliente_nome}`);
   lines.push(LINE);
 
-  pedido.itens?.forEach((item: ItemPedido) => {
-    kitchenItemLines(item).forEach((line, index) => lines.push(index === 0 ? BOLD_ON + line + BOLD_OFF : line));
-    lines.push('');
-  });
+  lines.push(...kitchenSectionLines(pedido.itens || []));
 
   lines.push(LINE);
   if (pedido.observacao) {
@@ -163,6 +161,38 @@ function kitchenItemLines(item: ItemPedido | ItemMesa): string[] {
   if (item.adicional) linhas.push(`  Adicional: ${item.adicional}`);
   if (item.observacao) linhas.push(`  Obs: ${item.observacao.toUpperCase()}`);
   return linhas;
+}
+
+function categoriaComanda(item: ItemPedido | ItemMesa): string {
+  const nome = item.produto_nome || '';
+  if (/combo\s+duo|combo/i.test(nome)) return 'COMBOS';
+  if (/esfirra/i.test(nome) || item.sabor1 && !/pizza/i.test(nome)) return 'ESFIRRAS';
+  if (/pizza/i.test(nome)) return 'PIZZAS';
+  if (/coca|guaraná|guarana|água|agua|suco|refrigerante|lata|500ml|1l/i.test(nome)) return 'BEBIDAS';
+  return 'OUTROS';
+}
+
+function agruparItensComanda<T extends ItemPedido | ItemMesa>(itens: T[]): Array<[string, T[]]> {
+  const ordem = ['PIZZAS', 'COMBOS', 'ESFIRRAS', 'BEBIDAS', 'OUTROS'];
+  const grupos = new Map<string, T[]>();
+  itens.forEach((item) => {
+    const grupo = categoriaComanda(item);
+    grupos.set(grupo, [...(grupos.get(grupo) || []), item]);
+  });
+  return ordem.filter((grupo) => grupos.has(grupo)).map((grupo) => [grupo, grupos.get(grupo)!]);
+}
+
+function kitchenSectionLines<T extends ItemPedido | ItemMesa>(itens: T[]): string[] {
+  const lines: string[] = [];
+  agruparItensComanda(itens).forEach(([grupo, grupoItens]) => {
+    lines.push(`[ ${grupo} ]`);
+    grupoItens.forEach((item) => {
+      kitchenItemLines(item).forEach((line, index) => lines.push(index === 0 ? BOLD_ON + line + BOLD_OFF : line));
+      lines.push('');
+    });
+    lines.push(LINE);
+  });
+  return lines;
 }
 
 export function buildCashReceipt(pedido: Pedido, config: Configuracao): string {
@@ -245,10 +275,7 @@ function buildMesaComandaEscPos(numeroMesa: number, itens: ItemMesa[], config: C
   lines.push(CENTER + BOLD_ON + `MESA ${numeroMesa}` + BOLD_OFF);
   lines.push(LEFT + `Hora: ${fmtHora(new Date().toISOString())}`);
   lines.push(LINE);
-  itens.forEach((item) => {
-    kitchenItemLines(item).forEach((line, index) => lines.push(index === 0 ? BOLD_ON + line + BOLD_OFF : line));
-    lines.push('');
-  });
+  lines.push(...kitchenSectionLines(itens));
   lines.push(LINE);
   lines.push(marcaEscPos(config.nome_loja));
   return INIT + lines.join('\n') + '\n\n\n';
@@ -263,24 +290,18 @@ export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], co
   const existing = document.getElementById('print-area');
   if (existing) existing.remove();
 
-  let itensHTML = '';
-  itens.forEach((item) => {
-    const linhas = kitchenItemLines(item);
-    itensHTML += linhas.map((line, index) => index === 0 ? `<div class="item"><b>${line}</b></div>` : `<div class="sub"><b>${line}</b></div>`).join('');
-  });
-
   const div = document.createElement('div');
   div.id = 'print-area';
   div.className = 'print-receipt';
   div.innerHTML = `
-    ${marcaHtml(config.nome_loja)}
+    ${marcaHtml(config.nome_loja, config.logo || '/logo.png')}
     <div class="center">*** COZINHA ***</div>
     <div class="center"><b>MESA ${numeroMesa}</b></div>
     <div>Hora: ${fmtHora(new Date().toISOString())}</div>
     <div class="sep">--------------------------------</div>
-    ${itensHTML}
+    ${agruparItensComanda(itens).map(([grupo, grupoItens]) => `<div class="section-title">[ ${grupo} ]</div>${grupoItens.map((item) => kitchenItemLines(item).map((line, index) => index === 0 ? `<div class="item"><b>${line}</b></div>` : `<div class="sub"><b>${line}</b></div>`).join('')).join('')}`).join('<div class="sep">--------------------------------</div>')}
     <div class="sep">--------------------------------</div>
-    ${marcaHtml(config.nome_loja)}
+    ${marcaHtml(config.nome_loja, config.logo || '/logo.png')}
   `;
   document.body.appendChild(div);
   window.print();
@@ -348,7 +369,7 @@ export async function printMesaConta(
   div.id = 'print-area';
   div.className = 'print-receipt';
   div.innerHTML = `
-    ${marcaHtml(config.nome_loja)}
+    ${marcaHtml(config.nome_loja, config.logo || '/logo.png')}
     ${config.endereco_loja ? `<div class="center">${config.endereco_loja}</div>` : ''}
     ${config.telefone_loja ? `<div class="center">Tel: ${config.telefone_loja}</div>` : ''}
     <div class="sep">--------------------------------</div>
@@ -371,14 +392,12 @@ export async function printMesaConta(
 }
 
 function kitchenHTML(pedido: Pedido, config: Configuracao): string {
-  let itens = '';
-  pedido.itens?.forEach((item) => {
-    itens += `<div class="item"><b>${item.quantidade}x ${item.produto_nome}</b></div>`;
-    if (item.adicional) itens += `<div class="sub"><b>Adic: ${item.adicional}</b></div>`;
-    if (item.observacao) itens += `<div class="sub"><b>Obs: ${item.observacao.toUpperCase()}</b></div>`;
-  });
+  const itens = agruparItensComanda(pedido.itens || []).map(([grupo, grupoItens]) => `
+    <div class="section-title">[ ${grupo} ]</div>
+    ${grupoItens.map((item) => kitchenItemLines(item).map((line, index) => index === 0 ? `<div class="item"><b>${line}</b></div>` : `<div class="sub"><b>${line}</b></div>`).join('')).join('')}
+  `).join('<div class="sep">--------------------------------</div>');
   return `
-    ${marcaHtml(config.nome_loja)}
+    ${marcaHtml(config.nome_loja, config.logo || '/logo.png')}
     <div class="center">*** COZINHA ***</div>
     <div>Pedido #: ${pedido.numero}</div>
     <div>Hora: ${fmtHora(pedido.created_at)}</div>
@@ -389,7 +408,7 @@ function kitchenHTML(pedido: Pedido, config: Configuracao): string {
     <div class="sep">--------------------------------</div>
     ${pedido.observacao ? `<div><b>OBS: ${pedido.observacao.toUpperCase()}</b></div>` : ''}
     <div class="sep">--------------------------------</div>
-    ${marcaHtml(config.nome_loja)}
+    ${marcaHtml(config.nome_loja, config.logo || '/logo.png')}
   `;
 }
 

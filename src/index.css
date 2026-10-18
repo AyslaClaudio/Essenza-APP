@@ -87,6 +87,20 @@ body {
   .print-receipt .marca {
     margin: 2px 0 6px;
   }
+  .print-receipt .marca-logo {
+    display: block;
+    width: 34mm;
+    max-height: 18mm;
+    object-fit: contain;
+    margin: 0 auto 2mm;
+  }
+  .print-receipt .section-title {
+    font-weight: bold;
+    margin-top: 8px;
+    padding: 2px 0;
+    border-top: 1px solid #000;
+    border-bottom: 1px solid #000;
+  }
   .print-receipt .marca + .marca {
     margin: 6px 0 2px;
   }
