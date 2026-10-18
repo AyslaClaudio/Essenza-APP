@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { brl, fmtHora, fmtData } from '../../lib/format';
 import { printReceipt } from '../../lib/print';
 import type { Pedido, ItemPedido, PedidoStatus } from '../../types';
-import { Search, Printer, Eye, CheckCircle, XCircle, Bike, Trash2, Lock, AlertTriangle } from 'lucide-react';
+import { Search, Printer, Eye, CheckCircle, XCircle, Bike, Trash2, Lock, AlertTriangle, Users, ListChecks } from 'lucide-react';
 import { SenhaAdminModal } from '../SenhaAdminModal';
 
 const STATUS_FLOW: PedidoStatus[] = ['confirmado', 'entregue'];
@@ -25,6 +25,7 @@ export function Pedidos({ buscaInicial }: { buscaInicial?: { valor: string; nonc
   const [selected, setSelected] = useState<Pedido | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Pedido | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Pedido | null>(null);
+  const [splitTarget, setSplitTarget] = useState<Pedido | null>(null);
 
   useEffect(() => {
     if (buscaInicial) {
@@ -133,6 +134,7 @@ export function Pedidos({ buscaInicial }: { buscaInicial?: { valor: string; nonc
           onClose={() => setSelected(null)}
           onPrint={(via) => config && printReceipt(selected, config, via)}
           onStatus={(s) => updateStatus(selected, s)}
+          onSplit={() => setSplitTarget(selected)}
           canDelete={isGerente}
           onDelete={() => setDeleteTarget(selected)}
         />
@@ -158,6 +160,18 @@ export function Pedidos({ buscaInicial }: { buscaInicial?: { valor: string; nonc
           onConfirm={confirmCancel}
           onCancel={() => setCancelTarget(null)}
           danger
+        />
+      )}
+
+      {splitTarget && (
+        <SplitPaymentModal
+          pedido={splitTarget}
+          onClose={() => setSplitTarget(null)}
+          onSaved={(forma) => {
+            setSplitTarget(null);
+            if (selected?.id === splitTarget.id) setSelected({ ...selected, forma_pagamento: forma });
+            load();
+          }}
         />
       )}
     </div>
@@ -313,11 +327,12 @@ function PedidoCard({ pedido, onView, onStatus, canDelete, onDelete }: {
   );
 }
 
-function PedidoDetail({ pedido, onClose, onPrint, onStatus, canDelete, onDelete }: {
+function PedidoDetail({ pedido, onClose, onPrint, onStatus, onSplit, canDelete, onDelete }: {
   pedido: Pedido;
   onClose: () => void;
   onPrint: (via: 'cozinha' | 'caixa') => void;
   onStatus: (s: PedidoStatus) => void;
+  onSplit: () => void;
   canDelete: boolean;
   onDelete: () => void;
 }) {
@@ -370,6 +385,12 @@ function PedidoDetail({ pedido, onClose, onPrint, onStatus, canDelete, onDelete 
           <div className="flex justify-between text-neutral-500 text-sm"><span>Pagamento</span><span>{pedido.forma_pagamento}</span></div>
         </div>
 
+        {pedido.status !== 'cancelado' && (
+          <button onClick={onSplit} className="w-full flex items-center justify-center gap-2 py-3 mb-2 border border-[#B91C1C] text-[#B91C1C] rounded-xl font-bold hover:bg-red-50">
+            <Users size={18} /> Dividir pagamento
+          </button>
+        )}
+
         {/* Actions */}
         <div className="grid grid-cols-2 gap-2 mb-2">
           <button onClick={() => onPrint('cozinha')} className="flex items-center justify-center gap-2 py-3 bg-neutral-200 text-neutral-900 rounded-xl font-medium hover:bg-neutral-700">
@@ -396,6 +417,132 @@ function PedidoDetail({ pedido, onClose, onPrint, onStatus, canDelete, onDelete 
           </button>
         )}
         <button onClick={onClose} className="w-full py-2 text-neutral-500 text-sm mt-2">Fechar</button>
+      </div>
+    </div>
+  );
+}
+
+type SplitMode = 'pessoas' | 'itens';
+type SplitPart = { identificacao: string; forma_pagamento: string; valor: number };
+const FORMAS_DIVISAO = ['Dinheiro', 'Pix', 'Cartão'];
+
+function SplitPaymentModal({ pedido, onClose, onSaved }: {
+  pedido: Pedido;
+  onClose: () => void;
+  onSaved: (forma: string) => void;
+}) {
+  const [modo, setModo] = useState<SplitMode>('pessoas');
+  const [quantidadePessoas, setQuantidadePessoas] = useState(2);
+  const [valores, setValores] = useState<number[]>([]);
+  const [formas, setFormas] = useState<string[]>([]);
+  const [responsaveis, setResponsaveis] = useState<number[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [erro, setErro] = useState('');
+
+  const unidades = (pedido.itens || []).flatMap((item) => Array.from({ length: Math.max(1, item.quantidade) }, () => ({
+    nome: item.produto_nome,
+    valor: item.preco_unitario + item.adicional_preco,
+  })));
+
+  const ajustarPessoas = (n: number) => {
+    const qtd = Math.min(12, Math.max(2, n || 2));
+    const base = Math.floor((pedido.total * 100) / qtd) / 100;
+    const novosValores = Array.from({ length: qtd }, (_, i) => i === qtd - 1 ? Math.round((pedido.total - base * (qtd - 1)) * 100) / 100 : base);
+    setQuantidadePessoas(qtd);
+    setValores(novosValores);
+    setFormas((atual) => Array.from({ length: qtd }, (_, i) => atual[i] || 'Dinheiro'));
+    setResponsaveis((atual) => Array.from({ length: qtd }, (_, i) => atual[i] ?? 0));
+  };
+
+  useEffect(() => { ajustarPessoas(2); }, []);
+
+  const valoresPorItem = () => {
+    const donos = responsaveis.length === unidades.length ? responsaveis : unidades.map(() => 0);
+    const subtotalItens = unidades.reduce((soma, unidade) => soma + unidade.valor, 0);
+    const fator = subtotalItens > 0 ? pedido.total / subtotalItens : 0;
+    const resultado = Array.from({ length: quantidadePessoas }, () => 0);
+    unidades.forEach((unidade, index) => {
+      const dono = Math.min(quantidadePessoas - 1, donos[index] || 0);
+      resultado[dono] += unidade.valor * fator;
+    });
+    const arredondado = resultado.map((valor) => Math.round(valor * 100) / 100);
+    const diferenca = Math.round((pedido.total - arredondado.reduce((soma, valor) => soma + valor, 0)) * 100) / 100;
+    const primeiroComValor = arredondado.findIndex((valor) => valor > 0);
+    if (primeiroComValor >= 0) arredondado[primeiroComValor] = Math.round((arredondado[primeiroComValor] + diferenca) * 100) / 100;
+    return arredondado;
+  };
+
+  const valoresAtuais = modo === 'pessoas' ? valores : valoresPorItem();
+  const confirmar = async () => {
+    const soma = Math.round(valoresAtuais.reduce((total, valor) => total + (Number(valor) || 0), 0) * 100) / 100;
+    if (Math.abs(soma - pedido.total) > 0.01) {
+      setErro(`A soma precisa ser ${brl(pedido.total)}. Atualmente está ${brl(soma)}.`);
+      return;
+    }
+    const partes: SplitPart[] = valoresAtuais
+      .map((valor, index) => ({ identificacao: `Pessoa ${index + 1}`, forma_pagamento: formas[index] || 'Dinheiro', valor: Number(valor) || 0 }))
+      .filter((parte) => parte.valor > 0);
+    if (partes.length === 0) return;
+    setBusy(true);
+    setErro('');
+    const { data, error } = await supabase.rpc('registrar_pagamentos_pedido', { p_pedido_id: pedido.id, p_pagamentos: partes });
+    setBusy(false);
+    if (error) {
+      setErro(error.message || 'Não foi possível registrar a divisão.');
+      return;
+    }
+    onSaved((data as { forma_pagamento: string }[] | null)?.[0]?.forma_pagamento || 'Dividido');
+  };
+
+  return (
+    <div className="fixed inset-0 z-[70] bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="p-5 border-b border-neutral-200 flex items-center justify-between">
+          <div><h3 className="font-black text-xl text-neutral-900">Dividir pagamento</h3><p className="text-sm text-neutral-500">Pedido #{pedido.numero} · Total {brl(pedido.total)}</p></div>
+          <button onClick={onClose} className="text-neutral-500 text-xl">×</button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setModo('pessoas')} className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold ${modo === 'pessoas' ? 'bg-[#B91C1C] text-white' : 'bg-neutral-100 text-neutral-700'}`}><Users size={17} /> Por pessoas</button>
+            <button onClick={() => setModo('itens')} className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold ${modo === 'itens' ? 'bg-[#B91C1C] text-white' : 'bg-neutral-100 text-neutral-700'}`}><ListChecks size={17} /> Por itens</button>
+          </div>
+
+          <label className="block text-sm font-semibold text-neutral-700">Quantidade de pessoas
+            <input type="number" min={2} max={12} value={quantidadePessoas} onChange={(e) => ajustarPessoas(Number(e.target.value))} className="mt-1 w-full border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900" />
+          </label>
+
+          {modo === 'itens' && (
+            <div className="border border-neutral-200 rounded-xl p-3 space-y-2">
+              <p className="text-xs text-neutral-500">Escolha quem ficará responsável por cada unidade. A entrega e descontos serão distribuídos proporcionalmente.</p>
+              {unidades.map((unidade, index) => (
+                <div key={`${unidade.nome}-${index}`} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="text-neutral-800 truncate">{index + 1}. {unidade.nome}</span>
+                  <select value={responsaveis[index] ?? 0} onChange={(e) => setResponsaveis((atual) => { const novo = [...atual]; novo[index] = Number(e.target.value); return novo; })} className="border border-neutral-200 rounded-lg px-2 py-1 text-neutral-900">
+                    {Array.from({ length: quantidadePessoas }, (_, pessoa) => <option key={pessoa} value={pessoa}>Pessoa {pessoa + 1}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {valoresAtuais.map((valor, index) => (
+              <div key={index} className="grid grid-cols-[1fr_1fr_110px] gap-2 items-center">
+                <span className="text-sm font-semibold text-neutral-800">Pessoa {index + 1}</span>
+                <select value={formas[index] || 'Dinheiro'} onChange={(e) => setFormas((atual) => { const novo = [...atual]; novo[index] = e.target.value; return novo; })} className="border border-neutral-200 rounded-lg px-2 py-2 text-sm text-neutral-900">
+                  {FORMAS_DIVISAO.map((forma) => <option key={forma}>{forma}</option>)}
+                </select>
+                <input type="number" min="0" step="0.01" value={valor.toFixed(2)} disabled={modo === 'itens'} onChange={(e) => setValores((atual) => { const novo = [...atual]; novo[index] = Number(e.target.value) || 0; return novo; })} className="border border-neutral-200 rounded-lg px-2 py-2 text-right text-sm text-neutral-900 disabled:bg-neutral-100" />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between border-t border-neutral-200 pt-3 font-black text-neutral-900"><span>Total dividido</span><span>{brl(valoresAtuais.reduce((soma, valor) => soma + valor, 0))}</span></div>
+          {erro && <p className="text-sm text-red-600 bg-red-50 rounded-xl p-3">{erro}</p>}
+        </div>
+        <div className="p-5 border-t border-neutral-200 flex gap-2">
+          <button onClick={onClose} className="flex-1 py-3 rounded-xl border border-neutral-200 text-neutral-700 font-semibold">Cancelar</button>
+          <button onClick={confirmar} disabled={busy} className="flex-1 py-3 rounded-xl bg-green-600 text-white font-bold disabled:opacity-50">{busy ? 'Salvando...' : 'Confirmar divisão'}</button>
+        </div>
       </div>
     </div>
   );
