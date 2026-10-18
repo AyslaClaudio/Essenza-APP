@@ -125,13 +125,7 @@ export function buildKitchenReceipt(pedido: Pedido, config: Configuracao): strin
   lines.push(LINE);
 
   pedido.itens?.forEach((item: ItemPedido) => {
-    lines.push(BOLD_ON + `${item.quantidade}x ${item.produto_nome}` + BOLD_OFF);
-    if (item.adicional) {
-      lines.push(BOLD_ON + `  Adic: ${item.adicional}` + BOLD_OFF);
-    }
-    if (item.observacao) {
-      lines.push(BOLD_ON + `  Obs: ${item.observacao.toUpperCase()}` + BOLD_OFF);
-    }
+    kitchenItemLines(item).forEach((line, index) => lines.push(index === 0 ? BOLD_ON + line + BOLD_OFF : line));
     lines.push('');
   });
 
@@ -142,6 +136,33 @@ export function buildKitchenReceipt(pedido: Pedido, config: Configuracao): strin
   lines.push(LINE);
   lines.push(marcaEscPos(config.nome_loja));
   return INIT + lines.join('\n') + '\n\n\n';
+}
+
+/** Descrição operacional: a cozinha precisa preparar componentes, não apenas o nome comercial. */
+function kitchenItemLines(item: ItemPedido | ItemMesa): string[] {
+  const nome = item.produto_nome || '';
+  const duo = /combo\s+duo/i.test(nome);
+  const esfirra = /^esfirra\s*:/i.test(nome);
+  const linhas: string[] = [];
+
+  if (duo) {
+    const premium = /adicional|premium/i.test(nome) ? ' + ADICIONAL (PREMIUM)' : '';
+    linhas.push(`${item.quantidade}x COMBO DUO${premium}`);
+    linhas.push(`  Esfirra 1: ${item.sabor1 || 'não informado'}`);
+    linhas.push(`  Esfirra 2: ${item.sabor2 || 'não informado'}`);
+    linhas.push('  Acompanha: 1x REFRIGERANTE LATA 350ml (INCLUSO — NÃO ESCOLHER)');
+  } else if (esfirra) {
+    const sabor = nome.replace(/^esfirra\s*:\s*/i, '').trim();
+    linhas.push(`${item.quantidade}x ESFIRRA`);
+    linhas.push(`  Sabor: ${item.sabor1 || sabor}`);
+  } else {
+    linhas.push(`${item.quantidade}x ${nome}`);
+    if (item.sabor1 || item.sabor2) linhas.push(`  Sabores: ${[item.sabor1, item.sabor2].filter(Boolean).join(' / ')}`);
+  }
+
+  if (item.adicional) linhas.push(`  Adicional: ${item.adicional}`);
+  if (item.observacao) linhas.push(`  Obs: ${item.observacao.toUpperCase()}`);
+  return linhas;
 }
 
 export function buildCashReceipt(pedido: Pedido, config: Configuracao): string {
@@ -225,9 +246,7 @@ function buildMesaComandaEscPos(numeroMesa: number, itens: ItemMesa[], config: C
   lines.push(LEFT + `Hora: ${fmtHora(new Date().toISOString())}`);
   lines.push(LINE);
   itens.forEach((item) => {
-    lines.push(BOLD_ON + `${item.quantidade}x ${item.produto_nome}` + BOLD_OFF);
-    if (item.adicional) lines.push(BOLD_ON + `  Adic: ${item.adicional}` + BOLD_OFF);
-    if (item.observacao) lines.push(BOLD_ON + `  Obs: ${item.observacao.toUpperCase()}` + BOLD_OFF);
+    kitchenItemLines(item).forEach((line, index) => lines.push(index === 0 ? BOLD_ON + line + BOLD_OFF : line));
     lines.push('');
   });
   lines.push(LINE);
@@ -246,9 +265,8 @@ export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], co
 
   let itensHTML = '';
   itens.forEach((item) => {
-    itensHTML += `<div class="item"><b>${item.quantidade}x ${item.produto_nome}</b></div>`;
-    if (item.adicional) itensHTML += `<div class="sub"><b>Adic: ${item.adicional}</b></div>`;
-    if (item.observacao) itensHTML += `<div class="sub"><b>Obs: ${item.observacao.toUpperCase()}</b></div>`;
+    const linhas = kitchenItemLines(item);
+    itensHTML += linhas.map((line, index) => index === 0 ? `<div class="item"><b>${line}</b></div>` : `<div class="sub"><b>${line}</b></div>`).join('');
   });
 
   const div = document.createElement('div');

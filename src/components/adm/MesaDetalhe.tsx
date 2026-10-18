@@ -337,6 +337,8 @@ function AddItemModal({
   massa: ReturnType<typeof useMassaHoje>;
 }) {
   const [prod1Id, setProd1Id] = useState('');
+  const [comboSabor1Id, setComboSabor1Id] = useState('');
+  const [comboSabor2Id, setComboSabor2Id] = useState('');
   const [meioMeio, setMeioMeio] = useState(false);
   const [prod2Id, setProd2Id] = useState('');
   const [quantidade, setQuantidade] = useState(1);
@@ -354,12 +356,17 @@ function AddItemModal({
   });
   const prod1 = produtos.find((p) => p.id === prod1Id);
   const prod2 = produtos.find((p) => p.id === prod2Id);
+  const comboSabor1 = produtos.find((p) => p.id === comboSabor1Id);
+  const comboSabor2 = produtos.find((p) => p.id === comboSabor2Id);
+  const isCombo = !!prod1?.categoria_nome.includes('Combo');
+  const isComboDuo = isCombo && /duo/i.test(prod1?.nome || '');
+  const saboresEsfirra = produtos.filter((p) => p.categoria_nome.includes('Esfirra') && !p.categoria_nome.includes('Combo'));
 
   // No meio a meio cobra-se o sabor mais caro (mesma regra do balcão/IA)
   const precoUnit = meioMeio && prod1 && prod2 ? Math.max(prod1.preco, prod2.preco) : prod1?.preco || 0;
   const custoUnit = meioMeio && prod1 && prod2 ? Math.max(prod1.custo, prod2.custo) : prod1?.custo || 0;
 
-  const podeAdicionar = !!prod1 && (!meioMeio || !!prod2) && quantidade > 0;
+  const podeAdicionar = !!prod1 && quantidade > 0 && (!isCombo ? (!meioMeio || !!prod2) : !!comboSabor1 && (!isComboDuo || !!comboSabor2));
   const totalCarrinho = carrinho.reduce((s, i) => s + i.quantidade * (i.preco_unitario + i.adicional_preco), 0);
 
   // Quanto de massa a lista atual (ainda não enviada) já reserva, e o saldo
@@ -386,6 +393,8 @@ function AddItemModal({
 
   const limparFormulario = () => {
     setProd1Id('');
+    setComboSabor1Id('');
+    setComboSabor2Id('');
     setMeioMeio(false);
     setProd2Id('');
     setQuantidade(1);
@@ -400,7 +409,9 @@ function AddItemModal({
   const adicionarAoCarrinho = () => {
     if (!prod1) return;
     if (!checarMassaDisponivel(consumoMassa(prod1, quantidade))) return;
-    const nome = meioMeio && prod2 ? `${prod1.nome} / ${prod2.nome}` : nomeComCategoria(prod1);
+    const nome = isCombo
+      ? prod1.nome
+      : meioMeio && prod2 ? `${prod1.nome} / ${prod2.nome}` : nomeComCategoria(prod1);
     setCarrinho((c) => [
       ...c,
       {
@@ -410,8 +421,8 @@ function AddItemModal({
         preco_unitario: precoUnit,
         custo_unitario: custoUnit,
         observacao,
-        sabor1: meioMeio ? prod1.nome : '',
-        sabor2: meioMeio && prod2 ? prod2.nome : '',
+        sabor1: isCombo ? comboSabor1!.nome : meioMeio ? prod1.nome : '',
+        sabor2: isCombo ? comboSabor2?.nome || '' : meioMeio && prod2 ? prod2.nome : '',
         adicional: '',
         adicional_preco: 0,
       },
@@ -433,13 +444,15 @@ function AddItemModal({
           ...carrinho,
           {
             produto_id: prod1!.id,
-            produto_nome: meioMeio && prod2 ? `${prod1!.nome} / ${prod2.nome}` : nomeComCategoria(prod1!),
+            produto_nome: isCombo
+              ? prod1!.nome
+              : meioMeio && prod2 ? `${prod1!.nome} / ${prod2.nome}` : nomeComCategoria(prod1!),
             quantidade,
             preco_unitario: precoUnit,
             custo_unitario: custoUnit,
             observacao,
-            sabor1: meioMeio ? prod1!.nome : '',
-            sabor2: meioMeio && prod2 ? prod2.nome : '',
+            sabor1: isCombo ? comboSabor1!.nome : meioMeio ? prod1!.nome : '',
+            sabor2: isCombo ? comboSabor2?.nome || '' : meioMeio && prod2 ? prod2.nome : '',
             adicional: '',
             adicional_preco: 0,
           },
@@ -516,7 +529,11 @@ function AddItemModal({
             {filtrados.map((p) => (
               <button
                 key={p.id}
-                onClick={() => setProd1Id(p.id)}
+                onClick={() => {
+                  setProd1Id(p.id);
+                  setComboSabor1Id('');
+                  setComboSabor2Id('');
+                }}
                 className={`flex items-center gap-3 px-2.5 py-2 rounded-lg border text-left text-sm transition-colors ${
                   prod1Id === p.id
                     ? 'border-[#B91C1C] bg-[#B91C1C]/10 text-[#B91C1C] font-semibold'
@@ -535,12 +552,26 @@ function AddItemModal({
             {filtrados.length === 0 && <p className="text-center text-neutral-500 text-sm py-4">Nenhum produto encontrado.</p>}
           </div>
 
-          {/* Meio a meio */}
-          <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer">
-            <input type="checkbox" checked={meioMeio} onChange={(e) => setMeioMeio(e.target.checked)} className="accent-[#B91C1C]" />
-            Pizza meio a meio (2 sabores — cobra o mais caro)
-          </label>
-          {meioMeio && (
+          {isCombo ? (
+            <div className="space-y-2 rounded-xl border border-[#B91C1C]/30 bg-[#B91C1C]/5 p-3">
+              <p className="text-sm font-bold text-[#B91C1C]">Sabores do combo</p>
+              <select value={comboSabor1Id} onChange={(e) => setComboSabor1Id(e.target.value)} className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900">
+                <option value="">Esfirra 1...</option>
+                {saboresEsfirra.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+              </select>
+              <select value={comboSabor2Id} onChange={(e) => setComboSabor2Id(e.target.value)} className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900">
+                <option value="">Esfirra 2...</option>
+                {saboresEsfirra.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+              </select>
+              <p className="text-xs text-neutral-600">Acompanha automaticamente 1 refrigerante lata 350 ml.</p>
+            </div>
+          ) : (
+            <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer">
+              <input type="checkbox" checked={meioMeio} onChange={(e) => setMeioMeio(e.target.checked)} className="accent-[#B91C1C]" />
+              Pizza meio a meio (2 sabores — cobra o mais caro)
+            </label>
+          )}
+          {!isCombo && meioMeio && (
             <select
               value={prod2Id}
               onChange={(e) => setProd2Id(e.target.value)}
