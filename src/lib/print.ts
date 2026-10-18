@@ -148,9 +148,9 @@ function kitchenItemLines(item: ItemPedido | ItemMesa): string[] {
   if (duo) {
     const premium = /adicional|premium/i.test(nome) ? ' + ADICIONAL (PREMIUM)' : '';
     linhas.push(`${item.quantidade}x COMBO DUO${premium}`);
-    linhas.push(`  Esfirra 1: ${item.sabor1 || 'não informado'}`);
-    linhas.push(`  Esfirra 2: ${item.sabor2 || 'não informado'}`);
-    linhas.push('  Acompanha: 1x REFRIGERANTE LATA 350ml (INCLUSO — NÃO ESCOLHER)');
+    linhas.push(`  ${item.quantidade}x Esfirra 1: ${item.sabor1 || 'não informado'}`);
+    linhas.push(`  ${item.quantidade}x Esfirra 2: ${item.sabor2 || 'não informado'}`);
+    linhas.push(`  Acompanha: ${item.quantidade}x REFRIGERANTE LATA 350ml (INCLUSO — NÃO ESCOLHER)`);
   } else if (esfirra) {
     const sabor = nome.replace(/^esfirra\s*:\s*/i, '').trim();
     linhas.push(`${item.quantidade}x ESFIRRA`);
