@@ -127,7 +127,7 @@ export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props
   // ----- Fecha a mesa: vira um pedido (tipo=mesa) + entrada no caixa -----
   // Tudo roda numa única transação no banco (RPC fechar_mesa), então não há risco
   // de ficar pela metade se a conexão cair no meio do processo.
-  const handleCloseMesa = async (formaPagamento: string) => {
+  const handleCloseMesa = async (formaPagamento: string, cobrarServico: boolean) => {
     if (itens.length === 0) {
       alert('A mesa não tem itens para fechar.');
       return;
@@ -135,14 +135,18 @@ export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props
     setBusy(true);
     try {
       const { data, error } = await supabase
-        .rpc('fechar_mesa', { p_mesa_id: mesa.id, p_forma_pagamento: formaPagamento })
-        .maybeSingle<{ pedido_id: string; numero: number; total: number }>();
+        .rpc('fechar_mesa', {
+          p_mesa_id: mesa.id,
+          p_forma_pagamento: formaPagamento,
+          ...(cobrarServico ? { p_cobrar_servico: true } : {}),
+        })
+        .maybeSingle<{ pedido_id: string; numero: number; total: number; taxa_servico: number }>();
       if (error) throw error;
 
       const totalFechado = data?.total ?? subtotal;
 
       // Imprime a conta do cliente com os itens ainda em memória (a mesa já foi limpa no banco)
-      if (config) printMesaConta(mesa.numero, itens, totalFechado, formaPagamento, config);
+      if (config) printMesaConta(mesa.numero, itens, totalFechado, formaPagamento, config, data?.taxa_servico ?? 0);
 
       setShowClose(false);
       onChanged();
@@ -650,10 +654,12 @@ function CloseMesaModal({
 }: {
   total: number;
   busy: boolean;
-  onConfirm: (forma: string) => void;
+  onConfirm: (forma: string, cobrarServico: boolean) => void;
   onClose: () => void;
 }) {
   const [forma, setForma] = useState('Dinheiro');
+  const [cobrarServico, setCobrarServico] = useState(false);
+  const servico = cobrarServico ? Math.round(total * 10) / 100 : 0;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
@@ -667,7 +673,15 @@ function CloseMesaModal({
         <div className="p-4 space-y-4">
           <div className="text-center">
             <p className="text-neutral-500 text-sm">Total a pagar</p>
-            <p className="text-[#22c55e] font-black text-4xl mt-1">{brl(total)}</p>
+            <p className="text-[#22c55e] font-black text-4xl mt-1">{brl(total + servico)}</p>
+          </div>
+          <label className="flex items-center gap-3 border border-neutral-200 rounded-xl p-3 text-sm">
+            <input type="checkbox" checked={cobrarServico} disabled={busy} onChange={(e) => setCobrarServico(e.target.checked)} />
+            Cobrar serviço (10%) — opcional
+          </label>
+          <div className="text-sm text-neutral-600">
+            <p>Consumo: {brl(total)}</p>
+            <p>Serviço (10%): {brl(servico)}</p>
           </div>
           <div>
             <label className="block text-xs text-neutral-500 mb-2">Forma de pagamento</label>
@@ -691,7 +705,7 @@ function CloseMesaModal({
             Cancelar
           </button>
           <button
-            onClick={() => onConfirm(forma)}
+            onClick={() => onConfirm(forma, cobrarServico)}
             disabled={busy}
             className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white rounded-xl py-2.5 font-bold disabled:opacity-40"
           >

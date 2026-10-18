@@ -272,7 +272,7 @@ export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], co
 /**
  * Conta (extrato) da MESA — impressa no fechamento, com todos os itens acumulados.
  */
-function buildMesaContaEscPos(numeroMesa: number, itens: ItemMesa[], total: number, formaPagamento: string, config: Configuracao): string {
+function buildMesaContaEscPos(numeroMesa: number, itens: ItemMesa[], total: number, formaPagamento: string, config: Configuracao, taxaServico = 0): string {
   const lines: string[] = [];
   lines.push(marcaEscPos(config.nome_loja));
   if (config.endereco_loja) lines.push(CENTER + config.endereco_loja);
@@ -289,6 +289,10 @@ function buildMesaContaEscPos(numeroMesa: number, itens: ItemMesa[], total: numb
     lines.push('');
   });
   lines.push(LINE);
+  if (taxaServico > 0) {
+    lines.push(`Consumo: ${brl(total - taxaServico)}`);
+    lines.push(`Servico (10%): ${brl(taxaServico)}`);
+  }
   lines.push(BOLD_ON + `TOTAL:       ${brl(total)}` + BOLD_OFF);
   lines.push(`Pagamento:   ${formaPagamento || '-'}`);
   lines.push(LINE);
@@ -304,9 +308,10 @@ export async function printMesaConta(
   total: number,
   formaPagamento: string,
   config: Configuracao,
+  taxaServico = 0,
 ) {
   if (temImpressoraPareada()) {
-    const ok = await imprimirViaBluetooth(buildMesaContaEscPos(numeroMesa, itens, total, formaPagamento, config));
+    const ok = await imprimirViaBluetooth(buildMesaContaEscPos(numeroMesa, itens, total, formaPagamento, config, taxaServico));
     if (ok) return;
   }
 
@@ -334,6 +339,7 @@ export async function printMesaConta(
     <div class="sep">--------------------------------</div>
     ${itensHTML}
     <div class="sep">--------------------------------</div>
+    ${taxaServico > 0 ? `<div>Consumo: ${brl(total - taxaServico)}</div><div>Serviço (10%): ${brl(taxaServico)}</div>` : ''}
     <div class="total">TOTAL:       ${brl(total)}</div>
     <div>Pagamento:   ${formaPagamento || '-'}</div>
     <div class="sep">--------------------------------</div>
