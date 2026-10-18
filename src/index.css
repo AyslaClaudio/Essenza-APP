@@ -35,7 +35,7 @@ body {
   background: #404040;
 }
 
-/* Print styles for 80mm receipt */
+/* Print styles for 58mm thermal receipt */
 @media print {
   body * {
     visibility: hidden;
@@ -48,11 +48,14 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 80mm;
+    width: 58mm;
     margin: 0;
-    padding: 2mm;
+    padding: 2mm 2.5mm;
     font-family: 'Courier New', monospace;
-    font-size: 10px;
+    font-size: 11px;
+    line-height: 1.35;
+    font-weight: 500;
+    overflow-wrap: anywhere;
     color: #000;
     background: #fff;
   }
@@ -87,25 +90,19 @@ body {
   .print-receipt .marca {
     margin: 2px 0 6px;
   }
-  .print-receipt .marca-logo {
-    display: block;
-    width: 34mm;
-    max-height: 18mm;
-    object-fit: contain;
-    margin: 0 auto 2mm;
-  }
   .print-receipt .section-title {
     font-weight: bold;
-    margin-top: 8px;
-    padding: 2px 0;
+    margin: 7px 0 4px;
+    padding: 3px 0;
     border-top: 1px solid #000;
     border-bottom: 1px solid #000;
+    letter-spacing: 0.3px;
   }
   .print-receipt .marca + .marca {
     margin: 6px 0 2px;
   }
   @page {
-    size: 80mm auto;
+    size: 58mm auto;
     margin: 0;
   }
 }

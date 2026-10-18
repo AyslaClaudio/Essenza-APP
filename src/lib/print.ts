@@ -16,86 +16,21 @@ const CENTER = `${ESC}a\x01`;
 const LEFT = `${ESC}a\x00`;
 const LINE = '--------------------------------';
 
-function juntarBytes(...partes: Uint8Array[]): Uint8Array {
-  const total = partes.reduce((soma, parte) => soma + parte.length, 0);
-  const resultado = new Uint8Array(total);
-  let offset = 0;
-  partes.forEach((parte) => {
-    resultado.set(parte, offset);
-    offset += parte.length;
-  });
-  return resultado;
-}
-
-/**
- * Converte a logo para raster ESC/POS compatível com impressora térmica 58 mm.
- * 300 pontos deixa margem segura para os modelos de 384 pontos (58 mm).
- */
-async function logoEscPos(config: Configuracao): Promise<Uint8Array> {
-  const fonte = config.logo || '/logo.png';
-  try {
-    const resposta = await fetch(fonte);
-    if (!resposta.ok) return new Uint8Array();
-    const bitmap = await createImageBitmap(await resposta.blob());
-    const largura = Math.min(300, bitmap.width);
-    const altura = Math.max(1, Math.min(120, Math.round(bitmap.height * (largura / bitmap.width))));
-    const canvas = document.createElement('canvas');
-    canvas.width = largura;
-    canvas.height = altura;
-    const contexto = canvas.getContext('2d');
-    if (!contexto) return new Uint8Array();
-    contexto.fillStyle = '#fff';
-    contexto.fillRect(0, 0, largura, altura);
-    contexto.drawImage(bitmap, 0, 0, largura, altura);
-    bitmap.close();
-
-    const pixels = contexto.getImageData(0, 0, largura, altura).data;
-    const larguraBytes = Math.ceil(largura / 8);
-    const dados = new Uint8Array(larguraBytes * altura);
-    for (let y = 0; y < altura; y++) {
-      for (let x = 0; x < largura; x++) {
-        const posicao = (y * largura + x) * 4;
-        const alpha = pixels[posicao + 3] / 255;
-        const cinza = (pixels[posicao] * 0.299 + pixels[posicao + 1] * 0.587 + pixels[posicao + 2] * 0.114) * alpha + 255 * (1 - alpha);
-        if (cinza < 180) dados[y * larguraBytes + Math.floor(x / 8)] |= 0x80 >> (x % 8);
-      }
-    }
-
-    // GS v 0: imagem raster, alinhada ao centro, seguida de avanço de papel.
-    const comando = new Uint8Array([
-      0x1b, 0x61, 0x01,
-      0x1d, 0x76, 0x30, 0x00,
-      larguraBytes & 0xff, (larguraBytes >> 8) & 0xff,
-      altura & 0xff, (altura >> 8) & 0xff,
-    ]);
-    return juntarBytes(comando, dados, new Uint8Array([0x0a, 0x1b, 0x61, 0x00]));
-  } catch {
-    // A impressão continua normalmente com o cabeçalho textual se a logo não carregar.
-    return new Uint8Array();
-  }
-}
-
-async function reciboBluetooth(texto: string, config: Configuracao): Promise<Uint8Array> {
-  return juntarBytes(await logoEscPos(config), textoParaBytes(texto));
-}
-
 // Marca d'água leve no topo de cada recibo — só texto (funciona em qualquer
 // impressora térmica/Bluetooth, sem gastar tinta com uma imagem). Aprovada
 // pela usuária: faixa de 3 marcas (lembrando a faixa verde/branco/vermelho
 // da logo oficial) + nome da loja + "Pizzaria".
 function marcaEscPos(nomeLoja: string): string {
   return [
-    CENTER + '*  *  *',
     CENTER + BOLD_ON + (nomeLoja || 'ESSENZA') + BOLD_OFF,
     CENTER + 'PIZZARIA',
+    CENTER + '--------------------------------',
   ].join('\n');
 }
 
-function marcaHtml(nomeLoja: string, logo?: string | null): string {
+function marcaHtml(nomeLoja: string): string {
   return `
     <div class="marca">
-      ${logo ? `<img class="marca-logo" src="${logo}" alt="${nomeLoja || 'ESSENZA'}" />` : ''}
-      <div class="center">* &nbsp; * &nbsp; *</div>
       <div class="center"><b>${nomeLoja || 'ESSENZA'}</b></div>
       <div class="center">PIZZARIA</div>
     </div>
@@ -143,7 +78,7 @@ export async function printFechamentoDia(
     produtos.forEach((p) => lines.push(`${p.qtd}x ${p.nome} - Lucro: ${brl(p.lucro)}`));
     lines.push(LINE);
     lines.push(marcaEscPos(config.nome_loja));
-    const ok = await imprimirViaBluetooth(await reciboBluetooth(INIT + lines.join('\n') + '\n\n\n', config));
+    const ok = await imprimirViaBluetooth(textoParaBytes(INIT + lines.join('\n') + '\n\n\n'));
     if (ok) return;
   }
 
@@ -304,7 +239,7 @@ export function buildCashReceipt(pedido: Pedido, config: Configuracao): string {
 export async function printReceipt(pedido: Pedido, config: Configuracao, via: 'cozinha' | 'caixa') {
   if (temImpressoraPareada()) {
     const texto = via === 'cozinha' ? buildKitchenReceipt(pedido, config) : buildCashReceipt(pedido, config);
-    const ok = await imprimirViaBluetooth(await reciboBluetooth(texto, config));
+    const ok = await imprimirViaBluetooth(textoParaBytes(texto));
     if (ok) return;
   }
 
@@ -346,7 +281,7 @@ function buildMesaComandaEscPos(numeroMesa: number, itens: ItemMesa[], config: C
 
 export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], config: Configuracao) {
   if (temImpressoraPareada()) {
-    const ok = await imprimirViaBluetooth(await reciboBluetooth(buildMesaComandaEscPos(numeroMesa, itens, config), config));
+    const ok = await imprimirViaBluetooth(textoParaBytes(buildMesaComandaEscPos(numeroMesa, itens, config)));
     if (ok) return;
   }
 
@@ -357,14 +292,14 @@ export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], co
   div.id = 'print-area';
   div.className = 'print-receipt';
   div.innerHTML = `
-    ${marcaHtml(config.nome_loja, config.logo || '/logo.png')}
+    ${marcaHtml(config.nome_loja)}
     <div class="center">*** COZINHA ***</div>
     <div class="center"><b>MESA ${numeroMesa}</b></div>
     <div>Hora: ${fmtHora(new Date().toISOString())}</div>
     <div class="sep">--------------------------------</div>
     ${agruparItensComanda(itens).map(([grupo, grupoItens]) => `<div class="section-title">[ ${grupo} ]</div>${grupoItens.map((item) => kitchenItemLines(item).map((line, index) => index === 0 ? `<div class="item"><b>${line}</b></div>` : `<div class="sub"><b>${line}</b></div>`).join('')).join('')}`).join('<div class="sep">--------------------------------</div>')}
     <div class="sep">--------------------------------</div>
-    ${marcaHtml(config.nome_loja, config.logo || '/logo.png')}
+    ${marcaHtml(config.nome_loja)}
   `;
   document.body.appendChild(div);
   window.print();
@@ -413,7 +348,7 @@ export async function printMesaConta(
   taxaServico = 0,
 ) {
   if (temImpressoraPareada()) {
-    const ok = await imprimirViaBluetooth(await reciboBluetooth(buildMesaContaEscPos(numeroMesa, itens, total, formaPagamento, config, taxaServico), config));
+    const ok = await imprimirViaBluetooth(textoParaBytes(buildMesaContaEscPos(numeroMesa, itens, total, formaPagamento, config, taxaServico)));
     if (ok) return;
   }
 
@@ -432,7 +367,7 @@ export async function printMesaConta(
   div.id = 'print-area';
   div.className = 'print-receipt';
   div.innerHTML = `
-    ${marcaHtml(config.nome_loja, config.logo || '/logo.png')}
+    ${marcaHtml(config.nome_loja)}
     ${config.endereco_loja ? `<div class="center">${config.endereco_loja}</div>` : ''}
     ${config.telefone_loja ? `<div class="center">Tel: ${config.telefone_loja}</div>` : ''}
     <div class="sep">--------------------------------</div>
@@ -460,7 +395,7 @@ function kitchenHTML(pedido: Pedido, config: Configuracao): string {
     ${grupoItens.map((item) => kitchenItemLines(item).map((line, index) => index === 0 ? `<div class="item"><b>${line}</b></div>` : `<div class="sub"><b>${line}</b></div>`).join('')).join('')}
   `).join('<div class="sep">--------------------------------</div>');
   return `
-    ${marcaHtml(config.nome_loja, config.logo || '/logo.png')}
+    ${marcaHtml(config.nome_loja)}
     <div class="center">*** COZINHA ***</div>
     <div>Pedido #: ${pedido.numero}</div>
     <div>Hora: ${fmtHora(pedido.created_at)}</div>
@@ -471,7 +406,7 @@ function kitchenHTML(pedido: Pedido, config: Configuracao): string {
     <div class="sep">--------------------------------</div>
     ${pedido.observacao ? `<div><b>OBS: ${pedido.observacao.toUpperCase()}</b></div>` : ''}
     <div class="sep">--------------------------------</div>
-    ${marcaHtml(config.nome_loja, config.logo || '/logo.png')}
+    ${marcaHtml(config.nome_loja)}
   `;
 }
 
