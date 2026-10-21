@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 import { brl } from '../../lib/format';
 import { printMesaComanda, printMesaConta } from '../../lib/print';
 import {
@@ -21,6 +22,7 @@ interface Props {
 const FORMAS_PAGAMENTO = ['Dinheiro', 'Pix', 'Cartão'];
 
 export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props) {
+  const { usuario } = useAuth();
   const massa = useMassaHoje();
   const [itens, setItens] = useState<ItemMesa[]>([]);
   const [loading, setLoading] = useState(true);
@@ -144,6 +146,17 @@ export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props
       if (error) throw error;
 
       const totalFechado = data?.total ?? subtotal;
+
+      // O RPC fecha a mesa atomicamente. Depois registramos o responsável pela
+      // conta para o gerente conseguir conferir o movimento do garçom.
+      if (data?.pedido_id && usuario) {
+        await supabase.from('pedidos').update({
+          garcom_id: usuario.role === 'garcom' ? usuario.id : null,
+          garcom_nome: usuario.role === 'garcom' ? usuario.nome : (mesa.garcom || ''),
+          fechado_por_id: usuario.id,
+          fechado_por_nome: usuario.nome,
+        }).eq('id', data.pedido_id);
+      }
 
       // Imprime a conta do cliente com os itens ainda em memória (a mesa já foi limpa no banco)
       if (config) printMesaConta(mesa.numero, itens, totalFechado, formaPagamento, config, data?.taxa_servico ?? 0);
@@ -309,6 +322,16 @@ export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props
           </div>
         )}
       </div>
+
+      {itens.length > 0 && (
+        <button
+          onClick={handleOpenClose}
+          disabled={busy}
+          className="w-full flex items-center justify-center gap-2 bg-[#B91C1C] hover:bg-red-700 text-white py-3 rounded-xl font-bold shadow-sm transition-colors disabled:opacity-50"
+        >
+          <DoorClosed size={18} /> Fechar conta da mesa
+        </button>
+      )}
 
       {showAdd && (
         <AddItemModal produtos={produtos} busy={busy} onAdd={handleAddItens} onClose={() => setShowAdd(false)} massa={massa} />

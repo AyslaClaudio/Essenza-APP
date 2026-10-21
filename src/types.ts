@@ -87,6 +87,10 @@ export interface Pedido {
   updated_at: string;
   imprimir_cozinha?: boolean;
   imprimir_caixa?: boolean;
+  garcom_id?: string | null;
+  garcom_nome?: string;
+  fechado_por_id?: string | null;
+  fechado_por_nome?: string;
   itens?: ItemPedido[];
 }
 

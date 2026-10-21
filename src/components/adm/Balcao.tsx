@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 import { useConfig } from '../../context/ConfigContext';
 import { brl, todayISO } from '../../lib/format';
 import { printReceipt, printMesaComanda } from '../../lib/print';
@@ -35,6 +36,7 @@ const sanitizaBusca = (s: string) => s.replace(/[(),"*]/g, ' ').replace(/\s+/g, 
 const RASCUNHO_KEY = 'essenza_balcao_rascunho';
 
 export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
+  const { usuario } = useAuth();
   const { config } = useConfig();
   const massa = useMassaHoje();
   const [step, setStep] = useState<'produtos' | 'carrinho' | 'cliente' | 'pagamento' | 'sucesso'>('produtos');
@@ -400,6 +402,8 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
         cupom: '',
         imprimir_cozinha: printCozinha,
         imprimir_caixa: printCaixa,
+        garcom_id: usuario?.role === 'garcom' ? usuario.id : null,
+        garcom_nome: usuario?.role === 'garcom' ? usuario.nome : '',
       };
 
       const { data: pedido, error: pedErr } = await supabase.from('pedidos').insert(pedidoData).select().maybeSingle();
@@ -514,6 +518,8 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
       // listener central duplicaria a comanda que já saiu na hora.
       imprimir_cozinha: false,
       imprimir_caixa: false,
+      garcom_id: usuario?.role === 'garcom' ? usuario.id : null,
+      garcom_nome: usuario?.role === 'garcom' ? usuario.nome : '',
     };
 
     const entry = queueOfflinePedido({ pedidoData, itens: itensBase, caixaDescricaoPrefixo: 'Pedido' });

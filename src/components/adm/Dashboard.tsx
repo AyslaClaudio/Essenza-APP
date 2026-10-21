@@ -10,7 +10,7 @@ import { calcularFinanceiroBase, calcularMargem, calcularReceitaPorOrigem } from
 import { buscarFaturamentoPeriodo } from '../../lib/financeQueries';
 import {
   TrendingUp, TrendingDown, DollarSign, Receipt, ShoppingBag, RefreshCw, ChefHat, LayoutGrid, Bluetooth, BluetoothConnected, AlertTriangle,
-  Calendar, PieChart as PieIcon, Trophy, Clock,
+  Calendar, PieChart as PieIcon, Trophy, Clock, Bell, X, Users,
 } from 'lucide-react';
 import { conectarImpressora, nomeImpressora, observarStatusImpressora, reconectarImpressoraSalva, statusImpressora, suportado as bluetoothSuportado } from '../../lib/bluetoothPrinter';
 import { buscarCustosOperacionais, type CustoOperacionalEntry } from '../../lib/custosOperacionais';
@@ -428,6 +428,8 @@ export function Dashboard({ meta }: { meta: number }) {
 
       <PrinterStatusWidget />
 
+      <PedidosAoVivo />
+
       {showCustom && (
         <div className="bg-white border border-[#EFE9E0] rounded-2xl p-4 flex flex-wrap items-end gap-3">
           <div>
@@ -718,5 +720,137 @@ function PrinterStatusWidget() {
       <div className="flex-1 min-w-0"><p className="text-amber-900 font-bold text-sm">Impressora não conectada</p><p className="text-amber-800 text-xs">Ligue a impressora ou conecte uma autorizada.</p>{erro && <p className="text-red-600 text-xs mt-1">{erro}</p>}</div>
       {bluetoothSuportado() ? <button onClick={conectar} disabled={conectando} className="shrink-0 flex items-center gap-1.5 bg-[#B91C1C] text-white px-3 py-2 rounded-xl text-xs font-bold disabled:opacity-50"><Bluetooth size={15} /> {conectando ? 'Buscando...' : 'Conectar'}</button> : <span className="text-amber-700 text-xs font-semibold">Use Chrome/Edge</span>}
     </div>
+  );
+}
+
+type PedidoAoVivo = {
+  id: string;
+  numero: number;
+  cliente_nome: string;
+  tipo: 'balcao' | 'delivery' | 'cliente' | 'mesa';
+  status: string;
+  total: number;
+  created_at: string;
+  garcom_nome?: string;
+};
+
+function tocaAlertaPedido() {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const oscilador = ctx.createOscillator();
+    const ganho = ctx.createGain();
+    oscilador.type = 'sine';
+    oscilador.frequency.setValueAtTime(880, ctx.currentTime);
+    oscilador.frequency.setValueAtTime(1175, ctx.currentTime + 0.12);
+    ganho.gain.setValueAtTime(0.0001, ctx.currentTime);
+    ganho.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.02);
+    ganho.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.28);
+    oscilador.connect(ganho).connect(ctx.destination);
+    oscilador.start();
+    oscilador.stop(ctx.currentTime + 0.3);
+    window.setTimeout(() => { void ctx.close(); }, 500);
+  } catch {
+    // Alguns navegadores bloqueiam áudio até o primeiro clique; o balão visual
+    // continua sendo mostrado normalmente.
+  }
+}
+
+function PedidosAoVivo() {
+  const [pedidos, setPedidos] = useState<PedidoAoVivo[]>([]);
+  const [toast, setToast] = useState<{ id: string; texto: string } | null>(null);
+
+  const carregar = useCallback(async () => {
+    const { data } = await supabase
+      .from('pedidos')
+      .select('id, numero, cliente_nome, tipo, status, total, created_at, garcom_nome')
+      .neq('status', 'entregue')
+      .neq('status', 'cancelado')
+      .order('created_at', { ascending: false })
+      .limit(30);
+    setPedidos((data as PedidoAoVivo[]) || []);
+  }, []);
+
+  useEffect(() => {
+    let cargaInicial = true;
+    void carregar().then(() => { cargaInicial = false; });
+    const intervalo = window.setInterval(carregar, 30000);
+    const channel = supabase
+      .channel('dashboard-pedidos-ao-vivo')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos' }, (payload) => {
+        const novo = payload.new as PedidoAoVivo;
+        void carregar();
+        if (!cargaInicial && novo.status !== 'cancelado') {
+          tocaAlertaPedido();
+          setToast({ id: novo.id, texto: `Novo pedido #${novo.numero} recebido` });
+          window.setTimeout(() => setToast((atual) => atual?.id === novo.id ? null : atual), 6500);
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pedidos' }, () => { void carregar(); })
+      .subscribe();
+    return () => {
+      window.clearInterval(intervalo);
+      supabase.removeChannel(channel);
+    };
+  }, [carregar]);
+
+  const tipoLabel: Record<PedidoAoVivo['tipo'], string> = {
+    balcao: 'Balcão', delivery: 'Delivery', cliente: 'Site', mesa: 'Mesa',
+  };
+  const tempo = (data: string) => {
+    const minutos = Math.max(0, Math.floor((Date.now() - new Date(data).getTime()) / 60000));
+    return minutos < 1 ? 'agora' : `${minutos} min`;
+  };
+
+  const porGarcom = pedidos.reduce<Record<string, { qtd: number; total: number }>>((acc, pedido) => {
+    const nome = pedido.garcom_nome?.trim() || 'Sem atribuição';
+    const atual = acc[nome] || { qtd: 0, total: 0 };
+    atual.qtd += 1;
+    atual.total += Number(pedido.total || 0);
+    acc[nome] = atual;
+    return acc;
+  }, {});
+
+  return (
+    <>
+      <section className="bg-white border border-[#EFE9E0] rounded-2xl p-4 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center"><Bell size={17} className="text-[#B91C1C]" /></span>
+            <div><h3 className="text-[#26211E] font-bold text-sm">Pedidos em andamento</h3><p className="text-[#8A8A8A] text-xs">Atualiza em tempo real e a cada 30 segundos</p></div>
+          </div>
+          <span className="text-xs font-bold text-[#B91C1C] bg-red-50 rounded-full px-2.5 py-1">{pedidos.length} abertos</span>
+        </div>
+        {pedidos.length === 0 ? (
+          <p className="text-sm text-[#8A8A8A] py-3">Nenhum pedido aguardando atendimento.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+            {pedidos.slice(0, 12).map((pedido) => (
+              <div key={pedido.id} className="border border-[#EFE9E0] rounded-xl px-3 py-2.5 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#FBF6EF] flex items-center justify-center text-[#B91C1C] font-black text-xs">#{pedido.numero}</div>
+                <div className="min-w-0 flex-1"><p className="text-[#26211E] text-sm font-semibold truncate">{tipoLabel[pedido.tipo]} · {pedido.cliente_nome || 'Consumidor'}</p><p className="text-[#8A8A8A] text-xs truncate">{pedido.garcom_nome || 'Sem garçom'} · {tempo(pedido.created_at)}</p></div>
+                <span className="text-[#22c55e] font-bold text-sm">{brl(Number(pedido.total || 0))}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="bg-white border border-[#EFE9E0] rounded-2xl p-4">
+        <div className="flex items-center gap-2 mb-3"><Users size={17} className="text-[#B91C1C]" /><h3 className="text-[#26211E] font-bold text-sm">Prestação em andamento por garçom</h3></div>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(porGarcom).length === 0 ? <span className="text-xs text-[#8A8A8A]">Nenhum movimento aberto.</span> : Object.entries(porGarcom).map(([nome, resumo]) => (
+            <span key={nome} className="bg-[#FBF6EF] border border-[#EFE9E0] rounded-xl px-3 py-2 text-xs text-[#26211E]"><b>{nome}</b> · {resumo.qtd} pedido{resumo.qtd === 1 ? '' : 's'} · {brl(resumo.total)}</span>
+          ))}
+        </div>
+      </section>
+
+      {toast && (
+        <div className="fixed right-4 bottom-5 z-[80] w-[min(360px,calc(100vw-2rem))] bg-[#26211E] text-white rounded-2xl p-4 shadow-2xl flex items-start gap-3 animate-fadeIn">
+          <Bell size={19} className="text-amber-300 mt-0.5 shrink-0" /><p className="text-sm font-semibold flex-1">{toast.texto}</p><button onClick={() => setToast(null)} className="text-white/60 hover:text-white"><X size={17} /></button>
+        </div>
+      )}
+    </>
   );
 }
