@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
 
     if (existente) {
       const { data: atualizado, error: updateError } = await admin.auth.admin.updateUserById(existente.id, {
+        email: emailInterno,
         password: String(password),
         email_confirm: true,
       });
