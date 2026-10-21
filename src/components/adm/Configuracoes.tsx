@@ -502,7 +502,15 @@ function ConfigUsuarios() {
         body: { nome, login, password },
       });
       if (error || data?.error) {
-        alert('Erro ao criar garçom: ' + (data?.error || error?.message || 'desconhecido'));
+        let detalhe = data?.error || error?.message || 'desconhecido';
+        const contexto = (error as any)?.context;
+        if (!data?.error && contexto?.json) {
+          try {
+            const resposta = await contexto.json();
+            detalhe = resposta?.error || detalhe;
+          } catch { /* mantém a mensagem padrão */ }
+        }
+        alert('Erro ao criar garçom: ' + detalhe);
         return;
       }
       setNome(''); setLogin(''); setEmail(''); setPassword(''); setRole('atendente'); setShowForm(false);
