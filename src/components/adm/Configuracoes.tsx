@@ -578,14 +578,14 @@ function ConfigUsuarios() {
             <h3 className="text-neutral-900 font-bold text-lg mb-4">Novo Usuário</h3>
             <div className="space-y-3">
               <Field label="Nome" value={nome} onChange={setNome} />
-              {role === 'garcom' ? <Field label="Login do garçom" value={login} onChange={setLogin} /> : <Field label="Email" value={email} onChange={setEmail} type="email" />}
-              <Field label="Senha" value={password} onChange={setPassword} type="password" />
               <div>
                 <label className="text-neutral-500 text-sm">Nível de Acesso</label>
                 <select value={role} onChange={(e) => setRole(e.target.value as typeof role)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1">
                   <option value="atendente">Atendente</option><option value="garcom">Garçom</option><option value="caixa">Caixa</option><option value="gerente">Gerente</option>
                 </select>
               </div>
+              {role === 'garcom' ? <Field label="Login do garçom" value={login} onChange={setLogin} /> : <Field label="Email" value={email} onChange={setEmail} type="text" />}
+              <Field label="Senha" value={password} onChange={setPassword} type="password" />
             </div>
             <div className="flex gap-2 mt-5">
               <button onClick={() => setShowForm(false)} className="flex-1 py-3 bg-neutral-200 text-neutral-500 rounded-xl">Cancelar</button>
