@@ -34,25 +34,39 @@ Deno.serve(async (req) => {
     const { nome, email, password } = await req.json();
     if (!nome || !email || !password) return resposta({ error: 'Nome, e-mail e senha são obrigatórios.' }, 400);
 
-    const { data: criado, error: createError } = await admin.auth.admin.createUser({
-      email: String(email).trim(),
-      password: String(password),
-      email_confirm: true,
-    });
-    if (createError || !criado.user) return resposta({ error: createError?.message || 'Não foi possível criar a conta.' }, 400);
+    const emailNormalizado = String(email).trim().toLowerCase();
+    const { data: usuariosAuth } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const existente = usuariosAuth?.users.find((u) => (u.email || '').toLowerCase() === emailNormalizado);
+    let userId: string;
 
-    const { error: profileError } = await admin.from('usuarios').insert({
-      user_id: criado.user.id,
-      nome: String(nome).trim(),
-      role: 'garcom',
-      ativo: true,
-    });
+    if (existente) {
+      const { data: atualizado, error: updateError } = await admin.auth.admin.updateUserById(existente.id, {
+        password: String(password),
+        email_confirm: true,
+      });
+      if (updateError || !atualizado.user) return resposta({ error: updateError?.message || 'Não foi possível atualizar a conta.' }, 400);
+      userId = atualizado.user.id;
+    } else {
+      const { data: criado, error: createError } = await admin.auth.admin.createUser({
+        email: emailNormalizado,
+        password: String(password),
+        email_confirm: true,
+      });
+      if (createError || !criado.user) return resposta({ error: createError?.message || 'Não foi possível criar a conta.' }, 400);
+      userId = criado.user.id;
+    }
+
+    const { data: perfilExistente } = await admin.from('usuarios').select('id').eq('user_id', userId).maybeSingle();
+    const profileQuery = perfilExistente
+      ? admin.from('usuarios').update({ nome: String(nome).trim(), role: 'garcom', ativo: true }).eq('user_id', userId)
+      : admin.from('usuarios').insert({ user_id: userId, nome: String(nome).trim(), role: 'garcom', ativo: true });
+    const { error: profileError } = await profileQuery;
     if (profileError) {
-      await admin.auth.admin.deleteUser(criado.user.id);
+      if (!existente) await admin.auth.admin.deleteUser(userId);
       return resposta({ error: profileError.message }, 400);
     }
 
-    return resposta({ ok: true, user_id: criado.user.id });
+    return resposta({ ok: true, user_id: userId });
   } catch (error) {
     return resposta({ error: error instanceof Error ? error.message : 'Erro inesperado.' }, 500);
   }
