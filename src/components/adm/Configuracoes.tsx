@@ -482,6 +482,7 @@ function ConfigUsuarios() {
   const { usuario } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [nome, setNome] = useState('');
+  const [login, setLogin] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'atendente' | 'garcom' | 'caixa' | 'gerente'>('atendente');
@@ -495,16 +496,16 @@ function ConfigUsuarios() {
   useEffect(() => { load(); }, [load]);
 
   const createUser = async () => {
-    if (!email || !password || !nome) return;
+    if (!(role === 'garcom' ? login : email) || !password || !nome) return;
     if (role === 'garcom') {
       const { data, error } = await supabase.functions.invoke('criar-garcom', {
-        body: { nome, email, password },
+        body: { nome, login, password },
       });
       if (error || data?.error) {
         alert('Erro ao criar garçom: ' + (data?.error || error?.message || 'desconhecido'));
         return;
       }
-      setNome(''); setEmail(''); setPassword(''); setRole('atendente'); setShowForm(false);
+      setNome(''); setLogin(''); setEmail(''); setPassword(''); setRole('atendente'); setShowForm(false);
       load();
       return;
     }
@@ -526,7 +527,7 @@ function ConfigUsuarios() {
       });
     }
 
-    setNome(''); setEmail(''); setPassword(''); setRole('atendente'); setShowForm(false);
+    setNome(''); setLogin(''); setEmail(''); setPassword(''); setRole('atendente'); setShowForm(false);
     load();
   };
 
@@ -577,7 +578,7 @@ function ConfigUsuarios() {
             <h3 className="text-neutral-900 font-bold text-lg mb-4">Novo Usuário</h3>
             <div className="space-y-3">
               <Field label="Nome" value={nome} onChange={setNome} />
-              <Field label="Email" value={email} onChange={setEmail} type="email" />
+              {role === 'garcom' ? <Field label="Login do garçom" value={login} onChange={setLogin} /> : <Field label="Email" value={email} onChange={setEmail} type="email" />}
               <Field label="Senha" value={password} onChange={setPassword} type="password" />
               <div>
                 <label className="text-neutral-500 text-sm">Nível de Acesso</label>

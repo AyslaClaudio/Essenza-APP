@@ -3,6 +3,7 @@ export type Role = 'atendente' | 'garcom' | 'caixa' | 'gerente';
 export interface Usuario {
   id: string;
   user_id: string;
+  login?: string | null;
   nome: string;
   role: Role;
   ativo: boolean;

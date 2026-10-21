@@ -31,12 +31,17 @@ Deno.serve(async (req) => {
       return resposta({ error: 'Somente um gerente pode criar garçons.' }, 403);
     }
 
-    const { nome, email, password } = await req.json();
-    if (!nome || !email || !password) return resposta({ error: 'Nome, e-mail e senha são obrigatórios.' }, 400);
+    const { nome, login, password } = await req.json();
+    if (!nome || !login || !password) return resposta({ error: 'Nome, login e senha são obrigatórios.' }, 400);
 
-    const emailNormalizado = String(email).trim().toLowerCase();
+    const loginNormalizado = String(login).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase().replace(/\s+/g, '');
+    if (!/^[a-z0-9._-]{3,30}$/.test(loginNormalizado)) return resposta({ error: 'O login deve ter de 3 a 30 caracteres, sem espaços.' }, 400);
+    const emailInterno = `${loginNormalizado}@garcom.essenza.local`;
+    const { data: perfilPorLogin } = await admin.from('usuarios').select('id, user_id').eq('login', loginNormalizado).maybeSingle();
     const { data: usuariosAuth } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    const existente = usuariosAuth?.users.find((u) => (u.email || '').toLowerCase() === emailNormalizado);
+    const existente = perfilPorLogin
+      ? usuariosAuth?.users.find((u) => u.id === perfilPorLogin.user_id)
+      : usuariosAuth?.users.find((u) => (u.email || '').toLowerCase() === emailInterno);
     let userId: string;
 
     if (existente) {
@@ -48,7 +53,7 @@ Deno.serve(async (req) => {
       userId = atualizado.user.id;
     } else {
       const { data: criado, error: createError } = await admin.auth.admin.createUser({
-        email: emailNormalizado,
+        email: emailInterno,
         password: String(password),
         email_confirm: true,
       });
@@ -58,8 +63,8 @@ Deno.serve(async (req) => {
 
     const { data: perfilExistente } = await admin.from('usuarios').select('id').eq('user_id', userId).maybeSingle();
     const profileQuery = perfilExistente
-      ? admin.from('usuarios').update({ nome: String(nome).trim(), role: 'garcom', ativo: true }).eq('user_id', userId)
-      : admin.from('usuarios').insert({ user_id: userId, nome: String(nome).trim(), role: 'garcom', ativo: true });
+      ? admin.from('usuarios').update({ nome: String(nome).trim(), login: loginNormalizado, role: 'garcom', ativo: true }).eq('user_id', userId)
+      : admin.from('usuarios').insert({ user_id: userId, nome: String(nome).trim(), login: loginNormalizado, role: 'garcom', ativo: true });
     const { error: profileError } = await profileQuery;
     if (profileError) {
       if (!existente) await admin.auth.admin.deleteUser(userId);

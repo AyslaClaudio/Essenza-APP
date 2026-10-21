@@ -26,13 +26,13 @@ export function Login() {
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-neutral-500 text-sm mb-1.5">Email</label>
+            <label className="block text-neutral-500 text-sm mb-1.5">E-mail ou login</label>
             <input
-              type="email"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-3.5 text-neutral-900 text-lg focus:border-[#B91C1C] focus:outline-none transition-colors"
-              placeholder="seu@email.com"
+              placeholder="seu@email.com ou miqueias"
               required
             />
           </div>
