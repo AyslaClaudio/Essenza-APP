@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
     const loginNormalizado = String(login).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase().replace(/\s+/g, '');
     if (!/^[a-z0-9._-]{3,30}$/.test(loginNormalizado)) return resposta({ error: 'O login deve ter de 3 a 30 caracteres, sem espaços.' }, 400);
-    const emailInterno = `${loginNormalizado}@garcom.essenza.local`;
+    const emailInterno = `${loginNormalizado}@garcom.essenza.com`;
     const { data: perfilPorLogin } = await admin.from('usuarios').select('id, user_id').eq('login', loginNormalizado).maybeSingle();
     const { data: perfilPorNome } = perfilPorLogin ? { data: null } : await admin.from('usuarios').select('id, user_id').ilike('nome', String(nome).trim()).maybeSingle();
     const { data: usuariosAuth } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });

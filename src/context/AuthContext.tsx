@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     const identificador = email.trim();
-    const emailAuth = identificador.includes('@') ? identificador : `${identificador.toLowerCase()}@garcom.essenza.local`;
+    const emailAuth = identificador.includes('@') ? identificador : `${identificador.toLowerCase()}@garcom.essenza.com`;
     const { error } = await supabase.auth.signInWithPassword({ email: emailAuth, password });
     if (error) return { error: error.message };
     return { error: null };
