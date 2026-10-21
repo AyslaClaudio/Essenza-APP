@@ -496,6 +496,18 @@ function ConfigUsuarios() {
 
   const createUser = async () => {
     if (!email || !password || !nome) return;
+    if (role === 'garcom') {
+      const { data, error } = await supabase.functions.invoke('criar-garcom', {
+        body: { nome, email, password },
+      });
+      if (error || data?.error) {
+        alert('Erro ao criar garçom: ' + (data?.error || error?.message || 'desconhecido'));
+        return;
+      }
+      setNome(''); setEmail(''); setPassword(''); setRole('atendente'); setShowForm(false);
+      load();
+      return;
+    }
     // O app só tem a chave anon (sem service role), então auth.admin.createUser
     // sempre falha aqui — o fallback é signUp(), que troca a sessão ativa pra do
     // usuário recém-criado. Sem restaurar a sessão do gerente logo em seguida,
