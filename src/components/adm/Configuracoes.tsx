@@ -485,10 +485,10 @@ function ConfigUsuarios() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'atendente' | 'garcom' | 'caixa' | 'gerente'>('atendente');
-  const [users, setUsers] = useState<{ id: string; nome: string; role: string; ativo: boolean }[]>([]);
+  const [users, setUsers] = useState<{ id: string; user_id: string; nome: string; role: string; ativo: boolean }[]>([]);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('usuarios').select('id, nome, role, ativo').order('nome');
+    const { data } = await supabase.from('usuarios').select('id, user_id, nome, role, ativo').order('nome');
     setUsers((data as typeof users) || []);
   }, []);
 
@@ -530,11 +530,14 @@ function ConfigUsuarios() {
     load();
   };
 
-  const removeUser = async (id: string) => {
-    if (confirm('Desativar usuário?')) {
-      await supabase.from('usuarios').update({ ativo: false }).eq('id', id);
-      load();
+  const removeUser = async (id: string, nomeUsuario: string) => {
+    if (!confirm(`Excluir o usuário ${nomeUsuario}? Ele perderá o acesso e esta ação não poderá ser desfeita.`)) return;
+    const { data, error } = await supabase.functions.invoke('excluir-usuario', { body: { usuario_id: id } });
+    if (error || data?.error) {
+      alert('Não foi possível excluir: ' + (data?.error || error?.message || 'erro desconhecido'));
+      return;
     }
+    load();
   };
 
   return (
@@ -562,7 +565,7 @@ function ConfigUsuarios() {
             </div>
             <div className="flex items-center gap-2">
               {u.ativo ? <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-600 rounded-full">Ativo</span> : <span className="text-xs px-2 py-0.5 bg-red-500/20 text-red-600 rounded-full">Inativo</span>}
-              {usuario?.role === 'gerente' && <button onClick={() => removeUser(u.id)} className="p-1.5 text-neutral-500 hover:text-red-600"><Trash2 size={16} /></button>}
+              {usuario?.role === 'gerente' && <button onClick={() => removeUser(u.id, u.nome)} title="Excluir usuário" className="p-1.5 text-neutral-500 hover:text-red-600"><Trash2 size={16} /></button>}
             </div>
           </div>
         ))}
