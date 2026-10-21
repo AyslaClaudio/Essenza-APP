@@ -498,8 +498,14 @@ function ConfigUsuarios() {
   const createUser = async () => {
     if (!(role === 'garcom' ? login : email) || !password || !nome) return;
     if (role === 'garcom') {
+      const { data: sessaoAtualizada, error: sessaoError } = await supabase.auth.refreshSession();
+      if (sessaoError || !sessaoAtualizada.session) {
+        alert('Sua sessão de gerente expirou. Saia e entre novamente para criar o garçom.');
+        return;
+      }
       const { data, error } = await supabase.functions.invoke('criar-garcom', {
         body: { nome, login, password },
+        headers: { Authorization: `Bearer ${sessaoAtualizada.session.access_token}` },
       });
       if (error || data?.error) {
         let detalhe = data?.error || error?.message || 'desconhecido';
