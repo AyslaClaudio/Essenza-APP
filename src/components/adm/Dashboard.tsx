@@ -9,9 +9,10 @@ import {
 import { calcularFinanceiroBase, calcularMargem, calcularReceitaPorOrigem } from '../../lib/reportUtils';
 import { buscarFaturamentoPeriodo } from '../../lib/financeQueries';
 import {
-  TrendingUp, TrendingDown, DollarSign, Receipt, ShoppingBag, RefreshCw, ChefHat, LayoutGrid,
+  TrendingUp, TrendingDown, DollarSign, Receipt, ShoppingBag, RefreshCw, ChefHat, LayoutGrid, Bluetooth, BluetoothConnected, AlertTriangle,
   Calendar, PieChart as PieIcon, Trophy, Clock,
 } from 'lucide-react';
+import { conectarImpressora, nomeImpressora, observarStatusImpressora, reconectarImpressoraSalva, statusImpressora, suportado as bluetoothSuportado } from '../../lib/bluetoothPrinter';
 import { buscarCustosOperacionais, type CustoOperacionalEntry } from '../../lib/custosOperacionais';
 import { GraficoTendencia, type BucketTendencia } from './dashboard/GraficoTendencia';
 import { GraficoTopSabores, type SaborTop } from './dashboard/GraficoTopSabores';
@@ -341,6 +342,26 @@ export function Dashboard({ meta }: { meta: number }) {
     return () => clearInterval(id);
   }, [load]);
 
+  // Mantém a última impressora autorizada pelo Chrome sendo procurada em
+  // segundo plano. Quando ela é ligada novamente, o GATT reconecta sem exigir
+  // que a atendente volte às Configurações.
+  useEffect(() => {
+    const sincronizar = () => setTimeout(() => setStatusPrinter(statusImpressora()), 0);
+    const tentarReconectar = () => { void reconectarImpressoraSalva().then(() => setStatusPrinter(statusImpressora())); };
+    sincronizar();
+    const cancelar = observarStatusImpressora(() => setStatusPrinter(statusImpressora()));
+    const intervalo = window.setInterval(tentarReconectar, 12000);
+    window.addEventListener('focus', tentarReconectar);
+    document.addEventListener('visibilitychange', tentarReconectar);
+    tentarReconectar();
+    return () => {
+      cancelar();
+      window.clearInterval(intervalo);
+      window.removeEventListener('focus', tentarReconectar);
+      document.removeEventListener('visibilitychange', tentarReconectar);
+    };
+  }, []);
+
   const ticketMedio = atual.num > 0 ? atual.faturamento / atual.num : 0;
   const ticketMedioPrev = anterior.num > 0 ? anterior.faturamento / anterior.num : 0;
   const margem = calcularMargem(atual.lucro, atual.faturamento);
@@ -404,6 +425,8 @@ export function Dashboard({ meta }: { meta: number }) {
 
       {/* Contagem de massas do dia */}
       <ContagemMassas />
+
+      <PrinterStatusWidget />
 
       {showCustom && (
         <div className="bg-white border border-[#EFE9E0] rounded-2xl p-4 flex flex-wrap items-end gap-3">
@@ -640,6 +663,60 @@ export function Dashboard({ meta }: { meta: number }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function setStatusPrinter(_status: ReturnType<typeof statusImpressora>) {
+  // O estado visual é atualizado pelo próprio widget; esta função existe para
+  // evitar que o polling do Dashboard force recarregamentos dos indicadores.
+  window.dispatchEvent(new CustomEvent('essenza-printer-status', { detail: _status }));
+}
+
+function PrinterStatusWidget() {
+  const [status, setStatus] = useState<ReturnType<typeof statusImpressora>>(statusImpressora());
+  const [nome, setNome] = useState(nomeImpressora());
+  const [conectando, setConectando] = useState(false);
+  const [erro, setErro] = useState('');
+
+  useEffect(() => {
+    const atualizar = () => { setStatus(statusImpressora()); setNome(nomeImpressora()); };
+    const cancelar = observarStatusImpressora(atualizar);
+    const evento = () => atualizar();
+    window.addEventListener('essenza-printer-status', evento);
+    atualizar();
+    return () => { cancelar(); window.removeEventListener('essenza-printer-status', evento); };
+  }, []);
+
+  const conectar = async () => {
+    setConectando(true);
+    setErro('');
+    const resultado = await conectarImpressora();
+    if (resultado.ok) {
+      setNome(resultado.nome);
+      setStatus('conectada');
+    } else if (resultado.erro !== 'Nenhum dispositivo selecionado.') {
+      setErro(resultado.erro);
+      setStatus('desconectada');
+    }
+    setConectando(false);
+  };
+
+  if (status === 'conectada') {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-2xl px-4 py-3 flex items-center gap-3">
+        <BluetoothConnected size={20} className="text-green-600 shrink-0" />
+        <div className="flex-1 min-w-0"><p className="text-green-800 font-bold text-sm">Impressora conectada</p><p className="text-green-700 text-xs truncate">{nome || 'Impressora Bluetooth'}</p></div>
+        <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" title="Pronta para imprimir" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-3">
+      <AlertTriangle size={20} className="text-amber-600 shrink-0" />
+      <div className="flex-1 min-w-0"><p className="text-amber-900 font-bold text-sm">Impressora não conectada</p><p className="text-amber-800 text-xs">Ligue a impressora ou conecte uma autorizada.</p>{erro && <p className="text-red-600 text-xs mt-1">{erro}</p>}</div>
+      {bluetoothSuportado() ? <button onClick={conectar} disabled={conectando} className="shrink-0 flex items-center gap-1.5 bg-[#B91C1C] text-white px-3 py-2 rounded-xl text-xs font-bold disabled:opacity-50"><Bluetooth size={15} /> {conectando ? 'Buscando...' : 'Conectar'}</button> : <span className="text-amber-700 text-xs font-semibold">Use Chrome/Edge</span>}
     </div>
   );
 }

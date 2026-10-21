@@ -19,6 +19,23 @@ const PRINTER_SERVICE_UUIDS = [
 
 let device: BluetoothDevice | null = null;
 let characteristic: BluetoothRemoteGATTCharacteristic | null = null;
+let reconexaoEmAndamento: Promise<boolean> | null = null;
+const listenersStatus = new Set<() => void>();
+const ULTIMA_IMPRESSORA_KEY = 'essenza.ultima-impressora-bluetooth';
+
+function avisarStatus() {
+  listenersStatus.forEach((listener) => listener());
+}
+
+export function observarStatusImpressora(listener: () => void): () => void {
+  listenersStatus.add(listener);
+  return () => listenersStatus.delete(listener);
+}
+
+export function statusImpressora(): 'conectada' | 'desconectada' | 'indisponivel' {
+  if (!suportado()) return 'indisponivel';
+  return impressoraConectada() ? 'conectada' : 'desconectada';
+}
 
 export function suportado(): boolean {
   return typeof navigator !== 'undefined' && 'bluetooth' in navigator;
@@ -39,6 +56,34 @@ export function temImpressoraPareada(): boolean {
 
 export function nomeImpressora(): string | null {
   return device?.name || null;
+}
+
+function prepararDevice(novoDevice: BluetoothDevice) {
+  device = novoDevice;
+  try { localStorage.setItem(ULTIMA_IMPRESSORA_KEY, (novoDevice as BluetoothDevice & { id: string }).id); } catch { /* storage indisponível */ }
+  device.addEventListener('gattserverdisconnected', () => {
+    characteristic = null;
+    avisarStatus();
+  });
+}
+
+async function conectarDeviceSalvo(novoDevice: BluetoothDevice): Promise<boolean> {
+  prepararDevice(novoDevice);
+  try {
+    const server = await novoDevice.gatt?.connect();
+    if (!server) return false;
+    characteristic = await descobrirCaracteristica(server);
+    if (!characteristic) {
+      novoDevice.gatt?.disconnect();
+      return false;
+    }
+    avisarStatus();
+    return true;
+  } catch {
+    characteristic = null;
+    avisarStatus();
+    return false;
+  }
 }
 
 // Descobre e guarda a característica BLE gravável dentro de um GATT server já
@@ -63,28 +108,19 @@ export async function conectarImpressora(): Promise<{ ok: true; nome: string } |
     return { ok: false, erro: 'Este navegador não suporta Bluetooth. Use Chrome ou Edge (Android, Windows, Mac ou Linux) — não funciona no Safari/iPhone.' };
   }
   try {
-    device = await navigator.bluetooth!.requestDevice({
+    const selecionada = await navigator.bluetooth!.requestDevice({
       acceptAllDevices: true,
       optionalServices: PRINTER_SERVICE_UUIDS,
     });
-    const server = await device.gatt?.connect();
-    if (!server) throw new Error('Não foi possível abrir conexão GATT com o dispositivo.');
-
-    characteristic = await descobrirCaracteristica(server);
-
-    if (!characteristic) {
-      device.gatt?.disconnect();
+    const ok = await conectarDeviceSalvo(selecionada);
+    if (!ok) {
       return {
         ok: false,
         erro: 'Conectou no dispositivo mas não achou um canal de impressão compatível. Essa impressora provavelmente usa Bluetooth clássico (SPP), que o navegador não consegue acessar — nesse caso só dá pra imprimir por um app Android dedicado (ex: o app que veio com a impressora).',
       };
     }
 
-    device.addEventListener('gattserverdisconnected', () => {
-      characteristic = null;
-    });
-
-    return { ok: true, nome: device.name || 'Impressora Bluetooth' };
+    return { ok: true, nome: selecionada.name || 'Impressora Bluetooth' };
   } catch (e) {
     const err = e as Error;
     // Usuário cancelou o seletor de dispositivos — não é bem um "erro"
@@ -99,6 +135,31 @@ export function desconectarImpressora() {
   device?.gatt?.disconnect();
   device = null;
   characteristic = null;
+  try { localStorage.removeItem(ULTIMA_IMPRESSORA_KEY); } catch { /* storage indisponível */ }
+  avisarStatus();
+}
+
+/** Reconecta a última impressora autorizada pelo Chrome, sem abrir seletor. */
+export async function reconectarImpressoraSalva(): Promise<boolean> {
+  if (!suportado() || impressoraConectada() || reconexaoEmAndamento) return impressoraConectada();
+  reconexaoEmAndamento = (async () => {
+    try {
+      const bluetooth = navigator.bluetooth as Bluetooth & { getDevices?: () => Promise<BluetoothDevice[]> };
+      if (!bluetooth.getDevices) return false;
+      const autorizadas = await bluetooth.getDevices();
+      if (autorizadas.length === 0) return false;
+      let idSalvo = '';
+      try { idSalvo = localStorage.getItem(ULTIMA_IMPRESSORA_KEY) || ''; } catch { /* storage indisponível */ }
+      const escolhida = autorizadas.find((item) => (item as BluetoothDevice & { id: string }).id === idSalvo) || autorizadas[0];
+      return await conectarDeviceSalvo(escolhida);
+    } catch {
+      return false;
+    } finally {
+      reconexaoEmAndamento = null;
+      avisarStatus();
+    }
+  })();
+  return reconexaoEmAndamento;
 }
 
 // Impressoras térmicas ESC/POS trabalham com 1 byte por caractere (não UTF-8) —

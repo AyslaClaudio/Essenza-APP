@@ -629,6 +629,33 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
         )}
       </div>
 
+      <div className="bg-white border border-neutral-200 rounded-2xl p-3">
+        <div className="flex items-center justify-between gap-1">
+          {[
+            ['produtos', '1. Itens'],
+            ['carrinho', '2. Conferir'],
+            ['cliente', tipo === 'delivery' ? '3. Entrega' : '3. Cliente'],
+            ['pagamento', '4. Pagamento'],
+          ].map(([chave, label], index, lista) => {
+            const atualIndex = ['produtos', 'carrinho', 'cliente', 'pagamento'].indexOf(step);
+            const ativo = chave === step;
+            const concluido = index < atualIndex;
+            return (
+              <div key={chave} className="flex items-center gap-1 flex-1 last:flex-none">
+                <div className={`flex items-center gap-1.5 text-xs font-bold whitespace-nowrap ${ativo ? 'text-[#B91C1C]' : concluido ? 'text-green-600' : 'text-neutral-400'}`}>
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] ${ativo ? 'bg-[#B91C1C] text-white' : concluido ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-500'}`}>{concluido ? '✓' : index + 1}</span>
+                  <span className="hidden sm:inline">{label}</span>
+                </div>
+                {index < lista.length - 1 && <div className={`h-px flex-1 mx-1 ${concluido ? 'bg-green-300' : 'bg-neutral-200'}`} />}
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-xs text-neutral-500 mt-2">
+          {step === 'produtos' ? 'Escolha os produtos. O carrinho fica salvo enquanto você monta o pedido.' : step === 'carrinho' ? 'Confira quantidades, tipo do pedido e taxa de entrega antes de continuar.' : step === 'cliente' ? 'Identifique o cliente e confirme endereço ou retirada.' : 'Confira o total, a forma de pagamento e as opções de impressão.'}
+        </p>
+      </div>
+
       {/* Saldo de massas do dia — visível durante todo o lançamento (produtos
           e carrinho) pra atendente saber na hora se ainda tem massa. Só
           aparece se a contagem do dia foi lançada no Dashboard. */}
