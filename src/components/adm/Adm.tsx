@@ -218,15 +218,28 @@ export function Adm() {
     },
   ];
 
+  const ehGarcom = usuario?.role === 'garcom';
+  const idsGarcom: Tab[] = ['balcao', 'mesas', 'pedidos'];
+  const navGroupsVisiveis = ehGarcom
+    ? navGroups.map((grupo) => ({ ...grupo, itens: grupo.itens.filter((item) => idsGarcom.includes(item.id)) })).filter((grupo) => grupo.itens.length > 0)
+    : navGroups;
+  useEffect(() => {
+    if (ehGarcom && !idsGarcom.includes(tab)) setTab('balcao');
+  }, [ehGarcom, tab]);
+
   // Navegação mobile: barra inferior com os 4 mais usados + "Mais" abrindo um
   // painel com o resto do app — em vez do menu lateral em gaveta de antes.
-  const BOTTOM_NAV: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+  const BOTTOM_NAV: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = ehGarcom ? [
+    { id: 'balcao', label: 'Lançar', icon: ShoppingCart },
+    { id: 'mesas', label: 'Mesas', icon: LayoutGrid },
+    { id: 'pedidos', label: 'Contas', icon: UtensilsCrossed },
+  ] : [
     { id: 'balcao', label: 'Balcão', icon: ShoppingCart },
     { id: 'mesas', label: 'Mesas', icon: LayoutGrid },
     { id: 'pedidos', label: 'Pedidos', icon: UtensilsCrossed },
     { id: 'clientes', label: 'Clientes', icon: Users },
   ];
-  const MAIS_ITENS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+  const MAIS_ITENS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = ehGarcom ? [] : [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'produtos', label: 'Cardápio', icon: Flame },
     { id: 'financeiro', label: 'Financeiro', icon: Wallet },
@@ -319,7 +332,7 @@ export function Adm() {
           </div>
         )}
         {/* Profit strip always visible */}
-        <ProfitStrip dash={dash} />
+        {!ehGarcom && <ProfitStrip dash={dash} />}
       </div>
 
       {/* Painel "Mais" (mobile) — sobe de baixo com o resto do app */}
@@ -375,7 +388,7 @@ export function Adm() {
         </div>
 
         <nav className="flex-1 px-3 py-2 space-y-5 overflow-y-auto">
-          {navGroups.map((grupo) => (
+          {navGroupsVisiveis.map((grupo) => (
             <div key={grupo.titulo}>
               <p className="px-4 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-neutral-400">{grupo.titulo}</p>
               <div className="space-y-0.5">
@@ -434,7 +447,7 @@ export function Adm() {
               {buscaAberta && buscaGlobal.trim().length >= 2 && renderResultadosBusca()}
             </div>
           </div>
-          <ProfitStrip dash={dash} />
+          {!ehGarcom && <ProfitStrip dash={dash} />}
         </div>
         <div className="p-4 pb-20 lg:pb-6 lg:p-6 max-w-7xl mx-auto">
           <Suspense fallback={<div className="p-12 text-center text-neutral-500">Carregando...</div>}>
@@ -459,13 +472,15 @@ export function Adm() {
             </button>
           );
         })}
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="flex-1 flex flex-col items-center gap-1 py-2.5"
-        >
-          <Menu size={20} className={bottomNavAtivo ? 'text-neutral-400' : 'text-[#B91C1C]'} />
-          <span className={`text-[10px] font-medium ${bottomNavAtivo ? 'text-neutral-500' : 'text-[#B91C1C] font-semibold'}`}>Mais</span>
-        </button>
+        {!ehGarcom && (
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="flex-1 flex flex-col items-center gap-1 py-2.5"
+          >
+            <Menu size={20} className={bottomNavAtivo ? 'text-neutral-400' : 'text-[#B91C1C]'} />
+            <span className={`text-[10px] font-medium ${bottomNavAtivo ? 'text-neutral-500' : 'text-[#B91C1C] font-semibold'}`}>Mais</span>
+          </button>
+        )}
       </nav>
     </div>
   );

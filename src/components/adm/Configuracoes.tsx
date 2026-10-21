@@ -484,7 +484,7 @@ function ConfigUsuarios() {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'atendente' | 'caixa' | 'gerente'>('atendente');
+  const [role, setRole] = useState<'atendente' | 'garcom' | 'caixa' | 'gerente'>('atendente');
   const [users, setUsers] = useState<{ id: string; nome: string; role: string; ativo: boolean }[]>([]);
 
   const load = useCallback(async () => {
@@ -567,7 +567,7 @@ function ConfigUsuarios() {
               <div>
                 <label className="text-neutral-500 text-sm">Nível de Acesso</label>
                 <select value={role} onChange={(e) => setRole(e.target.value as typeof role)} className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-4 py-2.5 text-neutral-900 mt-1">
-                  <option value="atendente">Atendente</option><option value="caixa">Caixa</option><option value="gerente">Gerente</option>
+                  <option value="atendente">Atendente</option><option value="garcom">Garçom</option><option value="caixa">Caixa</option><option value="gerente">Gerente</option>
                 </select>
               </div>
             </div>
