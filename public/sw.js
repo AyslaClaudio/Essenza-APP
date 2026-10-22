@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'essenza-v4';
+const CACHE_VERSION = 'essenza-v5';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
@@ -38,7 +38,8 @@ function cacheFirst(request, cacheName) {
     cache.match(request).then((cached) => {
       if (cached) return cached;
       return fetch(request).then((response) => {
-        if (response.ok && response.type === 'basic') {
+        const htmlNoLugarDoScript = request.destination === 'script' && (response.headers.get('content-type') || '').includes('text/html');
+        if (response.ok && response.type === 'basic' && !htmlNoLugarDoScript) {
           cache.put(request, response.clone());
         }
         return response;
