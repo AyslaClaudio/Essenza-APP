@@ -734,7 +734,7 @@ type PedidoAoVivo = {
   garcom_nome?: string;
 };
 
-const SONS_PEDIDO: { id: string; nome: string; notas: number[]; delivery?: boolean; intervalo?: number; repeticoes?: number }[] = [
+const SONS_PEDIDO: { id: string; nome: string; notas: number[]; delivery?: boolean; intervalo?: number; repeticoes?: number; voz?: boolean; sino?: boolean }[] = [
   { id: 'classico', nome: 'Clássico', notas: [880, 1175] },
   { id: 'campainha', nome: 'Campainha', notas: [1047, 784, 1047] },
   { id: 'suave', nome: 'Suave', notas: [523, 659, 784] },
@@ -742,6 +742,9 @@ const SONS_PEDIDO: { id: string; nome: string; notas: number[]; delivery?: boole
   { id: 'delivery-chegou', nome: 'Delivery · Chegou pedido', notas: [659.25, 830.61, 987.77], delivery: true, intervalo: 0.17, repeticoes: 2 },
   { id: 'delivery-campainha', nome: 'Delivery · Campainha dupla', notas: [1174.66, 880], delivery: true, intervalo: 0.32, repeticoes: 2 },
   { id: 'delivery-chamada', nome: 'Delivery · Chamada rápida', notas: [783.99, 1046.5, 987.77, 1318.51], delivery: true, intervalo: 0.12, repeticoes: 3 },
+  { id: 'voz', nome: 'Voz · Chegou um novo pedido', notas: [], voz: true },
+  { id: 'sino', nome: 'Sino · Duas badaladas', notas: [], sino: true },
+  { id: 'sino-voz', nome: 'Sino + voz', notas: [], sino: true, voz: true },
   { id: 'silencioso', nome: 'Sem som (só balão)', notas: [] },
 ];
 const SOM_PEDIDO_KEY = 'essenza_som_pedido';
@@ -749,9 +752,48 @@ function somPedidoSalvo() {
   try { return localStorage.getItem(SOM_PEDIDO_KEY) || 'classico'; } catch { return 'classico'; }
 }
 
+let falaPedidoPendente: number | undefined;
+function anunciarPedido() {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const fala = new SpeechSynthesisUtterance('Atenção, chegou um novo pedido!');
+  fala.lang = 'pt-BR';
+  fala.rate = 0.95;
+  const vozes = window.speechSynthesis.getVoices();
+  const voz = vozes.find((v) => v.lang.toLowerCase() === 'pt-br') || vozes.find((v) => v.lang.toLowerCase().startsWith('pt'));
+  if (voz) fala.voice = voz;
+  window.speechSynthesis.speak(fala);
+}
+
 function tocaAlertaPedido() {
   try {
+    window.clearTimeout(falaPedidoPendente);
     const som = SONS_PEDIDO.find((s) => s.id === somPedidoSalvo()) || SONS_PEDIDO[0];
+    if (som.voz && !som.sino) { anunciarPedido(); return; }
+    if (som.sino) {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) { if (som.voz) anunciarPedido(); return; }
+      const ctx = new AudioCtx();
+      void ctx.resume();
+      // Parciais não inteiros e cauda longa dão o timbre de sino.
+      [0, 0.65].forEach((atraso) => {
+        [1, 2.76, 5.4].forEach((parcial, i) => {
+          const nota = ctx.createOscillator();
+          const ganho = ctx.createGain();
+          const inicio = ctx.currentTime + 0.03 + atraso;
+          nota.frequency.value = 659.25 * parcial;
+          ganho.gain.setValueAtTime(0.0001, inicio);
+          ganho.gain.exponentialRampToValueAtTime(0.22 / (i + 1) ** 2, inicio + 0.008);
+          ganho.gain.exponentialRampToValueAtTime(0.0001, inicio + 1.65);
+          nota.connect(ganho).connect(ctx.destination);
+          nota.start(inicio);
+          nota.stop(inicio + 1.7);
+        });
+      });
+      window.setTimeout(() => { void ctx.close(); }, 2500);
+      if (som.voz) falaPedidoPendente = window.setTimeout(anunciarPedido, 1500);
+      return;
+    }
     if (!som.notas.length) return;
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtx) return;
