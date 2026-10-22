@@ -19,6 +19,7 @@ import { GraficoTopSabores, type SaborTop } from './dashboard/GraficoTopSabores'
 import { MetaProgresso } from './dashboard/MetaProgresso';
 import { InsightIA } from './dashboard/InsightIA';
 import { ContagemMassas } from './dashboard/ContagemMassas';
+import { ImpressaoLancamentosMesa, type MesaImpressao } from './ImpressaoLancamentosMesa';
 
 type Filtro = 'hoje' | '7dias' | '30dias' | 'mes' | '3meses' | '6meses' | 'custom';
 
@@ -844,6 +845,7 @@ function tocaAlertaPedido() {
 }
 
 function PedidosAoVivo() {
+  const [mesasImpressao, setMesasImpressao] = useState<MesaImpressao[]>([]);
   const [pedidos, setPedidos] = useState<PedidoAoVivo[]>([]);
   const [toast, setToast] = useState<{ id: string; texto: string } | null>(null);
   const vistos = useRef<Set<string> | null>(null);
@@ -859,12 +861,13 @@ function PedidosAoVivo() {
       .order('created_at', { ascending: false })
       .limit(30);
     const { data: mesas, error: erroMesas } = await supabase.from('mesas')
-      .select('id, numero, garcom, abertura_at, itens_mesa(id, quantidade, preco_unitario, adicional_preco, created_at)');
+      .select('id, numero, garcom, abertura_at, itens_mesa(*)');
     if (error || erroMesas) {
       setErroMonitor('Não foi possível atualizar os pedidos. Tentando novamente automaticamente.');
       return;
     }
     setErroMonitor('');
+    setMesasImpressao((mesas || []) as MesaImpressao[]);
     const chaves = new Set<string>();
     const novidades: string[] = [];
     const contas: PedidoAoVivo[] = [];
@@ -969,6 +972,8 @@ function PedidosAoVivo() {
           </div>
         )}
       </section>
+
+      <ImpressaoLancamentosMesa mesas={mesasImpressao} />
 
       <section className="bg-white border border-[#EFE9E0] rounded-2xl p-4">
         <div className="flex items-center gap-2 mb-3"><Users size={17} className="text-[#B91C1C]" /><h3 className="text-[#26211E] font-bold text-sm">Prestação em andamento por garçom</h3></div>

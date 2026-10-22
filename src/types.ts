@@ -126,6 +126,7 @@ export interface Mesa {
 }
 
 export interface ItemMesa {
+  lancamento_id?: string | null;
   id: string;
   mesa_id: string;
   produto_id: string | null;

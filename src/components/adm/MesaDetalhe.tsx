@@ -65,11 +65,12 @@ export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props
   // modal pra cada item. Quem decide fechar agora é o próprio garçom, no X do modal.
   const handleAddItens = async (novos: Omit<ItemMesa, 'id' | 'mesa_id' | 'created_at'>[]): Promise<boolean> => {
     if (novos.length === 0) return false;
+    const lancamentoId = crypto.randomUUID();
     setBusy(true);
     try {
       const { data: inserted, error } = await supabase
         .from('itens_mesa')
-        .insert(novos.map((n) => ({ ...n, mesa_id: mesa.id })))
+        .insert(novos.map((n) => ({ ...n, mesa_id: mesa.id, lancamento_id: lancamentoId })))
         .select();
       if (error) throw error;
 

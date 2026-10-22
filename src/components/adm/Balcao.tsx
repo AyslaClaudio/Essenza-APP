@@ -461,7 +461,9 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
       return;
     }
     try {
+      const lancamentoId = crypto.randomUUID();
       const novos = cart.map((c) => ({
+        lancamento_id: lancamentoId,
         mesa_id: mesa.id,
         produto_id: c.produto_id,
         produto_nome: c.produto_nome,
