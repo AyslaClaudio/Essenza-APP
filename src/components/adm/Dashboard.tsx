@@ -734,11 +734,14 @@ type PedidoAoVivo = {
   garcom_nome?: string;
 };
 
-const SONS_PEDIDO = [
+const SONS_PEDIDO: { id: string; nome: string; notas: number[]; delivery?: boolean; intervalo?: number; repeticoes?: number }[] = [
   { id: 'classico', nome: 'Clássico', notas: [880, 1175] },
   { id: 'campainha', nome: 'Campainha', notas: [1047, 784, 1047] },
   { id: 'suave', nome: 'Suave', notas: [523, 659, 784] },
   { id: 'urgente', nome: 'Alerta forte', notas: [1400, 1000, 1400, 1000] },
+  { id: 'delivery-chegou', nome: 'Delivery · Chegou pedido', notas: [659.25, 830.61, 987.77], delivery: true, intervalo: 0.17, repeticoes: 2 },
+  { id: 'delivery-campainha', nome: 'Delivery · Campainha dupla', notas: [1174.66, 880], delivery: true, intervalo: 0.32, repeticoes: 2 },
+  { id: 'delivery-chamada', nome: 'Delivery · Chamada rápida', notas: [783.99, 1046.5, 987.77, 1318.51], delivery: true, intervalo: 0.12, repeticoes: 3 },
   { id: 'silencioso', nome: 'Sem som (só balão)', notas: [] },
 ];
 const SOM_PEDIDO_KEY = 'essenza_som_pedido';
@@ -753,6 +756,33 @@ function tocaAlertaPedido() {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
+    if (som.delivery) {
+      void ctx.resume();
+      const intervalo = som.intervalo || 0.18;
+      const repeticoes = som.repeticoes || 1;
+      const ciclo = som.notas.length * intervalo + 0.35;
+      for (let repeticao = 0; repeticao < repeticoes; repeticao++) {
+        som.notas.forEach((frequencia, indice) => {
+          const inicio = ctx.currentTime + 0.03 + repeticao * ciclo + indice * intervalo;
+          // Cada nota tem ataque próprio e harmônicos suaves, como uma
+          // campainha, em vez de apenas deslizar a frequência de um bip.
+          [1, 2, 3].forEach((harmonico) => {
+            const nota = ctx.createOscillator();
+            const volume = ctx.createGain();
+            nota.type = 'sine';
+            nota.frequency.value = frequencia * harmonico;
+            volume.gain.setValueAtTime(0.0001, inicio);
+            volume.gain.exponentialRampToValueAtTime(0.15 / (harmonico * harmonico), inicio + 0.008);
+            volume.gain.exponentialRampToValueAtTime(0.0001, inicio + 0.45);
+            nota.connect(volume).connect(ctx.destination);
+            nota.start(inicio);
+            nota.stop(inicio + 0.48);
+          });
+        });
+      }
+      window.setTimeout(() => { void ctx.close(); }, (repeticoes * ciclo + 0.6) * 1000);
+      return;
+    }
     const oscilador = ctx.createOscillator();
     const ganho = ctx.createGain();
     oscilador.type = 'sine';
