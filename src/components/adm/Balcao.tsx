@@ -471,6 +471,9 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
       }));
       const { data: inserted, error } = await supabase.from('itens_mesa').insert(novos).select();
       if (error) throw error;
+      if (usuario?.role === 'garcom') {
+        await supabase.from('mesas').update({ garcom: usuario.nome }).eq('id', mesa.id);
+      }
 
       if (mesa.status === 'livre') {
         await supabase.from('mesas').update({ status: 'ocupada', abertura_at: new Date().toISOString() }).eq('id', mesa.id);

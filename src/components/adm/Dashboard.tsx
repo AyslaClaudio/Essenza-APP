@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useConfig } from '../../context/ConfigContext';
 import { brl } from '../../lib/format';
@@ -760,33 +760,66 @@ function tocaAlertaPedido() {
 function PedidosAoVivo() {
   const [pedidos, setPedidos] = useState<PedidoAoVivo[]>([]);
   const [toast, setToast] = useState<{ id: string; texto: string } | null>(null);
+  const vistos = useRef<Set<string> | null>(null);
+  const [erroMonitor, setErroMonitor] = useState('');
 
   const carregar = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('pedidos')
       .select('id, numero, cliente_nome, tipo, status, total, created_at, garcom_nome')
       .neq('status', 'entregue')
       .neq('status', 'cancelado')
       .order('created_at', { ascending: false })
       .limit(30);
-    setPedidos((data as PedidoAoVivo[]) || []);
+    const { data: mesas, error: erroMesas } = await supabase.from('mesas')
+      .select('id, numero, garcom, abertura_at, itens_mesa(id, quantidade, preco_unitario, adicional_preco, created_at)');
+    if (error || erroMesas) {
+      setErroMonitor('Não foi possível atualizar os pedidos. Tentando novamente automaticamente.');
+      return;
+    }
+    setErroMonitor('');
+    const chaves = new Set<string>();
+    const novidades: string[] = [];
+    const contas: PedidoAoVivo[] = [];
+    for (const pedido of (data || []) as PedidoAoVivo[]) {
+      const chave = `pedido:${pedido.id}`;
+      chaves.add(chave);
+      if (vistos.current && !vistos.current.has(chave)) novidades.push(`Pedido #${pedido.numero}`);
+    }
+    for (const mesa of mesas || []) {
+      const itens = mesa.itens_mesa || [];
+      if (!itens.length) continue;
+      let novo = false;
+      for (const item of itens) {
+        const chave = `item:${item.id}`;
+        chaves.add(chave);
+        if (vistos.current && !vistos.current.has(chave)) novo = true;
+      }
+      if (novo) novidades.push(`Novos itens na mesa ${mesa.numero}`);
+      contas.push({ id: mesa.id, numero: mesa.numero, cliente_nome: `Mesa ${mesa.numero}`, tipo: 'mesa', status: 'confirmado', garcom_nome: mesa.garcom,
+        created_at: mesa.abertura_at || itens[0].created_at,
+        total: itens.reduce((s, i) => s + Number(i.quantidade) * (Number(i.preco_unitario) + Number(i.adicional_preco || 0)), 0) });
+    }
+    vistos.current = chaves;
+    if (novidades.length) {
+      tocaAlertaPedido();
+      const id = String(Date.now());
+      setToast({ id, texto: novidades.join(' · ') });
+      window.setTimeout(() => setToast((atual) => atual?.id === id ? null : atual), 10000);
+    }
+    setPedidos([...contas, ...((data as PedidoAoVivo[]) || [])]);
   }, []);
 
   useEffect(() => {
-    let cargaInicial = true;
-    void carregar().then(() => { cargaInicial = false; });
+    void carregar();
     const intervalo = window.setInterval(carregar, 30000);
     const channel = supabase
       .channel('dashboard-pedidos-ao-vivo')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos' }, (payload) => {
-        const novo = payload.new as PedidoAoVivo;
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos' }, () => {
         void carregar();
-        if (!cargaInicial && novo.status !== 'cancelado') {
-          tocaAlertaPedido();
-          setToast({ id: novo.id, texto: `Novo pedido #${novo.numero} recebido` });
-          window.setTimeout(() => setToast((atual) => atual?.id === novo.id ? null : atual), 6500);
-        }
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'itens_mesa' }, () => { void carregar(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mesas' }, () => { void carregar(); })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pedidos' }, () => { void carregar(); })
       .subscribe();
     return () => {
@@ -815,6 +848,7 @@ function PedidosAoVivo() {
   return (
     <>
       <section className="bg-white border border-[#EFE9E0] rounded-2xl p-4 shadow-[0_2px_12px_rgba(38,33,30,0.04)]">
+        {erroMonitor && <p role="alert" className="text-red-600 text-sm mb-3">{erroMonitor}</p>}
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
             <span className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center"><Bell size={17} className="text-[#B91C1C]" /></span>
@@ -822,6 +856,7 @@ function PedidosAoVivo() {
           </div>
           <span className="text-xs font-bold text-[#B91C1C] bg-red-50 rounded-full px-2.5 py-1">{pedidos.length} abertos</span>
         </div>
+        <button onClick={tocaAlertaPedido} className="text-xs text-[#B91C1C] border border-red-200 rounded-lg px-3 py-2 mb-3">Ativar / testar som dos pedidos</button>
         {pedidos.length === 0 ? (
           <p className="text-sm text-[#8A8A8A] py-3">Nenhum pedido aguardando atendimento.</p>
         ) : (

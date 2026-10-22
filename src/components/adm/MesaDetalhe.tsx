@@ -72,6 +72,10 @@ export function MesaDetalhe({ mesa, produtos, config, onBack, onChanged }: Props
         .select();
       if (error) throw error;
 
+      if (usuario?.role === 'garcom') {
+        await supabase.from('mesas').update({ garcom: usuario.nome }).eq('id', mesa.id);
+      }
+
       // Se a mesa estava livre, passa para "ocupada" e marca o horário de abertura.
       // Se estava "fechando" (conta já pedida) e chegou item novo, volta pra "ocupada".
       if (mesa.status === 'livre') {
