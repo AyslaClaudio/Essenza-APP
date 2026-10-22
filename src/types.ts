@@ -10,6 +10,8 @@ export interface Usuario {
 }
 
 export interface Produto {
+  codigo_cardapio?: string | null;
+  sabor_chave?: string | null;
   id: string;
   nome: string;
   categoria_id: string | null;

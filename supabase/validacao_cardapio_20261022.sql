@@ -1,0 +1,11 @@
+WITH oficial(codigo,preco) AS (VALUES ('pizza-mussarela-g',36.9),('pizza-mussarela-p',24.9),('pizza-presunto-g',37.9),('pizza-presunto-p',25.9),('pizza-marguerita-g',42.9),('pizza-marguerita-p',28.6),('pizza-bacon-g',44.9),('pizza-bacon-p',29.9),('pizza-frango-g',46.9),('pizza-frango-p',31.9),('pizza-calabresa-g',43.9),('pizza-calabresa-p',29.9),('pizza-pepperoni-g',50),('pizza-pepperoni-p',33.9),('pizza-frango-com-catupiry-g',49.9),('pizza-frango-com-catupiry-p',33.9),('pizza-calabresa-especial-g',49.9),('pizza-calabresa-especial-p',32.6),('pizza-frango-com-bacon-g',49.9),('pizza-frango-com-bacon-p',33.9),('pizza-tres-queijos-g',52.9),('pizza-tres-queijos-p',35.9),('pizza-carne-de-sol-g',59.9),('pizza-carne-de-sol-p',39.9),('pizza-carne-de-sol-essenza-g',69.9),('pizza-carne-de-sol-essenza-p',49.9),('pizza-pepperoni-essenza-g',71.9),('pizza-pepperoni-essenza-p',49.9),('pizza-pepperoni-tropical-g',65),('pizza-pepperoni-tropical-p',43.9),('pizza-tropicana-g',54.9),('pizza-tropicana-p',36.9),('pizza-carne-de-sol-picante-g',63.9),('pizza-carne-de-sol-picante-p',42.9),('esfiha-carne',8),('esfiha-carne-com-queijo',10),('esfiha-queijo',8),('esfiha-tres-queijos',8),('esfiha-pizza',8),('esfiha-calabresa-com-queijo',8),('esfiha-bacon-com-queijo',8),('esfiha-frango-com-queijo',8),('esfiha-frango-com-bacon',8),('esfiha-carne-de-sol-com-queijo',10),('esfiha-doce-de-leite',8),('esfiha-chocolate-cremoso',8),('combo-solo',10),('combo-duo',19.9),('salva-bordas-100ml',10))
+SELECT json_build_object(
+'oficiais_encontrados', (select count(*) from produtos p join oficial o on p.codigo_cardapio=o.codigo where p.ativo),
+'precos_divergentes', (select count(*) from oficial o left join produtos p on p.codigo_cardapio=o.codigo where p.id is null or not p.ativo or p.preco<>o.preco),
+'categorias', (select json_agg(t) from (select categoria_nome,count(*) quantidade from produtos where ativo group by categoria_nome order by categoria_nome) t),
+'pedidos', (select count(*) from pedidos),
+'itens_pedido', (select count(*) from itens_pedido),
+'soma_total_pedidos', (select sum(total) from pedidos),
+'backup_produtos', (select count(*) from catalogo_backup_20261022),
+'desativados_nesta_correcao', (select count(*) from produtos p join catalogo_backup_20261022 b using(id) where (b.registro->>'ativo')::boolean and not p.ativo)
+) as conferencia;

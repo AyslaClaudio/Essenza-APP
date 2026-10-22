@@ -14,6 +14,7 @@ export function Produtos({ buscaInicial }: { buscaInicial?: { valor: string; non
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [filtro, setFiltro] = useState('');
   const [catFiltro, setCatFiltro] = useState('todas');
+  const [mostrarInativos, setMostrarInativos] = useState(false);
 
   useEffect(() => {
     if (buscaInicial) { setFiltro(buscaInicial.valor); setCatFiltro('todas'); }
@@ -43,7 +44,7 @@ export function Produtos({ buscaInicial }: { buscaInicial?: { valor: string; non
   const filtered = produtos.filter((p) => {
     const matchFiltro = p.nome.toLowerCase().includes(filtro.toLowerCase());
     const matchCat = catFiltro === 'todas' || p.categoria_nome === catFiltro;
-    return matchFiltro && matchCat;
+    return matchFiltro && matchCat && (p.ativo || mostrarInativos);
   });
 
   const grouped = filtered.reduce((acc, p) => {
@@ -133,6 +134,10 @@ export function Produtos({ buscaInicial }: { buscaInicial?: { valor: string; non
           </div>
 
           {/* Product table grouped by category */}
+          <label className="flex items-center gap-2 text-sm text-neutral-600">
+            <input type="checkbox" checked={mostrarInativos} onChange={(e) => setMostrarInativos(e.target.checked)} />
+            Mostrar produtos inativos / arquivados
+          </label>
           <div className="space-y-6">
             {Object.entries(grouped).map(([cat, items]) => (
               <div key={cat} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
@@ -144,7 +149,6 @@ export function Produtos({ buscaInicial }: { buscaInicial?: { valor: string; non
                     <thead>
                       <tr className="text-neutral-500 text-xs uppercase border-b border-neutral-200">
                         <th className="text-left px-4 py-2">Nome</th>
-                        <th className="text-center px-2 py-2">Foto</th>
                         <th className="text-right px-2 py-2">Custo</th>
                         <th className="text-right px-2 py-2">Venda</th>
                         <th className="text-right px-2 py-2">Lucro R$</th>
@@ -172,15 +176,15 @@ export function Produtos({ buscaInicial }: { buscaInicial?: { valor: string; non
                                     <Flame size={16} className="text-neutral-400" />
                                   </div>
                                 )}
-                                <span>{p.nome}</span>
+                                <span>{p.nome}{p.tamanho && <span className="ml-2 text-xs font-bold text-neutral-500">{p.tamanho}</span>}{!p.ativo && <span className="ml-2 text-xs text-red-600">Inativo</span>}</span>
                               </div>
                             </td>
-                            <td className="px-2 py-3 text-right text-neutral-500">{brl(p.custo)}</td>
+                            <td className="px-2 py-3 text-right text-neutral-500">{p.custo > 0 ? brl(p.custo) : 'Pendente'}</td>
                             <td className="px-2 py-3 text-right text-neutral-900 font-semibold">{brl(p.preco)}</td>
-                            <td className="px-2 py-3 text-right text-[#22c55e] font-semibold">{brl(lucro)}</td>
+                            <td className="px-2 py-3 text-right text-[#22c55e] font-semibold">{p.custo > 0 ? brl(lucro) : '—'}</td>
                             <td className="px-2 py-3 text-right">
                               <span className={`font-semibold ${margem >= 70 ? 'text-green-600' : margem >= 50 ? 'text-amber-700' : 'text-orange-600'}`}>
-                                {margem.toFixed(0)}%
+                                {p.custo > 0 ? `${margem.toFixed(0)}%` : '—'}
                               </span>
                             </td>
                             {canEdit && !locked && (
@@ -300,12 +304,14 @@ function ProdutoForm({ produto, categorias, onClose, onSave }: {
       ativo,
       destaque,
     };
-    if (produto) {
-      await supabase.from('produtos').update(data).eq('id', produto.id);
-    } else {
-      await supabase.from('produtos').insert(data);
-    }
+    const { error } = produto
+      ? await supabase.from('produtos').update(data).eq('id', produto.id)
+      : await supabase.from('produtos').insert(data);
     setSaving(false);
+    if (error) {
+      alert(error.code === '23505' ? 'Já existe um produto ativo com esse nome, categoria e tamanho. Edite o cadastro existente para atualizar o preço.' : `Não foi possível salvar: ${error.message}`);
+      return;
+    }
     onSave();
   };
 

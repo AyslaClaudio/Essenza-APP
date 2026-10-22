@@ -138,6 +138,7 @@ export function buildKitchenReceipt(pedido: Pedido, config: Configuracao): strin
 function kitchenItemLines(item: ItemPedido | ItemMesa): string[] {
   const nome = item.produto_nome || '';
   const duo = /combo\s+duo/i.test(nome);
+  const solo = /combo\s+solo/i.test(nome);
   const esfirra = /^esfirra\s*:/i.test(nome);
   const linhas: string[] = [];
 
@@ -147,6 +148,10 @@ function kitchenItemLines(item: ItemPedido | ItemMesa): string[] {
     linhas.push(`  ${item.quantidade}x Esfirra 1: ${item.sabor1 || 'não informado'}`);
     linhas.push(`  ${item.quantidade}x Esfirra 2: ${item.sabor2 || 'não informado'}`);
     linhas.push(`  Acompanha: ${item.quantidade}x REFRIGERANTE LATA 350ml (INCLUSO — NÃO ESCOLHER)`);
+  } else if (solo) {
+    linhas.push(`${item.quantidade}x COMBO SOLO`);
+    linhas.push(`  ${item.quantidade}x Esfirra: ${item.sabor1 || 'não informado'}`);
+    linhas.push(`  Acompanha: ${item.quantidade}x REFRIGERANTE 200ml (INCLUSO)`);
   } else if (esfirra) {
     const sabor = nome.replace(/^esfirra\s*:\s*/i, '').trim();
     linhas.push(`${item.quantidade}x ESFIRRA`);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
+import { ehPizza, ehSalvaBordas, podeMeioAMeio, SABORES_SALVA_BORDAS } from '../../lib/catalogo';
 import { useAuth } from '../../context/AuthContext';
 import { brl } from '../../lib/format';
 import { printMesaComanda, printMesaConta } from '../../lib/print';
@@ -365,6 +366,7 @@ function AddItemModal({
 }) {
   const [prod1Id, setProd1Id] = useState('');
   const [comboSabor1Id, setComboSabor1Id] = useState('');
+  const [salvaSabor, setSalvaSabor] = useState('');
   const [comboSabor2Id, setComboSabor2Id] = useState('');
   const [meioMeio, setMeioMeio] = useState(false);
   const [prod2Id, setProd2Id] = useState('');
@@ -393,7 +395,8 @@ function AddItemModal({
   const precoUnit = meioMeio && prod1 && prod2 ? Math.max(prod1.preco, prod2.preco) : prod1?.preco || 0;
   const custoUnit = meioMeio && prod1 && prod2 ? Math.max(prod1.custo, prod2.custo) : prod1?.custo || 0;
 
-  const podeAdicionar = !!prod1 && quantidade > 0 && (!isCombo ? (!meioMeio || !!prod2) : !!comboSabor1 && (!isComboDuo || !!comboSabor2));
+  const podeAdicionar = !!prod1 && quantidade > 0 && (!ehSalvaBordas(prod1) || !!salvaSabor) && (!isCombo ? (!meioMeio || (!!prod2 && podeMeioAMeio(prod1) && podeMeioAMeio(prod2))) : !!comboSabor1 && (!isComboDuo || !!comboSabor2));
+  const observacaoItem = prod1 && ehSalvaBordas(prod1) ? [`Sabor: ${salvaSabor}`, observacao].filter(Boolean).join(' · ') : observacao;
   const totalCarrinho = carrinho.reduce((s, i) => s + i.quantidade * (i.preco_unitario + i.adicional_preco), 0);
 
   // Quanto de massa a lista atual (ainda não enviada) já reserva, e o saldo
@@ -421,6 +424,7 @@ function AddItemModal({
   const limparFormulario = () => {
     setProd1Id('');
     setComboSabor1Id('');
+    setSalvaSabor('');
     setComboSabor2Id('');
     setMeioMeio(false);
     setProd2Id('');
@@ -431,14 +435,14 @@ function AddItemModal({
 
   // Esfirra e pizza podem ter sabores com nome parecido — prefixa a categoria
   // pra não confundir a cozinha na hora do preparo.
-  const nomeComCategoria = (p: Produto) => (p.categoria_nome.includes('Esfirra') ? `Esfirra: ${p.nome}` : p.nome);
+  const nomeComCategoria = (p: Produto) => (p.categoria_nome.includes('Esfirra') ? `Esfirra: ${p.nome}` : ehPizza(p) ? `Pizza ${p.tamanho} ${p.nome}` : p.nome);
 
   const adicionarAoCarrinho = () => {
-    if (!prod1) return;
+    if (!prod1 || !podeAdicionar) return;
     if (!checarMassaDisponivel(consumoMassa(prod1, quantidade))) return;
     const nome = isCombo
       ? prod1.nome
-      : meioMeio && prod2 ? `${prod1.nome} / ${prod2.nome}` : nomeComCategoria(prod1);
+      : meioMeio && prod2 ? `Pizza G ${prod1.nome} / ${prod2.nome}` : nomeComCategoria(prod1);
     setCarrinho((c) => [
       ...c,
       {
@@ -447,7 +451,7 @@ function AddItemModal({
         quantidade,
         preco_unitario: precoUnit,
         custo_unitario: custoUnit,
-        observacao,
+        observacao: observacaoItem,
         sabor1: isCombo ? comboSabor1!.nome : meioMeio ? prod1.nome : '',
         sabor2: isCombo ? comboSabor2?.nome || '' : meioMeio && prod2 ? prod2.nome : '',
         adicional: '',
@@ -473,11 +477,11 @@ function AddItemModal({
             produto_id: prod1!.id,
             produto_nome: isCombo
               ? prod1!.nome
-              : meioMeio && prod2 ? `${prod1!.nome} / ${prod2.nome}` : nomeComCategoria(prod1!),
+              : meioMeio && prod2 ? `Pizza G ${prod1!.nome} / ${prod2.nome}` : nomeComCategoria(prod1!),
             quantidade,
             preco_unitario: precoUnit,
             custo_unitario: custoUnit,
-            observacao,
+            observacao: observacaoItem,
             sabor1: isCombo ? comboSabor1!.nome : meioMeio ? prod1!.nome : '',
             sabor2: isCombo ? comboSabor2?.nome || '' : meioMeio && prod2 ? prod2.nome : '',
             adicional: '',
@@ -558,8 +562,11 @@ function AddItemModal({
                 key={p.id}
                 onClick={() => {
                   setProd1Id(p.id);
+                  setMeioMeio(false);
+                  setProd2Id('');
                   setComboSabor1Id('');
                   setComboSabor2Id('');
+                  setSalvaSabor('');
                 }}
                 className={`flex items-center gap-3 px-2.5 py-2 rounded-lg border text-left text-sm transition-colors ${
                   prod1Id === p.id
@@ -586,18 +593,22 @@ function AddItemModal({
                 <option value="">Esfirra 1...</option>
                 {saboresEsfirra.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
               </select>
-              <select value={comboSabor2Id} onChange={(e) => setComboSabor2Id(e.target.value)} className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900">
+              {isComboDuo && <select value={comboSabor2Id} onChange={(e) => setComboSabor2Id(e.target.value)} className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900">
                 <option value="">Esfirra 2...</option>
                 {saboresEsfirra.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
-              </select>
-              <p className="text-xs text-neutral-600">Acompanha automaticamente 1 refrigerante lata 350 ml.</p>
+              </select>}
+              <p className="text-xs text-neutral-600">{isComboDuo ? 'Acompanha 1 refrigerante lata 350 ml.' : 'Acompanha 1 refrigerante 200 ml.'}</p>
             </div>
-          ) : (
+          ) : prod1 && podeMeioAMeio(prod1) ? (
             <label className="flex items-center gap-2 text-sm text-neutral-700 cursor-pointer">
               <input type="checkbox" checked={meioMeio} onChange={(e) => setMeioMeio(e.target.checked)} className="accent-[#B91C1C]" />
               Pizza meio a meio (2 sabores — cobra o mais caro)
             </label>
-          )}
+          ) : null}
+          {prod1 && ehSalvaBordas(prod1) && <select aria-label="Sabor do Salva Bordas" value={salvaSabor} onChange={(e) => setSalvaSabor(e.target.value)} className="w-full border rounded-xl px-3 py-2.5">
+            <option value="">Escolha o sabor do Salva Bordas...</option>
+            {SABORES_SALVA_BORDAS.map((sabor) => <option key={sabor}>{sabor}</option>)}
+          </select>}
           {!isCombo && meioMeio && (
             <select
               value={prod2Id}
@@ -605,7 +616,7 @@ function AddItemModal({
               className="w-full bg-neutral-100 border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900 focus:border-[#B91C1C] focus:outline-none"
             >
               <option value="">Selecione o 2º sabor...</option>
-              {produtos.map((p) => (
+              {produtos.filter(podeMeioAMeio).map((p) => (
                 <option key={p.id} value={p.id}>{p.nome} — {brl(p.preco)}</option>
               ))}
             </select>

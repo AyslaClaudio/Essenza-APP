@@ -18,7 +18,7 @@ export function massaDoProduto(produto: ProdutoMassaInfo | null | undefined): { 
   if (!produto) return null;
   const cat = produto.categoria_nome || '';
   if (cat.includes('Pizza')) return { tipo: 'pizza', unidades: 1 };
-  if (cat.includes('Esfirra')) {
+  if (cat.includes('Esfirra') || cat.includes('Combo')) {
     const isDuo = cat.includes('Combo') && produto.nome.toLowerCase().includes('duo');
     return { tipo: 'esfiha', unidades: isDuo ? 2 : 1 };
   }

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
+import { ehSalvaBordas, podeMeioAMeio, saboresPizza } from '../../lib/catalogo';
+import { SalvaBordasModal } from '../SalvaBordasModal';
 import { useAuth } from '../../context/AuthContext';
 import { useConfig } from '../../context/ConfigContext';
 import { brl, todayISO } from '../../lib/format';
@@ -61,6 +63,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   const [novoCliente, setNovoCliente] = useState({ nome: '', telefone: '', endereco: '', bairro: '', cep: '', referencia: '' });
   const [ultimoPedido, setUltimoPedido] = useState<Pedido | null>(null);
   const [showSabores, setShowSabores] = useState<Produto | null>(null);
+  const [showSalva, setShowSalva] = useState<Produto | null>(null);
   const [sabor1, setSabor1] = useState<Produto | null>(null);
   const [sabor2, setSabor2] = useState<Produto | null>(null);
   const [selectedAdicional, setSelectedAdicional] = useState<Adicional | null>(null);
@@ -219,6 +222,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
   const isCombo = (p: Produto) => p.categoria_nome.includes('Combo');
 
   const handleProductClick = (produto: Produto) => {
+    if (ehSalvaBordas(produto)) { setShowSalva(produto); return; }
     if (produto.categoria_nome.includes('Pizza') || isCombo(produto)) {
       setShowSabores(produto);
       // Pizza: já pré-seleciona o sabor clicado (atalho). Combo: o clicado é o
@@ -266,6 +270,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
 
   const confirmSabor = () => {
     if (!showSabores || !sabor1) return;
+    if (!isCombo(showSabores) && sabor2 && (!podeMeioAMeio(sabor1) || !podeMeioAMeio(sabor2))) return;
 
     if (isCombo(showSabores)) {
       // Combo: preço fixo do combo (não deriva do preço das esfirras — o combo
@@ -723,6 +728,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
               >
                 <div>
                   <p className="text-neutral-900 font-bold text-base leading-tight">{p.nome}</p>
+                  {(p.tamanho === 'G' || p.tamanho === 'P') && <p className="text-xs font-semibold text-neutral-500">{p.tamanho === 'G' ? 'G · 8 pedaços' : 'P · 4 pedaços'}</p>}
                   <p className="text-neutral-500 text-xs mt-0.5">{p.categoria_nome}</p>
                 </div>
                 <div className="flex items-end justify-between mt-2">
@@ -1067,6 +1073,12 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
       )}
 
       {/* Sabor selector modal (half/half) */}
+      {showSalva && <SalvaBordasModal onClose={() => setShowSalva(null)} onConfirm={(sabor) => {
+        addToCart({ id: '', pedido_id: '', produto_id: showSalva.id, produto_nome: showSalva.nome, quantidade: 1,
+          preco_unitario: showSalva.preco, custo_unitario: showSalva.custo, observacao: `Sabor: ${sabor}`,
+          sabor1: '', sabor2: '', adicional: '', adicional_preco: 0, produto: showSalva });
+        setShowSalva(null);
+      }} />}
       {showSabores && (
         <SaborModal
           produto={showSabores}
@@ -1123,7 +1135,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
 }) {
   const isCombo = produto.categoria_nome.includes('Combo');
   const comboDuo = isCombo && produto.nome.toLowerCase().includes('duo');
-  const opcoesSabor = isCombo ? produtos.filter((p) => p.categoria_nome.includes('Esfirra') && !p.categoria_nome.includes('Combo')) : produtos.filter((p) => p.categoria_nome === produto.categoria_nome);
+  const opcoesSabor = isCombo ? produtos.filter((p) => p.categoria_nome.includes('Esfirra') && !p.categoria_nome.includes('Combo')) : saboresPizza(produtos, produto);
   const precoFinal = isCombo ? produto.preco : (sabor2 ? Math.max(sabor1?.preco || 0, sabor2.preco) : sabor1?.preco || 0);
   const podeConfirmar = isCombo ? !!sabor1 && (!comboDuo || !!sabor2) : !!sabor1;
 
@@ -1131,7 +1143,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white border border-neutral-200 rounded-2xl p-5 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-neutral-900 font-bold text-lg">{isCombo ? produto.nome : produto.categoria_nome}</h3>
+          <h3 className="text-neutral-900 font-bold text-lg">{isCombo ? produto.nome : `${produto.categoria_nome} · ${produto.tamanho}`}</h3>
           <button onClick={onClose} className="text-neutral-500 hover:text-neutral-900"><X size={20} /></button>
         </div>
 
@@ -1149,7 +1161,7 @@ function SaborModal({ produto, produtos, sabor1, sabor2, setSabor1, setSabor2, a
           ))}
         </div>
 
-        {(!isCombo || comboDuo) && (
+        {((!isCombo && podeMeioAMeio(produto)) || comboDuo) && (
           <>
             <p className="text-neutral-500 text-sm mb-2">{isCombo ? 'Esfirra 2' : 'Sabor 2 (opcional)'}</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-40 overflow-y-auto">

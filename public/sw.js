@@ -100,10 +100,9 @@ self.addEventListener('fetch', (event) => {
 
   if (request.method !== 'GET') return;
 
-  // Cardápio/config: Stale-While-Revalidate num cache próprio, para o cliente
-  // e o balcão ainda mostrarem o cardápio mesmo com a internet fora do ar.
+  // Prioriza preços atuais. O catálogo salvo só é usado sem rede.
   if (isCacheableSupabaseRead(url)) {
-    event.respondWith(staleWhileRevalidate(request, MENU_CACHE));
+    event.respondWith(networkFirst(request, MENU_CACHE));
     return;
   }
 
