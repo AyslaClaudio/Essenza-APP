@@ -734,23 +734,37 @@ type PedidoAoVivo = {
   garcom_nome?: string;
 };
 
+const SONS_PEDIDO = [
+  { id: 'classico', nome: 'Clássico', notas: [880, 1175] },
+  { id: 'campainha', nome: 'Campainha', notas: [1047, 784, 1047] },
+  { id: 'suave', nome: 'Suave', notas: [523, 659, 784] },
+  { id: 'urgente', nome: 'Alerta forte', notas: [1400, 1000, 1400, 1000] },
+  { id: 'silencioso', nome: 'Sem som (só balão)', notas: [] },
+];
+const SOM_PEDIDO_KEY = 'essenza_som_pedido';
+function somPedidoSalvo() {
+  try { return localStorage.getItem(SOM_PEDIDO_KEY) || 'classico'; } catch { return 'classico'; }
+}
+
 function tocaAlertaPedido() {
   try {
+    const som = SONS_PEDIDO.find((s) => s.id === somPedidoSalvo()) || SONS_PEDIDO[0];
+    if (!som.notas.length) return;
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
     const oscilador = ctx.createOscillator();
     const ganho = ctx.createGain();
     oscilador.type = 'sine';
-    oscilador.frequency.setValueAtTime(880, ctx.currentTime);
-    oscilador.frequency.setValueAtTime(1175, ctx.currentTime + 0.12);
+    const duracao = som.notas.length * 0.18;
+    som.notas.forEach((nota, i) => oscilador.frequency.setValueAtTime(nota, ctx.currentTime + i * 0.18));
     ganho.gain.setValueAtTime(0.0001, ctx.currentTime);
     ganho.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.02);
-    ganho.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.28);
+    ganho.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duracao);
     oscilador.connect(ganho).connect(ctx.destination);
     oscilador.start();
-    oscilador.stop(ctx.currentTime + 0.3);
-    window.setTimeout(() => { void ctx.close(); }, 500);
+    oscilador.stop(ctx.currentTime + duracao + 0.02);
+    window.setTimeout(() => { void ctx.close(); }, (duracao + 0.2) * 1000);
   } catch {
     // Alguns navegadores bloqueiam áudio até o primeiro clique; o balão visual
     // continua sendo mostrado normalmente.
@@ -762,6 +776,7 @@ function PedidosAoVivo() {
   const [toast, setToast] = useState<{ id: string; texto: string } | null>(null);
   const vistos = useRef<Set<string> | null>(null);
   const [erroMonitor, setErroMonitor] = useState('');
+  const [somSelecionado, setSomSelecionado] = useState(somPedidoSalvo);
 
   const carregar = useCallback(async () => {
     const { data, error } = await supabase
@@ -856,7 +871,18 @@ function PedidosAoVivo() {
           </div>
           <span className="text-xs font-bold text-[#B91C1C] bg-red-50 rounded-full px-2.5 py-1">{pedidos.length} abertos</span>
         </div>
-        <button onClick={tocaAlertaPedido} className="text-xs text-[#B91C1C] border border-red-200 rounded-lg px-3 py-2 mb-3">Ativar / testar som dos pedidos</button>
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <label htmlFor="som-pedidos" className="text-xs text-neutral-600">Som de notificação</label>
+          <select id="som-pedidos" value={somSelecionado} onChange={(e) => {
+            setSomSelecionado(e.target.value);
+            try { localStorage.setItem(SOM_PEDIDO_KEY, e.target.value); } catch { /* preferência permanece nesta sessão */ }
+            tocaAlertaPedido();
+          }} className="text-sm border border-neutral-200 rounded-lg px-3 py-2 bg-white">
+            {SONS_PEDIDO.map((som) => <option key={som.id} value={som.id}>{som.nome}</option>)}
+          </select>
+          <button onClick={tocaAlertaPedido} className="text-xs text-[#B91C1C] border border-red-200 rounded-lg px-3 py-2">Ativar / testar som</button>
+          <span className="text-xs text-neutral-500">Preferência salva neste aparelho</span>
+        </div>
         {pedidos.length === 0 ? (
           <p className="text-sm text-[#8A8A8A] py-3">Nenhum pedido aguardando atendimento.</p>
         ) : (
