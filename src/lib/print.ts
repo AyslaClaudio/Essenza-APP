@@ -211,7 +211,22 @@ function kitchenSectionLines<T extends ItemPedido | ItemMesa>(itens: T[]): strin
   return lines;
 }
 
-export function buildCashReceipt(pedido: Pedido, config: Configuracao): string {
+export interface PagamentoComanda {
+  identificacao: string;
+  forma_pagamento: string;
+  valor: number;
+}
+
+function linhasDivisao(pagamentos: PagamentoComanda[]): string[] {
+  if (!pagamentos.length) return [];
+  return [LINE, 'DIVISAO DA CONTA', ...pagamentos.flatMap((pagamento) => [
+    pagamento.identificacao.replace(/[\x00-\x1f\x7f]/g, ' '),
+    `  Valor: ${brl(Number(pagamento.valor))}`,
+    `  Pagamento: ${pagamento.forma_pagamento.replace(/[\x00-\x1f\x7f]/g, ' ')}`,
+  ])];
+}
+
+export function buildCashReceipt(pedido: Pedido, config: Configuracao, pagamentos: PagamentoComanda[] = []): string {
   const lines: string[] = [];
   lines.push(marcaEscPos(config.nome_loja));
   if (config.endereco_loja) lines.push(CENTER + config.endereco_loja);
@@ -239,6 +254,7 @@ export function buildCashReceipt(pedido: Pedido, config: Configuracao): string {
   if (pedido.desconto > 0) lines.push(`Desconto:    -${brl(pedido.desconto)}`);
   lines.push(BOLD_ON + `TOTAL:       ${brl(pedido.total)}` + BOLD_OFF);
   lines.push(`Pagamento:   ${pedido.forma_pagamento || '-'}`);
+  lines.push(...linhasDivisao(pagamentos));
   lines.push(LINE);
   lines.push(CENTER + 'Obrigado! Volte Sempre');
   lines.push(LINE);
@@ -255,8 +271,17 @@ export function buildCashReceipt(pedido: Pedido, config: Configuracao): string {
  * navegador — mais rápido e sem depender de driver/spooler do sistema.
  */
 export async function printReceipt(pedido: Pedido, config: Configuracao, via: 'cozinha' | 'caixa'): Promise<'bluetooth' | 'navegador' | 'erro'> {
+  let pagamentos: PagamentoComanda[] = [];
+  if (via === 'caixa') {
+    const { supabase } = await import('./supabase');
+    const { data, error } = await supabase.from('pedido_pagamentos')
+      .select('identificacao, forma_pagamento, valor').eq('pedido_id', pedido.id)
+      .order('created_at', { ascending: true }).order('id', { ascending: true });
+    if (error) throw new Error('Não foi possível carregar a divisão da conta. Tente imprimir novamente.');
+    pagamentos = data || [];
+  }
   if (impressoraConectada()) {
-    const texto = via === 'cozinha' ? buildKitchenReceipt(pedido, config) : buildCashReceipt(pedido, config);
+    const texto = via === 'cozinha' ? buildKitchenReceipt(pedido, config) : buildCashReceipt(pedido, config, pagamentos);
     const ok = await imprimirViaBluetooth(textoParaBytes(texto));
     if (ok) return 'bluetooth';
     alert('Não foi possível enviar a comanda por Bluetooth: ' + (ultimoErroImpressao() || 'Confira a conexão da impressora.') + '\nO pedido continua salvo. Reconecte e tente reimprimir.');
@@ -273,7 +298,7 @@ export async function printReceipt(pedido: Pedido, config: Configuracao, via: 'c
   if (via === 'cozinha') {
     div.innerHTML = kitchenHTML(pedido, config);
   } else {
-    div.innerHTML = cashHTML(pedido, config);
+    div.innerHTML = cashHTML(pedido, config, pagamentos);
   }
 
   abrirReciboNoNavegador(div);
@@ -437,7 +462,7 @@ function kitchenHTML(pedido: Pedido, config: Configuracao): string {
   `;
 }
 
-function cashHTML(pedido: Pedido, config: Configuracao): string {
+export function cashHTML(pedido: Pedido, config: Configuracao, pagamentos: PagamentoComanda[] = []): string {
   let itens = '';
   pedido.itens?.forEach((item) => {
     itens += `<div class="item">${item.quantidade}x ${item.produto_nome}</div>`;
@@ -464,6 +489,7 @@ function cashHTML(pedido: Pedido, config: Configuracao): string {
     ${pedido.desconto > 0 ? `<div>Desconto:    -${brl(pedido.desconto)}</div>` : ''}
     <div class="total">TOTAL:       ${brl(pedido.total)}</div>
     <div>Pagamento:   ${pedido.forma_pagamento || '-'}</div>
+    ${linhasDivisao(pagamentos).map((linha) => `<div>${linha.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')}</div>`).join('')}
     <div class="sep">--------------------------------</div>
     <div class="center">Obrigado! Volte Sempre</div>
     <div class="sep">--------------------------------</div>
