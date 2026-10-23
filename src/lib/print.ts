@@ -1,6 +1,6 @@
 import type { Pedido, ItemPedido, Configuracao, ItemMesa } from '../types';
 import { brl, fmtHora } from './format';
-import { impressoraConectada, imprimirViaBluetooth, textoParaBytes } from './bluetoothPrinter';
+import { impressoraConectada, imprimirViaBluetooth, textoParaBytes, ultimoErroImpressao } from './bluetoothPrinter';
 
 /**
  * ESC/POS commands for 80mm thermal printers.
@@ -284,10 +284,17 @@ function buildMesaComandaEscPos(numeroMesa: number, itens: ItemMesa[], config: C
   return INIT + lines.join('\n') + '\n\n\n';
 }
 
-export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], config: Configuracao) {
-  if (impressoraConectada()) {
+export type ModoImpressaoMesa = 'auto' | 'bluetooth' | 'navegador';
+
+export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], config: Configuracao, modo: ModoImpressaoMesa = 'auto'): Promise<'bluetooth' | 'navegador'> {
+  if (!itens.length) throw new Error('Este lançamento não contém itens.');
+  if (modo === 'bluetooth' && !impressoraConectada()) {
+    throw new Error('A impressora Bluetooth não está conectada neste aparelho. Conecte-a no Dashboard ou escolha impressão do navegador.');
+  }
+  if (modo !== 'navegador' && impressoraConectada()) {
     const ok = await imprimirViaBluetooth(textoParaBytes(buildMesaComandaEscPos(numeroMesa, itens, config)));
-    if (ok) return;
+    if (ok) return 'bluetooth';
+    if (modo === 'bluetooth') throw new Error(ultimoErroImpressao() || 'Falha no envio Bluetooth. Confira a conexão e tente novamente.');
   }
 
   const existing = document.getElementById('print-area');
@@ -307,8 +314,18 @@ export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], co
     ${marcaHtml(config.nome_loja)}
   `;
   document.body.appendChild(div);
+  // Em aparelhos móveis o diálogo pode abrir depois que print() retorna.
+  // Remover o recibo após 1 segundo podia deixar a prévia sem os itens.
+  let limite: ReturnType<typeof setTimeout>;
+  const limpar = () => {
+    div.remove();
+    window.removeEventListener('afterprint', limpar);
+    clearTimeout(limite);
+  };
+  window.addEventListener('afterprint', limpar);
+  limite = setTimeout(limpar, 120000);
   window.print();
-  setTimeout(() => div.remove(), 1000);
+  return 'navegador';
 }
 
 /**

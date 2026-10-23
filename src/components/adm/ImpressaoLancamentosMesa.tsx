@@ -2,7 +2,8 @@ import { useRef, useState } from 'react';
 import { Printer } from 'lucide-react';
 import { useConfig } from '../../context/ConfigContext';
 import { agruparLancamentosMesa } from '../../lib/lancamentosMesa';
-import { printMesaComanda } from '../../lib/print';
+import { printMesaComanda, type ModoImpressaoMesa } from '../../lib/print';
+import { impressoraConectada } from '../../lib/bluetoothPrinter';
 import type { ItemMesa } from '../../types';
 
 export interface MesaImpressao {
@@ -16,19 +17,27 @@ export function ImpressaoLancamentosMesa({ mesas }: { mesas: MesaImpressao[] }) 
   const { config } = useConfig();
   const [imprimindo, setImprimindo] = useState<string | null>(null);
   const [erro, setErro] = useState('');
+  const [aviso, setAviso] = useState('');
+  const [modo, setModo] = useState<ModoImpressaoMesa>('auto');
+  const [repetir, setRepetir] = useState<{ mesa: MesaImpressao; id: string; itens: ItemMesa[] } | null>(null);
   const trava = useRef(false);
 
-  const imprimir = async (mesa: MesaImpressao, id: string, itens: ItemMesa[]) => {
+  const imprimir = async (mesa: MesaImpressao, id: string, itens: ItemMesa[], escolha = modo) => {
     if (!config || trava.current) return;
     trava.current = true;
     setImprimindo(id);
     setErro('');
+    setAviso('');
+    setRepetir(null);
     try {
       // Os itens já estão carregados: o clique chega diretamente à impressão
       // do navegador sem uma consulta assíncrona que possa bloquear o diálogo.
-      await printMesaComanda(mesa.numero, itens, config);
-    } catch {
-      setErro('Não foi possível solicitar a impressão. Confira a impressora e tente novamente.');
+      const destino = escolha === 'auto' ? (impressoraConectada() ? 'bluetooth' : 'navegador') : escolha;
+      const via = await printMesaComanda(mesa.numero, itens, config, destino);
+      setAviso(via === 'bluetooth' ? 'Dados enviados à impressora Bluetooth. Confira a saída do papel.' : 'Impressão solicitada ao navegador. Selecione a impressora e confirme no diálogo.');
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível solicitar a impressão. Confira a impressora e tente novamente.');
+      setRepetir({ mesa, id, itens });
     } finally {
       trava.current = false;
       setImprimindo(null);
@@ -40,8 +49,17 @@ export function ImpressaoLancamentosMesa({ mesas }: { mesas: MesaImpressao[] }) 
     <section className="bg-white border border-[#EFE9E0] rounded-2xl p-4 space-y-3">
       <h3 className="font-bold text-sm flex items-center gap-2"><Printer size={18} className="text-[#B91C1C]" />Imprimir lançamentos das mesas</h3>
       <p className="text-xs text-neutral-500">Abra a mesa, confira os itens e imprima somente o lançamento escolhido. Disponível enquanto a conta estiver aberta.</p>
+      <label className="flex flex-wrap gap-2 items-center text-sm">Como imprimir
+        <select value={modo} onChange={(e) => setModo(e.target.value as ModoImpressaoMesa)} className="border rounded-lg px-3 py-2 bg-white">
+          <option value="auto">Automático</option>
+          <option value="navegador">Navegador (USB / impressora do computador)</option>
+          <option value="bluetooth">Bluetooth conectado neste aparelho</option>
+        </select>
+      </label>
       {!config && <p role="alert" className="text-sm text-amber-700">Aguarde o carregamento das configurações da impressão.</p>}
       {erro && <p role="alert" className="text-sm text-red-600">{erro}</p>}
+      {aviso && <p role="status" className="text-sm text-neutral-700">{aviso}</p>}
+      {repetir && <button disabled={imprimindo !== null} onClick={() => { void imprimir(repetir.mesa, repetir.id, repetir.itens, 'navegador'); }} className="border border-red-200 text-[#B91C1C] rounded-lg px-3 py-2 text-sm">Abrir impressão do navegador</button>}
       {!ocupadas.length && <p className="text-sm text-neutral-500">Nenhuma mesa com itens lançados.</p>}
       {ocupadas.map((mesa) => {
         const grupos = agruparLancamentosMesa(mesa.itens_mesa);
