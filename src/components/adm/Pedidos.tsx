@@ -458,6 +458,8 @@ function SplitPaymentModal({ pedido, onClose, onSaved }: {
   const [quantidadePessoas, setQuantidadePessoas] = useState(2);
   const [valores, setValores] = useState<number[]>([]);
   const [formas, setFormas] = useState<string[]>([]);
+  const [nomes, setNomes] = useState<string[]>([]);
+  const nomesEditados = useRef(false);
   const [responsaveis, setResponsaveis] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
   const [erro, setErro] = useState('');
@@ -474,10 +476,27 @@ function SplitPaymentModal({ pedido, onClose, onSaved }: {
     setQuantidadePessoas(qtd);
     setValores(novosValores);
     setFormas((atual) => Array.from({ length: qtd }, (_, i) => atual[i] || 'Dinheiro'));
+    setNomes((atual) => Array.from({ length: qtd }, (_, i) => atual[i] || ''));
     setResponsaveis((atual) => Array.from({ length: qtd }, (_, i) => atual[i] ?? 0));
   };
 
-  useEffect(() => { ajustarPessoas(2); }, []);
+  useEffect(() => {
+    let cancelado = false;
+    ajustarPessoas(2);
+    // Recupera nomes e pagamentos já salvos quando a divisão é reaberta.
+    void (async () => {
+      const { data } = await supabase.from('pedido_pagamentos')
+        .select('identificacao, forma_pagamento, valor').eq('pedido_id', pedido.id)
+        .order('created_at', { ascending: true }).order('id', { ascending: true });
+      if (cancelado || nomesEditados.current || !data?.length) return;
+      const qtd = Math.max(2, data.length);
+      setQuantidadePessoas(qtd);
+      setNomes(Array.from({ length: qtd }, (_, i) => data[i]?.identificacao || ''));
+      setFormas(Array.from({ length: qtd }, (_, i) => data[i]?.forma_pagamento || 'Dinheiro'));
+      setValores(Array.from({ length: qtd }, (_, i) => Number(data[i]?.valor || 0)));
+    })();
+    return () => { cancelado = true; };
+  }, []);
 
   const valoresPorItem = () => {
     const donos = responsaveis.length === unidades.length ? responsaveis : unidades.map(() => 0);
@@ -497,13 +516,17 @@ function SplitPaymentModal({ pedido, onClose, onSaved }: {
 
   const valoresAtuais = modo === 'pessoas' ? valores : valoresPorItem();
   const confirmar = async () => {
+    if (valoresAtuais.some((valor, index) => valor > 0 && !nomes[index]?.trim())) {
+      setErro('Informe o nome de cada pessoa que vai pagar.');
+      return;
+    }
     const soma = Math.round(valoresAtuais.reduce((total, valor) => total + (Number(valor) || 0), 0) * 100) / 100;
     if (Math.abs(soma - pedido.total) > 0.01) {
       setErro(`A soma precisa ser ${brl(pedido.total)}. Atualmente está ${brl(soma)}.`);
       return;
     }
     const partes: SplitPart[] = valoresAtuais
-      .map((valor, index) => ({ identificacao: `Pessoa ${index + 1}`, forma_pagamento: formas[index] || 'Dinheiro', valor: Number(valor) || 0 }))
+      .map((valor, index) => ({ identificacao: nomes[index]?.trim() || '', forma_pagamento: formas[index] || 'Dinheiro', valor: Number(valor) || 0 }))
       .filter((parte) => parte.valor > 0);
     if (partes.length === 0) return;
     setBusy(true);
@@ -524,15 +547,25 @@ function SplitPaymentModal({ pedido, onClose, onSaved }: {
           <div><h3 className="font-black text-xl text-neutral-900">Dividir pagamento</h3><p className="text-sm text-neutral-500">Pedido #{pedido.numero} · Total {brl(pedido.total)}</p></div>
           <button onClick={onClose} className="text-neutral-500 text-xl">×</button>
         </div>
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4" onChangeCapture={() => { nomesEditados.current = true; }}>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => setModo('pessoas')} className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold ${modo === 'pessoas' ? 'bg-[#B91C1C] text-white' : 'bg-neutral-100 text-neutral-700'}`}><Users size={17} /> Por pessoas</button>
             <button onClick={() => setModo('itens')} className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold ${modo === 'itens' ? 'bg-[#B91C1C] text-white' : 'bg-neutral-100 text-neutral-700'}`}><ListChecks size={17} /> Por itens</button>
           </div>
 
           <label className="block text-sm font-semibold text-neutral-700">Quantidade de pessoas
-            <input type="number" min={2} max={12} value={quantidadePessoas} onChange={(e) => ajustarPessoas(Number(e.target.value))} className="mt-1 w-full border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900" />
+            <input type="number" min={2} max={12} value={quantidadePessoas} onChange={(e) => { nomesEditados.current = true; ajustarPessoas(Number(e.target.value)); }} className="mt-1 w-full border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900" />
           </label>
+
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-neutral-700">Quem vai dividir a conta?</p>
+            {Array.from({ length: quantidadePessoas }, (_, index) => <input
+              key={index} type="text" aria-label={`Nome da pessoa ${index + 1}`} placeholder="Nome da pessoa"
+              value={nomes[index] || ''} maxLength={100}
+              onChange={(e) => { nomesEditados.current = true; setNomes((atual) => { const novo = [...atual]; novo[index] = e.target.value; return novo; }); }}
+              className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900"
+            />)}
+          </div>
 
           {modo === 'itens' && (
             <div className="border border-neutral-200 rounded-xl p-3 space-y-2">
@@ -541,7 +574,7 @@ function SplitPaymentModal({ pedido, onClose, onSaved }: {
                 <div key={`${unidade.nome}-${index}`} className="flex items-center justify-between gap-2 text-sm">
                   <span className="text-neutral-800 truncate">{index + 1}. {unidade.nome}</span>
                   <select value={responsaveis[index] ?? 0} onChange={(e) => setResponsaveis((atual) => { const novo = [...atual]; novo[index] = Number(e.target.value); return novo; })} className="border border-neutral-200 rounded-lg px-2 py-1 text-neutral-900">
-                    {Array.from({ length: quantidadePessoas }, (_, pessoa) => <option key={pessoa} value={pessoa}>Pessoa {pessoa + 1}</option>)}
+                    {Array.from({ length: quantidadePessoas }, (_, pessoa) => <option key={pessoa} value={pessoa}>{nomes[pessoa]?.trim() || 'Nome não informado'}</option>)}
                   </select>
                 </div>
               ))}
@@ -551,7 +584,7 @@ function SplitPaymentModal({ pedido, onClose, onSaved }: {
           <div className="space-y-2">
             {valoresAtuais.map((valor, index) => (
               <div key={index} className="grid grid-cols-[1fr_1fr_110px] gap-2 items-center">
-                <span className="text-sm font-semibold text-neutral-800">Pessoa {index + 1}</span>
+                <span className="text-sm font-semibold text-neutral-800 break-words">{nomes[index]?.trim() || 'Nome não informado'}</span>
                 <select value={formas[index] || 'Dinheiro'} onChange={(e) => setFormas((atual) => { const novo = [...atual]; novo[index] = e.target.value; return novo; })} className="border border-neutral-200 rounded-lg px-2 py-2 text-sm text-neutral-900">
                   {FORMAS_DIVISAO.map((forma) => <option key={forma}>{forma}</option>)}
                 </select>
