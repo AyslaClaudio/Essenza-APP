@@ -456,6 +456,7 @@ function SplitPaymentModal({ pedido, onClose, onSaved }: {
 }) {
   const [modo, setModo] = useState<SplitMode>('pessoas');
   const [quantidadePessoas, setQuantidadePessoas] = useState(2);
+  const [quantidadeDigitada, setQuantidadeDigitada] = useState('2');
   const [valores, setValores] = useState<number[]>([]);
   const [formas, setFormas] = useState<string[]>([]);
   const [nomes, setNomes] = useState<string[]>([]);
@@ -491,6 +492,7 @@ function SplitPaymentModal({ pedido, onClose, onSaved }: {
       if (cancelado || nomesEditados.current || !data?.length) return;
       const qtd = Math.max(2, data.length);
       setQuantidadePessoas(qtd);
+      setQuantidadeDigitada(String(qtd));
       setNomes(Array.from({ length: qtd }, (_, i) => data[i]?.identificacao || ''));
       setFormas(Array.from({ length: qtd }, (_, i) => data[i]?.forma_pagamento || 'Dinheiro'));
       setValores(Array.from({ length: qtd }, (_, i) => Number(data[i]?.valor || 0)));
@@ -516,6 +518,11 @@ function SplitPaymentModal({ pedido, onClose, onSaved }: {
 
   const valoresAtuais = modo === 'pessoas' ? valores : valoresPorItem();
   const confirmar = async () => {
+    const quantidade = Number(quantidadeDigitada);
+    if (!quantidadeDigitada || !Number.isInteger(quantidade) || quantidade < 2 || quantidade > 12) {
+      setErro('Informe uma quantidade de 2 a 12 pessoas.');
+      return;
+    }
     if (valoresAtuais.some((valor, index) => valor > 0 && !nomes[index]?.trim())) {
       setErro('Informe o nome de cada pessoa que vai pagar.');
       return;
@@ -554,7 +561,24 @@ function SplitPaymentModal({ pedido, onClose, onSaved }: {
           </div>
 
           <label className="block text-sm font-semibold text-neutral-700">Quantidade de pessoas
-            <input type="number" min={2} max={12} value={quantidadePessoas} onChange={(e) => { nomesEditados.current = true; ajustarPessoas(Number(e.target.value)); }} className="mt-1 w-full border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900" />
+            <input type="number" min={2} max={12} step={1} value={quantidadeDigitada}
+              onChange={(e) => {
+                nomesEditados.current = true;
+                const texto = e.target.value;
+                setQuantidadeDigitada(texto);
+                const quantidade = Number(texto);
+                if (texto && Number.isInteger(quantidade) && quantidade >= 2 && quantidade <= 12 && quantidade !== quantidadePessoas) {
+                  ajustarPessoas(quantidade);
+                  setErro('');
+                }
+              }}
+              onBlur={() => {
+                const quantidade = Number(quantidadeDigitada);
+                if (!quantidadeDigitada || !Number.isInteger(quantidade) || quantidade < 2 || quantidade > 12) {
+                  setQuantidadeDigitada(String(quantidadePessoas));
+                }
+              }}
+              className="mt-1 w-full border border-neutral-200 rounded-xl px-3 py-2 text-neutral-900" />
           </label>
 
           <div className="space-y-2">
