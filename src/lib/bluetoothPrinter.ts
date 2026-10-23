@@ -179,6 +179,23 @@ export function textoParaBytes(text: string): Uint8Array {
 // parte das impressoras, mas travam ou truncam silenciosamente em outras.
 // 20 bytes é o valor seguro que funciona no maior número de aparelhos.
 const CHUNK_SIZE = 20;
+const WRITE_TIMEOUT_MS = 5000;
+let filaImpressao: Promise<boolean> = Promise.resolve(true);
+
+function informarEnvio(mensagem: string) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('essenza-impressao', { detail: mensagem }));
+  }
+}
+
+async function comPrazo<T>(operacao: Promise<T>, mensagem: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([operacao, new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(mensagem)), WRITE_TIMEOUT_MS);
+    })]);
+  } finally { clearTimeout(timer); }
+}
 
 let ultimoErro: string | null = null;
 
@@ -186,7 +203,18 @@ export function ultimoErroImpressao(): string | null {
   return ultimoErro;
 }
 
-export async function imprimirViaBluetooth(escposText: string | Uint8Array): Promise<boolean> {
+export function imprimirViaBluetooth(escposText: string | Uint8Array): Promise<boolean> {
+  const bytes = typeof escposText === 'string' ? textoParaBytes(escposText) : escposText.slice();
+  // Uma comanda inteira por vez, inclusive se o listener de novos pedidos
+  // tentar imprimir enquanto o administrador imprime um lançamento.
+  const trabalho = filaImpressao.then(() => enviarComanda(bytes));
+  filaImpressao = trabalho.catch(() => false);
+  return trabalho;
+}
+
+async function enviarComanda(bytes: Uint8Array): Promise<boolean> {
+  informarEnvio('Enviando comanda à impressora Bluetooth...');
+  try {
   // Impressora BLE parada por um tempo (ex: só imprime de novo na hora do
   // fechamento do dia/semana, horas depois da última comanda) costuma cair a
   // conexão GATT sozinha. Se já pareamos com um dispositivo nesta sessão,
@@ -194,28 +222,29 @@ export async function imprimirViaBluetooth(escposText: string | Uint8Array): Pro
   // precisaria voltar em Configurações e clicar "Conectar" toda vez.
   if (!characteristic && device) {
     try {
-      const server = device.gatt?.connected ? device.gatt : await device.gatt?.connect();
-      if (server) characteristic = await descobrirCaracteristica(server);
+      const server = device.gatt?.connected ? device.gatt : await comPrazo(device.gatt!.connect(), 'A impressora não respondeu à reconexão Bluetooth.');
+      if (server) characteristic = await comPrazo(descobrirCaracteristica(server), 'A impressora não respondeu ao abrir o canal de impressão.');
     } catch {
       // reconexão falhou — cai no erro "nenhuma impressora conectada" abaixo
     }
   }
 
   if (!characteristic) {
-    ultimoErro = 'Nenhuma impressora conectada.';
-    return false;
+    throw new Error('Nenhuma impressora conectada. Reconecte no Essenza e tente novamente.');
   }
   ultimoErro = null;
-  try {
-    const bytes = typeof escposText === 'string' ? textoParaBytes(escposText) : escposText;
+    const canal = characteristic;
     for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
       const slice = bytes.slice(i, i + CHUNK_SIZE);
-      if (characteristic.properties.writeWithoutResponse) {
-        await characteristic.writeValueWithoutResponse(slice);
+      if (canal.properties.write) {
+        await comPrazo(canal.writeValue(slice), 'A impressora parou de responder durante o envio. Reconecte-a e tente novamente.');
       } else {
-        await characteristic.writeValue(slice);
+        await comPrazo(canal.writeValueWithoutResponse(slice), 'A impressora parou de responder durante o envio. Reconecte-a e tente novamente.');
       }
+      // Evita lotar o pequeno buffer das térmicas de 58 mm.
+      await new Promise((resolve) => setTimeout(resolve, 25));
     }
+    informarEnvio('Dados enviados à impressora. Confira a saída do papel.');
     return true;
   } catch (e) {
     // Nunca deixa o erro "vazar" pra quem chamou — imprimir é sempre best-effort:
@@ -224,7 +253,10 @@ export async function imprimirViaBluetooth(escposText: string | Uint8Array): Pro
     // em vez de travar sem imprimir nada.
     const err = e as Error;
     ultimoErro = err.message || 'Falha ao enviar dados pra impressora.';
+    informarEnvio('Falha na impressão: ' + ultimoErro);
     characteristic = null; // conexão provavelmente caiu — força reconectar da próxima vez
+    device?.gatt?.disconnect();
+    avisarStatus();
     return false;
   }
 }

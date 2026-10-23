@@ -19,6 +19,7 @@ export function ImpressaoLancamentosMesa({ mesas }: { mesas: MesaImpressao[] }) 
   const [erro, setErro] = useState('');
   const [aviso, setAviso] = useState('');
   const [modo, setModo] = useState<ModoImpressaoMesa>('auto');
+  const [feedbackId, setFeedbackId] = useState<string | null>(null);
   const [repetir, setRepetir] = useState<{ mesa: MesaImpressao; id: string; itens: ItemMesa[] } | null>(null);
   const trava = useRef(false);
 
@@ -26,6 +27,7 @@ export function ImpressaoLancamentosMesa({ mesas }: { mesas: MesaImpressao[] }) 
     if (!config || trava.current) return;
     trava.current = true;
     setImprimindo(id);
+    setFeedbackId(id);
     setErro('');
     setAviso('');
     setRepetir(null);
@@ -71,6 +73,8 @@ export function ImpressaoLancamentosMesa({ mesas }: { mesas: MesaImpressao[] }) 
                 <p className="text-sm font-semibold">Lançamento {grupos.length - indice} · {new Date(grupo.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
                 <button onClick={() => { void imprimir(mesa, grupo.id, grupo.itens); }} disabled={!config || imprimindo !== null} className="flex items-center gap-2 bg-[#B91C1C] text-white text-xs font-bold px-3 py-2 rounded-lg disabled:opacity-50"><Printer size={15} />{imprimindo === grupo.id ? 'Enviando...' : 'Imprimir lançamento'}</button>
               </div>
+              {feedbackId === grupo.id && erro && <p role="alert" className="text-sm text-red-600">{erro}</p>}
+              {feedbackId === grupo.id && aviso && <p role="status" className="text-sm text-neutral-700">{aviso}</p>}
               <ul className="space-y-1 text-sm">
                 {grupo.itens.map((item) => <li key={item.id}>
                   <p>{item.quantidade}x {item.produto_nome}</p>

@@ -46,6 +46,12 @@ export function Adm() {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [dash, setDash] = useState<DashboardData>({ lucro: 0, faturamento: 0, numPedidos: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [avisoImpressao, setAvisoImpressao] = useState('');
+  useEffect(() => {
+    const receber = (evento: Event) => setAvisoImpressao((evento as CustomEvent<string>).detail);
+    window.addEventListener('essenza-impressao', receber);
+    return () => window.removeEventListener('essenza-impressao', receber);
+  }, []);
 
   // Busca global do topo — um campo só pra achar produto, cliente ou pedido
   // sem trocar de aba manualmente. Ao clicar num resultado, troca de aba e
@@ -300,6 +306,9 @@ export function Adm() {
   return (
     <div className="min-h-screen bg-[#FBF6EF] flex flex-col lg:flex-row">
       <OfflineBanner />
+      {avisoImpressao && <div role="status" className="fixed bottom-24 right-4 z-[100] max-w-sm bg-white border border-neutral-300 shadow-xl rounded-xl p-4 flex items-start gap-3 text-sm">
+        <span>{avisoImpressao}</span><button aria-label="Fechar aviso de impressão" onClick={() => setAvisoImpressao('')}><X size={16} /></button>
+      </div>}
       {/* Mobile header with dashboard strip — sem menu hambúrguer: a navegação
           mobile agora é a barra inferior fixa (ver fim do componente). */}
       <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-neutral-200">

@@ -16,6 +16,19 @@ const CENTER = `${ESC}a\x01`;
 const LEFT = `${ESC}a\x00`;
 const LINE = '--------------------------------';
 
+function abrirReciboNoNavegador(div: HTMLDivElement) {
+  document.body.appendChild(div);
+  let limite: ReturnType<typeof setTimeout>;
+  const limpar = () => {
+    div.remove();
+    window.removeEventListener('afterprint', limpar);
+    clearTimeout(limite);
+  };
+  window.addEventListener('afterprint', limpar);
+  limite = setTimeout(limpar, 120000);
+  window.print();
+}
+
 // Marca d'água leve no topo de cada recibo — só texto (funciona em qualquer
 // impressora térmica/Bluetooth, sem gastar tinta com uma imagem). Aprovada
 // pela usuária: faixa de 3 marcas (lembrando a faixa verde/branco/vermelho
@@ -246,6 +259,8 @@ export async function printReceipt(pedido: Pedido, config: Configuracao, via: 'c
     const texto = via === 'cozinha' ? buildKitchenReceipt(pedido, config) : buildCashReceipt(pedido, config);
     const ok = await imprimirViaBluetooth(textoParaBytes(texto));
     if (ok) return;
+    alert('Não foi possível enviar a comanda por Bluetooth: ' + (ultimoErroImpressao() || 'Confira a conexão da impressora.') + '\nO pedido continua salvo. Reconecte e tente reimprimir.');
+    return;
   }
 
   const existing = document.getElementById('print-area');
@@ -261,9 +276,7 @@ export async function printReceipt(pedido: Pedido, config: Configuracao, via: 'c
     div.innerHTML = cashHTML(pedido, config);
   }
 
-  document.body.appendChild(div);
-  window.print();
-  setTimeout(() => div.remove(), 1000);
+  abrirReciboNoNavegador(div);
 }
 
 /**
@@ -313,18 +326,7 @@ export async function printMesaComanda(numeroMesa: number, itens: ItemMesa[], co
     <div class="sep">--------------------------------</div>
     ${marcaHtml(config.nome_loja)}
   `;
-  document.body.appendChild(div);
-  // Em aparelhos móveis o diálogo pode abrir depois que print() retorna.
-  // Remover o recibo após 1 segundo podia deixar a prévia sem os itens.
-  let limite: ReturnType<typeof setTimeout>;
-  const limpar = () => {
-    div.remove();
-    window.removeEventListener('afterprint', limpar);
-    clearTimeout(limite);
-  };
-  window.addEventListener('afterprint', limpar);
-  limite = setTimeout(limpar, 120000);
-  window.print();
+  abrirReciboNoNavegador(div);
   return 'navegador';
 }
 
@@ -372,6 +374,8 @@ export async function printMesaConta(
   if (impressoraConectada()) {
     const ok = await imprimirViaBluetooth(textoParaBytes(buildMesaContaEscPos(numeroMesa, itens, total, formaPagamento, config, taxaServico)));
     if (ok) return;
+    alert('Conta fechada e salva. Falha ao imprimir por Bluetooth: ' + (ultimoErroImpressao() || 'Confira a conexão da impressora.'));
+    return;
   }
 
   const existing = document.getElementById('print-area');

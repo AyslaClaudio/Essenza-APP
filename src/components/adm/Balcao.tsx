@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useConfig } from '../../context/ConfigContext';
 import { brl, todayISO } from '../../lib/format';
 import { printReceipt, printMesaComanda } from '../../lib/print';
+import { impressoraConectada } from '../../lib/bluetoothPrinter';
 import type { Produto, Cliente, ItemPedido, TaxaEntrega, Adicional, Pedido, Mesa, ItemMesa } from '../../types';
 import { Search, Plus, Minus, X, ShoppingCart, Printer, Check, Phone, ArrowLeft, CloudOff, LayoutGrid, Wheat } from 'lucide-react';
 import { ProductPlaceholder, usaImagemPadrao } from '../ProductPlaceholder';
@@ -387,6 +388,7 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
         }
       }
 
+      const imprimirNesteAparelho = impressoraConectada();
       const pedidoData = {
         numero,
         cliente_id: clienteId,
@@ -405,8 +407,8 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
         forma_pagamento: formaPagamento,
         observacao,
         cupom: '',
-        imprimir_cozinha: printCozinha,
-        imprimir_caixa: printCaixa,
+        imprimir_cozinha: printCozinha && !imprimirNesteAparelho,
+        imprimir_caixa: printCaixa && !imprimirNesteAparelho,
         garcom_id: usuario?.role === 'garcom' ? usuario.id : null,
         garcom_nome: usuario?.role === 'garcom' ? usuario.nome : '',
       };
@@ -431,16 +433,23 @@ export function Balcao({ onOrderComplete }: { onOrderComplete: () => void }) {
 
       const fullPedido = { ...pedidoData, id: pedidoId, itens: cart, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), avaliacao: 0 } as Pedido;
 
-      // Não imprime aqui: o INSERT acima já dispara o listener central em
-      // Adm.tsx (Realtime), que imprime na impressora conectada — de
-      // qualquer terminal (PC, celular) que tenha lançado o pedido. Sem essa
-      // separação, lançar pelo próprio PC com a impressora conectada
-      // imprimiria a comanda duas vezes.
+      // Se houver Bluetooth local, o envio é direto após salvar todos os
+      // itens. As flags do INSERT desativam a autoimpressão nesse caso.
 
       setPedidoOffline(false);
       setUltimoPedido(fullPedido);
       setStep('sucesso');
       onOrderComplete();
+      if (imprimirNesteAparelho && config) {
+        // A venda já está salva. Falhar na impressão nunca pode enviar a
+        // mesma venda à fila offline e duplicar o pedido/caixa.
+        try {
+          if (printCozinha) await printReceipt(fullPedido, config, 'cozinha');
+          if (printCaixa) await printReceipt(fullPedido, config, 'caixa');
+        } catch (erro) {
+          alert('Pedido salvo. Falha na impressão: ' + (erro instanceof Error ? erro.message : 'Confira a impressora e reimprima nesta tela.'));
+        }
+      }
     } catch (e) {
       // Provavelmente caiu a internet no meio do processo — não perde o
       // pedido, salva na fila local para sincronizar depois.
