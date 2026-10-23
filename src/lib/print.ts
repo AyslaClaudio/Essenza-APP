@@ -254,13 +254,13 @@ export function buildCashReceipt(pedido: Pedido, config: Configuracao): string {
  * imprime direto nela via ESC/POS em vez de abrir o diálogo de impressão do
  * navegador — mais rápido e sem depender de driver/spooler do sistema.
  */
-export async function printReceipt(pedido: Pedido, config: Configuracao, via: 'cozinha' | 'caixa') {
+export async function printReceipt(pedido: Pedido, config: Configuracao, via: 'cozinha' | 'caixa'): Promise<'bluetooth' | 'navegador' | 'erro'> {
   if (impressoraConectada()) {
     const texto = via === 'cozinha' ? buildKitchenReceipt(pedido, config) : buildCashReceipt(pedido, config);
     const ok = await imprimirViaBluetooth(textoParaBytes(texto));
-    if (ok) return;
+    if (ok) return 'bluetooth';
     alert('Não foi possível enviar a comanda por Bluetooth: ' + (ultimoErroImpressao() || 'Confira a conexão da impressora.') + '\nO pedido continua salvo. Reconecte e tente reimprimir.');
-    return;
+    return 'erro';
   }
 
   const existing = document.getElementById('print-area');
@@ -277,6 +277,7 @@ export async function printReceipt(pedido: Pedido, config: Configuracao, via: 'c
   }
 
   abrirReciboNoNavegador(div);
+  return 'navegador';
 }
 
 /**

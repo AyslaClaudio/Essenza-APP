@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useConfig } from '../../context/ConfigContext';
 import { useAuth } from '../../context/AuthContext';
 import { brl, fmtHora, fmtData } from '../../lib/format';
 import { printReceipt } from '../../lib/print';
+import { ultimoErroImpressao } from '../../lib/bluetoothPrinter';
 import type { Pedido, ItemPedido, PedidoStatus } from '../../types';
 import { Search, Printer, Eye, CheckCircle, XCircle, Bike, Trash2, Lock, AlertTriangle, Users, ListChecks } from 'lucide-react';
 import { SenhaAdminModal } from '../SenhaAdminModal';
@@ -132,7 +133,10 @@ export function Pedidos({ buscaInicial }: { buscaInicial?: { valor: string; nonc
         <PedidoDetail
           pedido={selected}
           onClose={() => setSelected(null)}
-          onPrint={(via) => config && printReceipt(selected, config, via)}
+          onPrint={(via) => {
+            if (!config) throw new Error('Não foi possível carregar a configuração da loja. Atualize o app e tente novamente.');
+            return printReceipt(selected, config, via);
+          }}
           onStatus={(s) => updateStatus(selected, s)}
           onSplit={() => setSplitTarget(selected)}
           canDelete={isGerente}
@@ -330,12 +334,30 @@ function PedidoCard({ pedido, onView, onStatus, canDelete, onDelete }: {
 function PedidoDetail({ pedido, onClose, onPrint, onStatus, onSplit, canDelete, onDelete }: {
   pedido: Pedido;
   onClose: () => void;
-  onPrint: (via: 'cozinha' | 'caixa') => void;
+  onPrint: (via: 'cozinha' | 'caixa') => ReturnType<typeof printReceipt>;
   onStatus: (s: PedidoStatus) => void;
   onSplit: () => void;
   canDelete: boolean;
   onDelete: () => void;
 }) {
+  const [enviando, setEnviando] = useState<'cozinha' | 'caixa' | null>(null);
+  const [retornoImpressao, setRetornoImpressao] = useState('');
+  const travaImpressao = useRef(false);
+  const imprimir = async (via: 'cozinha' | 'caixa') => {
+    if (travaImpressao.current) return;
+    travaImpressao.current = true;
+    setEnviando(via);
+    setRetornoImpressao('Enviando comanda...');
+    try {
+      const resultado = await onPrint(via);
+      setRetornoImpressao(resultado === 'erro' ? `Falha na impressão: ${ultimoErroImpressao() || 'Reconecte a impressora.'}` : resultado === 'bluetooth' ? 'Dados enviados pelo Bluetooth. Confira a saída do papel.' : 'Impressão solicitada ao navegador. Confirme o destino na janela de impressão.');
+    } catch (erro) {
+      setRetornoImpressao(erro instanceof Error ? erro.message : 'Não foi possível iniciar a impressão.');
+    } finally {
+      travaImpressao.current = false;
+      setEnviando(null);
+    }
+  };
   const nextIndex = STATUS_FLOW.indexOf(pedido.status) + 1;
   const nextStatus = nextIndex < STATUS_FLOW.length ? STATUS_FLOW[nextIndex] : null;
 
@@ -392,12 +414,13 @@ function PedidoDetail({ pedido, onClose, onPrint, onStatus, onSplit, canDelete, 
         )}
 
         {/* Actions */}
+        {retornoImpressao && <p role="status" className="text-sm border border-neutral-200 bg-neutral-50 rounded-xl p-3 mb-2">{retornoImpressao}</p>}
         <div className="grid grid-cols-2 gap-2 mb-2">
-          <button onClick={() => onPrint('cozinha')} className="flex items-center justify-center gap-2 py-3 bg-neutral-200 text-neutral-900 rounded-xl font-medium hover:bg-neutral-700">
-            <Printer size={18} /> Cozinha
+          <button onClick={() => { void imprimir('cozinha'); }} disabled={enviando !== null} className="flex items-center justify-center gap-2 py-3 bg-neutral-200 text-neutral-900 rounded-xl font-medium hover:bg-neutral-300 disabled:opacity-50">
+            <Printer size={18} /> {enviando === 'cozinha' ? 'Enviando...' : 'Cozinha'}
           </button>
-          <button onClick={() => onPrint('caixa')} className="flex items-center justify-center gap-2 py-3 bg-neutral-200 text-neutral-900 rounded-xl font-medium hover:bg-neutral-700">
-            <Printer size={18} /> Caixa
+          <button onClick={() => { void imprimir('caixa'); }} disabled={enviando !== null} className="flex items-center justify-center gap-2 py-3 bg-neutral-200 text-neutral-900 rounded-xl font-medium hover:bg-neutral-300 disabled:opacity-50">
+            <Printer size={18} /> {enviando === 'caixa' ? 'Enviando...' : 'Caixa'}
           </button>
         </div>
 
